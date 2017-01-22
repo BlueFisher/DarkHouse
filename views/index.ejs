@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+	<meta charset="UTF-8">
+	<title>DarkHouse</title>
+	
+	<% if (useCDN) { %>
+		<link href="//cdn.bootcss.com/rangeslider.js/2.2.1/rangeslider.min.css" rel="stylesheet" />
+		<link href="//cdn.bootcss.com/toastr.js/latest/css/toastr.min.css" rel="stylesheet" />
+		<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" />
+		<link href="//cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+	<% } else { %>
+		<link rel="stylesheet" href="/public/style/rangeslider.css" />
+		<link rel="stylesheet" href="/public/style/toastr.min.css" />
+		<link rel="stylesheet" href="/public/style/font-awesome.min.css" />
+		<link rel="stylesheet" href="/public/style/bootstrap.min.css" />
+	<% } %>
+
+	<link rel="stylesheet" href="/public/style/main.css" />
+</head>
+
+<body>
+	<div class="stage-container">
+		<canvas class="stage" id="stage" tabindex="0"></canvas>
+	</div>
+
+	<% if (useCDN) { %>
+		<script src="//cdn.bootcss.com/vue/2.0.1/vue.min.js"></script>
+		<script src="//cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
+		<script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script src="//cdn.bootcss.com/jquery-mousewheel/3.1.13/jquery.mousewheel.min.js"></script>
+		<script src="//cdn.bootcss.com/rangeslider.js/2.2.1/rangeslider.min.js"></script>
+		<script src="//cdn.bootcss.com/toastr.js/latest/js/toastr.min.js"></script>
+	<% } else { %>
+		<script src="/public/scripts/lib/vue.js"></script>
+		<script src="/public/scripts/lib/jquery-3.1.0.min.js"></script>
+		<script src="/public/scripts/lib/bootstrap.min.js"></script>
+		<script src="/public/scripts/lib/jquery.mousewheel.min.js"></script>
+		<script src="/public/scripts/lib/rangeslider.min.js"></script>
+		<script src="/public/scripts/lib/toastr.min.js"></script>
+	<% } %>
+	<script src="/public/scripts/bundle.js"></script>
+</body>
+
+</html>

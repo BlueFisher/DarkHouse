@@ -1,0 +1,76 @@
+html, body {
+	font-family: 'Microsoft YaHei', serif;
+}
+
+.stage-container {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	background: #000;
+}
+
+.stage-container .stage {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	outline: none;
+}
+
+.player {
+	position: absolute;
+	top: 0;
+	left: 0;
+	padding: 5px;
+	background: #fff;
+	z-index: 5;
+}
+
+.ranklist {
+	position: absolute;
+	top: 0;
+	right: 0;
+	padding: 2px 5px;
+	z-index: 5;
+}
+
+.ranklist p:last-child {
+	margin-bottom: 0;
+}
+
+.modal .title {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+.modal .form-group:last-child {
+	margin-bottom: 0;
+}
+
+.modal.fade .modal-dialog {
+	-webkit-transition: none;
+	-o-transition: none;
+	transition: none;
+	-webkit-transform: none;
+	-ms-transform: none;
+	-o-transform: none;
+	transform: none;
+}
+
+.modal.in .modal-dialog {
+	-webkit-transform: none;
+	-ms-transform: none;
+	-o-transform: none;
+	transform: none;
+}
+
+.props {
+	position: absolute;
+	top: 50px;
+	left: 0;
+	z-index: 5;
+}
