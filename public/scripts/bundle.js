@@ -55,8 +55,11 @@
 	
 	var main = function () {
 	    function main() {
+	        var _this = this;
+	
 	        _classCallCheck(this, main);
 	
+	        this._lengthPerSec = 0;
 	        this._connectWebSocket();
 	        adjustCanvasSize();
 	        window.onresize = function () {
@@ -67,6 +70,10 @@
 	            canvas.height = window.innerHeight;
 	            canvas.width = window.innerWidth;
 	        }
+	        setInterval(function () {
+	            console.log(_this._lengthPerSec / 1024 + " KB/s");
+	            _this._lengthPerSec = 0;
+	        }, 1000);
 	    }
 	
 	    _createClass(main, [{
@@ -78,18 +85,20 @@
 	    }, {
 	        key: "_connect",
 	        value: function _connect(url) {
-	            var _this = this;
+	            var _this2 = this;
 	
 	            this._ws = new WebSocket(url);
 	            toastr.info('正在连接服务器...');
 	            this._ws.onopen = function () {
 	                toastr.clear();
 	                toastr.success('服务器连接成功');
-	                _this._gameCore = new game_core_1.gameCore(_this._send.bind(_this));
+	                _this2._gameCore = new game_core_1.gameCore(_this2._send.bind(_this2));
 	            };
 	            this._ws.onmessage = function (e) {
+	                var data = e.data;
+	                _this2._lengthPerSec += data.length;
 	                var protocol = JSON.parse(e.data);
-	                _this._gameCore.protocolReceived(protocol);
+	                _this2._gameCore.protocolReceived(protocol);
 	            };
 	            this._ws.onclose = this._ws.onerror = function () {
 	                toastr.error('服务器断开连接');
@@ -253,8 +262,15 @@
 	            });
 	        }
 	    }, {
+	        key: "_getPlayerPROT",
+	        value: function _getPlayerPROT(playerId) {
+	            return this._mainPROTCache.playerBPROTs.find(function (p) {
+	                return p.id == playerId;
+	            });
+	        }
+	    }, {
 	        key: "_drawPlayer",
-	        value: function _drawPlayer(ctx, players, fillStyle, strokeStyle) {
+	        value: function _drawPlayer(ctx, playerIds, fillStyle, strokeStyle) {
 	            var _this3 = this;
 	
 	            ctx.save();
@@ -267,8 +283,10 @@
 	
 	            try {
 	                var _loop = function _loop() {
-	                    var player = _step.value;
+	                    var playerId = _step.value;
 	
+	                    var player = _this3._getPlayerPROT(playerId);
+	                    if (!player) return "continue";
 	                    ctx.beginPath();
 	                    ctx.arc(player.position.x, player.position.y, config.player.radius, 0, Math.PI * 2);
 	                    ctx.fill();
@@ -286,15 +304,17 @@
 	                        ctx.stroke();
 	                    }
 	                    var playerBasic = _this3._playerBasicPROTs.find(function (p) {
-	                        return p.id == player.id;
+	                        return player != null && p.id == player.id;
 	                    });
 	                    if (playerBasic) {
 	                        ctx.fillText(playerBasic.name, player.position.x, player.position.y + config.player.radius + 15);
 	                    }
 	                };
 	
-	                for (var _iterator = players[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	                    _loop();
+	                for (var _iterator = playerIds[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	                    var _ret = _loop();
+	
+	                    if (_ret === "continue") continue;
 	                }
 	            } catch (err) {
 	                _didIteratorError = true;
@@ -321,9 +341,9 @@
 	            if (!this._isGameOn || !this._mainPROTCache) return;
 	            var ctx = this._canvas.getContext('2d');
 	            ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-	            var currPlayer = this._mainPROTCache.currPlayer;
+	            var currPlayer = this._getPlayerPROT(this._mainPROTCache.currPlayerId);
 	            ctx.save();
-	            ctx.setTransform(1.5, 0, 0, 1.5, this._canvas.width / 2 - currPlayer.position.x * 1.5, this._canvas.height / 2 - currPlayer.position.y * 1.5);
+	            if (currPlayer) ctx.setTransform(1.5, 0, 0, 1.5, this._canvas.width / 2 - currPlayer.position.x * 1.5, this._canvas.height / 2 - currPlayer.position.y * 1.5);
 	            // 绘制障碍物
 	            ctx.fillStyle = '#111';
 	            var _iteratorNormalCompletion2 = true;
@@ -383,9 +403,9 @@
 	            ctx.save();
 	            // 绘制可见区域中所有玩家
 	            ctx.beginPath();
-	            ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius - 1, 0, Math.PI * 2);
+	            if (currPlayer) ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius - 1, 0, Math.PI * 2);
 	            ctx.clip();
-	            this._drawPlayer(ctx, this._mainPROTCache.playersInSight, '#fff', '#f00');
+	            this._drawPlayer(ctx, this._mainPROTCache.playerIdsInSight, '#fff', '#f00');
 	            // 绘制可见区域中所有障碍物
 	            ctx.fillStyle = '#fff';
 	            var _iteratorNormalCompletion4 = true;
@@ -417,10 +437,10 @@
 	            // 绘制可见区域光线
 	            ctx.beginPath();
 	            ctx.fillStyle = 'rgba(255,255,255,0.25)';
-	            ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius, 0, Math.PI * 2);
+	            if (currPlayer) ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius, 0, Math.PI * 2);
 	            ctx.fill();
 	            // 绘制本玩家
-	            this._drawPlayer(ctx, [currPlayer], '#333', '#f00');
+	            this._drawPlayer(ctx, [this._mainPROTCache.currPlayerId], '#333', '#f00');
 	            // 绘制射击
 	            this._mainPROTCache.shootPROTs.forEach(function (shootPROT) {
 	                ctx.save();
@@ -428,10 +448,10 @@
 	                ctx.beginPath();
 	                ctx.arc(shootPROT.position.x, shootPROT.position.y, config.player.shootingSightRadius - 1, 0, Math.PI * 2);
 	                ctx.clip();
-	                _this4._drawPlayer(ctx, shootPROT.playersInSight, '#fff', '#f00');
+	                _this4._drawPlayer(ctx, shootPROT.playerIdsInSight, '#fff', '#f00');
 	                ctx.restore();
-	                if (shootPROT.shootedPlayer) {
-	                    _this4._drawPlayer(ctx, [shootPROT.shootedPlayer], '#fff', '#f00');
+	                if (shootPROT.shootedPlayerId) {
+	                    _this4._drawPlayer(ctx, [shootPROT.shootedPlayerId], '#fff', '#f00');
 	                }
 	                // 绘制射击可见区域
 	                ctx.beginPath();
@@ -451,13 +471,16 @@
 	                }
 	                ctx.stroke();
 	            });
+	            // 绘制奔跑
 	            this._mainPROTCache.runningPROTs.forEach(function (runningPROT) {
 	                ctx.save();
+	                // 绘制奔跑范围视野中所有的玩家
 	                ctx.beginPath();
 	                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
 	                ctx.clip();
-	                _this4._drawPlayer(ctx, runningPROT.playersInSight, '#fff', '#f00');
+	                _this4._drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
 	                ctx.restore();
+	                // 绘制奔跑视野
 	                ctx.beginPath();
 	                ctx.fillStyle = 'rgba(255,255,255,0.75)';
 	                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius, 0, Math.PI * 2);
@@ -589,6 +612,8 @@
 
 	"use strict";
 	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 	
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
@@ -639,14 +664,103 @@
 	
 	        var _this2 = _possibleConstructorReturn(this, (mainPROT.__proto__ || Object.getPrototypeOf(mainPROT)).call(this, type.main));
 	
+	        _this2.playerBPROTs = [];
 	        _this2.newPlayerBPROTs = [];
 	        _this2.shootPROTs = [];
 	        _this2.runningPROTs = [];
 	        _this2.propHpPROTs = [];
-	        _this2.currPlayer = currPlayer;
-	        _this2.playersInSight = playersInSight;
+	        _this2.currPlayerId = currPlayer;
+	        _this2.playerIdsInSight = playersInSight;
 	        return _this2;
 	    }
+	
+	    _createClass(mainPROT, [{
+	        key: "formatPlayerPROT",
+	        value: function formatPlayerPROT(format) {
+	            var arr = [this.currPlayerId];
+	            arr = arr.concat(this.playerIdsInSight);
+	            var _iteratorNormalCompletion = true;
+	            var _didIteratorError = false;
+	            var _iteratorError = undefined;
+	
+	            try {
+	                for (var _iterator = this.shootPROTs[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	                    var shootPROT = _step.value;
+	
+	                    arr = arr.concat(shootPROT.playerIdsInSight);
+	                    if (shootPROT.shootedPlayerId) arr.push(shootPROT.shootedPlayerId);
+	                }
+	            } catch (err) {
+	                _didIteratorError = true;
+	                _iteratorError = err;
+	            } finally {
+	                try {
+	                    if (!_iteratorNormalCompletion && _iterator.return) {
+	                        _iterator.return();
+	                    }
+	                } finally {
+	                    if (_didIteratorError) {
+	                        throw _iteratorError;
+	                    }
+	                }
+	            }
+	
+	            var _iteratorNormalCompletion2 = true;
+	            var _didIteratorError2 = false;
+	            var _iteratorError2 = undefined;
+	
+	            try {
+	                for (var _iterator2 = this.runningPROTs[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	                    var runningPROT = _step2.value;
+	
+	                    arr = arr.concat(runningPROT.playerIdsInSight);
+	                }
+	            } catch (err) {
+	                _didIteratorError2 = true;
+	                _iteratorError2 = err;
+	            } finally {
+	                try {
+	                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+	                        _iterator2.return();
+	                    }
+	                } finally {
+	                    if (_didIteratorError2) {
+	                        throw _iteratorError2;
+	                    }
+	                }
+	            }
+	
+	            var json = {};
+	            var _iteratorNormalCompletion3 = true;
+	            var _didIteratorError3 = false;
+	            var _iteratorError3 = undefined;
+	
+	            try {
+	                for (var _iterator3 = arr[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+	                    var i = _step3.value;
+	
+	                    if (!json[i]) {
+	                        json[i] = 1;
+	                        var playerPROT = format(i);
+	                        if (playerPROT) this.playerBPROTs.push(playerPROT);
+	                    }
+	                }
+	            } catch (err) {
+	                _didIteratorError3 = true;
+	                _iteratorError3 = err;
+	            } finally {
+	                try {
+	                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
+	                        _iterator3.return();
+	                    }
+	                } finally {
+	                    if (_didIteratorError3) {
+	                        throw _iteratorError3;
+	                    }
+	                }
+	            }
+	        }
+	    }]);
 	
 	    return mainPROT;
 	}(baseProtocol);

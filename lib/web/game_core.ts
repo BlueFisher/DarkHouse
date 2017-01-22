@@ -129,15 +129,23 @@ export class gameCore {
 		});
 	}
 
+	private _getPlayerPROT(playerId: number) {
+		return this._mainPROTCache.playerBPROTs.find(p => p.id == playerId);
+	}
+
 	private _drawPlayer(ctx: CanvasRenderingContext2D,
-		players: toClientPROT.playerPROT[], fillStyle: string, strokeStyle: string) {
+		playerIds: number[], fillStyle: string, strokeStyle: string) {
 
 		ctx.save();
 		ctx.fillStyle = fillStyle;
 		ctx.strokeStyle = strokeStyle;
 		ctx.textAlign = 'center';
 
-		for (let player of players) {
+		for (let playerId of playerIds) {
+			let player = this._getPlayerPROT(playerId);
+			if (!player)
+				continue;
+
 			ctx.beginPath();
 			ctx.arc(player.position.x, player.position.y, config.player.radius, 0, Math.PI * 2);
 			ctx.fill();
@@ -160,7 +168,7 @@ export class gameCore {
 				ctx.stroke();
 			}
 
-			let playerBasic = this._playerBasicPROTs.find(p => p.id == player.id);
+			let playerBasic = this._playerBasicPROTs.find(p => player != null && p.id == player.id);
 			if (playerBasic) {
 				ctx.fillText(playerBasic.name, player.position.x, player.position.y + config.player.radius + 15);
 			}
@@ -176,11 +184,12 @@ export class gameCore {
 		let ctx = this._canvas.getContext('2d') as CanvasRenderingContext2D;
 		ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
 
-		let currPlayer = this._mainPROTCache.currPlayer;
+		let currPlayer = this._getPlayerPROT(this._mainPROTCache.currPlayerId);
 		ctx.save();
 
-		ctx.setTransform(1.5, 0, 0, 1.5,
-			this._canvas.width / 2 - currPlayer.position.x * 1.5, this._canvas.height / 2 - currPlayer.position.y * 1.5);
+		if (currPlayer)
+			ctx.setTransform(1.5, 0, 0, 1.5,
+				this._canvas.width / 2 - currPlayer.position.x * 1.5, this._canvas.height / 2 - currPlayer.position.y * 1.5);
 
 		// 绘制障碍物
 		ctx.fillStyle = '#111';
@@ -201,10 +210,11 @@ export class gameCore {
 
 		// 绘制可见区域中所有玩家
 		ctx.beginPath();
-		ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius - 1, 0, Math.PI * 2);
+		if (currPlayer)
+			ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius - 1, 0, Math.PI * 2);
 		ctx.clip();
 
-		this._drawPlayer(ctx, this._mainPROTCache.playersInSight, '#fff', '#f00');
+		this._drawPlayer(ctx, this._mainPROTCache.playerIdsInSight, '#fff', '#f00');
 
 		// 绘制可见区域中所有障碍物
 		ctx.fillStyle = '#fff';
@@ -218,11 +228,12 @@ export class gameCore {
 		// 绘制可见区域光线
 		ctx.beginPath();
 		ctx.fillStyle = 'rgba(255,255,255,0.25)';
-		ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius, 0, Math.PI * 2);
+		if (currPlayer)
+			ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius, 0, Math.PI * 2);
 		ctx.fill();
 
 		// 绘制本玩家
-		this._drawPlayer(ctx, [currPlayer], '#333', '#f00');
+		this._drawPlayer(ctx, [this._mainPROTCache.currPlayerId], '#333', '#f00');
 
 		// 绘制射击
 		this._mainPROTCache.shootPROTs.forEach(shootPROT => {
@@ -233,12 +244,12 @@ export class gameCore {
 			ctx.arc(shootPROT.position.x, shootPROT.position.y, config.player.shootingSightRadius - 1, 0, Math.PI * 2);
 			ctx.clip();
 
-			this._drawPlayer(ctx, shootPROT.playersInSight, '#fff', '#f00');
+			this._drawPlayer(ctx, shootPROT.playerIdsInSight, '#fff', '#f00');
 
 			ctx.restore();
 
-			if (shootPROT.shootedPlayer) {
-				this._drawPlayer(ctx, [shootPROT.shootedPlayer], '#fff', '#f00');
+			if (shootPROT.shootedPlayerId) {
+				this._drawPlayer(ctx, [shootPROT.shootedPlayerId], '#fff', '#f00');
 			}
 
 			// 绘制射击可见区域
@@ -262,17 +273,20 @@ export class gameCore {
 			ctx.stroke();
 		});
 
+		// 绘制奔跑
 		this._mainPROTCache.runningPROTs.forEach(runningPROT => {
 			ctx.save();
 
+			// 绘制奔跑范围视野中所有的玩家
 			ctx.beginPath();
 			ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
 			ctx.clip();
 
-			this._drawPlayer(ctx, runningPROT.playersInSight, '#fff', '#f00');
+			this._drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
 
 			ctx.restore();
 
+			// 绘制奔跑视野
 			ctx.beginPath();
 			ctx.fillStyle = 'rgba(255,255,255,0.75)';
 			ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius, 0, Math.PI * 2);

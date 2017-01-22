@@ -54,18 +54,20 @@ export class gameCore extends events.EventEmitter {
 			this._newPlayersCache = [];
 
 			let shootPROTs: toClientPROT.shootPROT[] = [];
+
 			for (let i = this._shootingCache.length - 1; i >= 0; i--) {
-				let shootedPlayer: toClientPROT.playerPROT | undefined;
+				let shootedPlayerId: number | undefined;
 				if (this._shootingCache[i].shootedPlayer) {
-					shootedPlayer = (this._shootingCache[i].shootedPlayer as player).getPlayerPROT();
+					shootedPlayerId = (this._shootingCache[i].shootedPlayer as player).id;
 				}
+
 				shootPROTs.push({
 					position: this._shootingCache[i].shootingPosition,
 					angle: this._shootingCache[i].angle,
-					playersInSight: this._getPlayersInRadius(this._shootingCache[i].shootingPosition, config.player.shootingSightRadius)
-						.map(p => p.getPlayerPROT()),
+					playerIdsInSight: this._getPlayersInRadius(this._shootingCache[i].shootingPosition, config.player.shootingSightRadius)
+						.map(p => p.id),
 					collisionPoint: this._shootingCache[i].collisionPoint,
-					shootedPlayer: shootedPlayer
+					shootedPlayerId: shootedPlayerId
 				});
 				if (++this._shootingCache[i].timeCount > 2) {
 					this._shootingCache.splice(i, 1);
@@ -85,8 +87,8 @@ export class gameCore extends events.EventEmitter {
 				if (runningCache >= 1 && runningCache <= 5) {
 					runningPROTs.push({
 						position: runningPlayer.getPosition(),
-						playersInSight: this._getPlayersInRadius(runningPlayer.getPosition(), config.player.runningSightRadius)
-							.map(p => p.getPlayerPROT())
+						playerIdsInSight: this._getPlayersInRadius(runningPlayer.getPosition(), config.player.runningSightRadius)
+							.map(p => p.id)
 					});
 				}
 
@@ -100,12 +102,21 @@ export class gameCore extends events.EventEmitter {
 			for (let player of connectedPlayers) {
 				this._playerMove(player);
 
-				let mainPROT = new toClientPROT.mainPROT(player.getPlayerPROT(),
-					this._getPlayersInPlayerSight(player, config.player.sightRadius).map(p => p.getPlayerPROT()));
+				let mainPROT = new toClientPROT.mainPROT(player.id,
+					this._getPlayersInPlayerSight(player, config.player.sightRadius).map(p => p.id));
 				mainPROT.shootPROTs = shootPROTs;
 				mainPROT.runningPROTs = runningPROTs;
 				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
 				mainPROT.propHpPROTs = this._propHps.map(p => p.getPropHpPROT());
+
+				mainPROT.formatPlayerPROT((playerId) => {
+					let player = this._players.find(p => p.id == playerId);
+					if (player)
+						return player.getPlayerPROT();
+					else
+						return null;
+				});
+
 				sendingMap.set(player.id, mainPROT);
 			}
 			this.emit(gameCore.events.sendToPlayers, sendingMap);

@@ -23,15 +23,15 @@ export interface propHpPROT {
 
 export interface runningPROT {
 	position: point,
-	playersInSight: playerPROT[],
+	playerIdsInSight: number[],
 }
 
 export interface shootPROT {
 	position: point,
 	angle: number,
-	playersInSight: playerPROT[],
+	playerIdsInSight: number[],
 	collisionPoint?: point,
-	shootedPlayer?: playerPROT
+	shootedPlayerId?: number
 }
 
 export enum type {
@@ -64,17 +64,41 @@ export class initialize extends baseProtocol {
 }
 
 export class mainPROT extends baseProtocol {
-	constructor(currPlayer: playerPROT, playersInSight: playerPROT[]) {
+	constructor(currPlayer: number, playersInSight: number[]) {
 		super(type.main);
 
-		this.currPlayer = currPlayer;
-		this.playersInSight = playersInSight;
+		this.currPlayerId = currPlayer;
+		this.playerIdsInSight = playersInSight;
 	}
 
+	formatPlayerPROT(format: (playerId: number) => playerPROT | null) {
+		let arr = [this.currPlayerId];
+		arr = arr.concat(this.playerIdsInSight);
+		for (let shootPROT of this.shootPROTs) {
+			arr = arr.concat(shootPROT.playerIdsInSight);
+			if (shootPROT.shootedPlayerId)
+				arr.push(shootPROT.shootedPlayerId)
+		}
+		for (let runningPROT of this.runningPROTs) {
+			arr = arr.concat(runningPROT.playerIdsInSight);
+		}
+
+		let json = {};
+		for (let i of arr) {
+			if (!json[i]) {
+				json[i] = 1;
+				let playerPROT = format(i);
+				if (playerPROT)
+					this.playerBPROTs.push(playerPROT);
+			}
+		}
+	}
+
+	playerBPROTs: playerPROT[] = [];
 	newPlayerBPROTs: playerBasicPROT[] = [];
 
-	currPlayer: playerPROT;
-	playersInSight: playerPROT[];
+	currPlayerId: number;
+	playerIdsInSight: number[];
 
 	shootPROTs: shootPROT[] = [];
 	runningPROTs: runningPROT[] = [];

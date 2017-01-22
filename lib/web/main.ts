@@ -10,9 +10,11 @@ class main {
 	private _ws: WebSocket;
 	private _gameCore: gameCore;
 
+	private _lengthPerSec: number = 0;
+
 	constructor() {
 		this._connectWebSocket();
-		
+
 
 		adjustCanvasSize();
 		window.onresize = () => {
@@ -24,6 +26,11 @@ class main {
 			canvas.height = window.innerHeight
 			canvas.width = window.innerWidth;
 		}
+
+		setInterval(() => {
+			console.log(`${this._lengthPerSec / 1024} KB/s`);
+			this._lengthPerSec = 0;
+		}, 1000);
 	}
 
 	private _connectWebSocket() {
@@ -41,6 +48,8 @@ class main {
 		};
 
 		this._ws.onmessage = (e) => {
+			let data = e.data as string;
+			this._lengthPerSec += data.length;
 			let protocol = JSON.parse(e.data);
 			this._gameCore.protocolReceived(protocol);
 		};
