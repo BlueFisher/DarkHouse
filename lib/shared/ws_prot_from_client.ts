@@ -1,4 +1,5 @@
 export enum type {
+	ping,
 	init,
 	startRunning,
 	stopMoving,
@@ -11,6 +12,12 @@ export class baseProtocol {
 		this.type = type;
 	}
 	type: type;
+}
+
+export class pingProtocol extends baseProtocol {
+	constructor() {
+		super(type.ping);
+	}
 }
 
 export class initialize extends baseProtocol {

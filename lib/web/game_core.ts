@@ -6,7 +6,7 @@ export class gameCore {
 	private _isGameOn = false;
 	private _sendFunc: (protocol: fromClientPROT.baseProtocol) => void;
 	private _send(protocol: fromClientPROT.baseProtocol) {
-		if (this._isGameOn || protocol.type == fromClientPROT.type.init) {
+		if (this._isGameOn || protocol.type == fromClientPROT.type.init || protocol.type == fromClientPROT.type.ping) {
 			this._sendFunc(protocol);
 		}
 	}
@@ -17,6 +17,8 @@ export class gameCore {
 	private _barricades: toClientPROT.barricadePROT[] = [];
 	private _mainPROTCache: toClientPROT.mainPROT;
 
+	private _pingTime: Date;
+
 	constructor(sendFunc: (protocol: fromClientPROT.baseProtocol) => void) {
 		this._sendFunc = sendFunc;
 
@@ -26,6 +28,14 @@ export class gameCore {
 
 	protocolReceived(protocol: toClientPROT.baseProtocol) {
 		switch (protocol.type) {
+			case toClientPROT.type.pong:
+				let now = new Date();
+				let delay = now.getTime() - this._pingTime.getTime();
+				console.log(`${delay} ms`);
+				setTimeout(() => {
+					this._sendPing();
+				}, 1000);
+				break;
 			case toClientPROT.type.init:
 				this._onInitialize(protocol as toClientPROT.initialize);
 				break;
@@ -120,6 +130,12 @@ export class gameCore {
 		this._playerBasicPROTs = protocol.players;
 		this._barricades = protocol.barricades;
 		this._isGameOn = true;
+		this._sendPing();
+	}
+
+	private _sendPing() {
+		this._pingTime = new Date();
+		this._send(new fromClientPROT.pingProtocol());
 	}
 
 	private _onMainPROT(protocol: toClientPROT.mainPROT) {

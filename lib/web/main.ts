@@ -10,7 +10,7 @@ class main {
 	private _ws: WebSocket;
 	private _gameCore: gameCore;
 
-	private _lengthPerSec: number = 0;
+	private _dataLengthPerSec: number = 0;
 
 	constructor() {
 		this._connectWebSocket();
@@ -28,8 +28,8 @@ class main {
 		}
 
 		setInterval(() => {
-			console.log(`${this._lengthPerSec / 1024} KB/s`);
-			this._lengthPerSec = 0;
+			console.log(`${this._dataLengthPerSec / 1024} KB/s`);
+			this._dataLengthPerSec = 0;
 		}, 1000);
 	}
 
@@ -48,8 +48,7 @@ class main {
 		};
 
 		this._ws.onmessage = (e) => {
-			let data = e.data as string;
-			this._lengthPerSec += data.length;
+			this._dataLengthPerSec += e.data.length;
 			let protocol = JSON.parse(e.data);
 			this._gameCore.protocolReceived(protocol);
 		};

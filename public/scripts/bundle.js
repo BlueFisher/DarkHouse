@@ -59,7 +59,7 @@
 	
 	        _classCallCheck(this, main);
 	
-	        this._lengthPerSec = 0;
+	        this._dataLengthPerSec = 0;
 	        this._connectWebSocket();
 	        adjustCanvasSize();
 	        window.onresize = function () {
@@ -71,8 +71,8 @@
 	            canvas.width = window.innerWidth;
 	        }
 	        setInterval(function () {
-	            console.log(_this._lengthPerSec / 1024 + " KB/s");
-	            _this._lengthPerSec = 0;
+	            console.log(_this._dataLengthPerSec / 1024 + " KB/s");
+	            _this._dataLengthPerSec = 0;
 	        }, 1000);
 	    }
 	
@@ -95,8 +95,7 @@
 	                _this2._gameCore = new game_core_1.gameCore(_this2._send.bind(_this2));
 	            };
 	            this._ws.onmessage = function (e) {
-	                var data = e.data;
-	                _this2._lengthPerSec += data.length;
+	                _this2._dataLengthPerSec += e.data.length;
 	                var protocol = JSON.parse(e.data);
 	                _this2._gameCore.protocolReceived(protocol);
 	            };
@@ -152,14 +151,24 @@
 	    _createClass(gameCore, [{
 	        key: "_send",
 	        value: function _send(protocol) {
-	            if (this._isGameOn || protocol.type == fromClientPROT.type.init) {
+	            if (this._isGameOn || protocol.type == fromClientPROT.type.init || protocol.type == fromClientPROT.type.ping) {
 	                this._sendFunc(protocol);
 	            }
 	        }
 	    }, {
 	        key: "protocolReceived",
 	        value: function protocolReceived(protocol) {
+	            var _this = this;
+	
 	            switch (protocol.type) {
+	                case toClientPROT.type.pong:
+	                    var now = new Date();
+	                    var delay = now.getTime() - this._pingTime.getTime();
+	                    console.log(delay + " ms");
+	                    setTimeout(function () {
+	                        _this._sendPing();
+	                    }, 1000);
+	                    break;
 	                case toClientPROT.type.init:
 	                    this._onInitialize(protocol);
 	                    break;
@@ -176,15 +185,15 @@
 	    }, {
 	        key: "_initlializeCanvas",
 	        value: function _initlializeCanvas() {
-	            var _this = this;
+	            var _this2 = this;
 	
 	            this._canvas.addEventListener('mousemove', function (e) {
 	                var point = {
-	                    x: e.pageX - _this._canvas.offsetLeft,
-	                    y: e.pageY - _this._canvas.offsetTop
+	                    x: e.pageX - _this2._canvas.offsetLeft,
+	                    y: e.pageY - _this2._canvas.offsetTop
 	                };
-	                var x = point.x - _this._canvas.width / 2;
-	                var y = point.y - _this._canvas.height / 2;
+	                var x = point.x - _this2._canvas.width / 2;
+	                var y = point.y - _this2._canvas.height / 2;
 	                var angle = void 0;
 	                if (x == 0) {
 	                    if (y >= 0) {
@@ -201,42 +210,42 @@
 	                    }
 	                }
 	                var protocol = new fromClientPROT.rotate(angle);
-	                _this._send(protocol);
+	                _this2._send(protocol);
 	            });
 	            this._canvas.addEventListener('keydown', function (e) {
 	                if (e.keyCode == 32) {
 	                    var protocol = new fromClientPROT.stopMoving(true);
-	                    _this._send(protocol);
+	                    _this2._send(protocol);
 	                }
 	                if (e.keyCode == 87) {
 	                    var _protocol = new fromClientPROT.startRunning(true);
-	                    _this._send(_protocol);
+	                    _this2._send(_protocol);
 	                }
 	            });
 	            this._canvas.addEventListener('keyup', function (e) {
 	                if (e.keyCode == 32) {
 	                    var protocol = new fromClientPROT.stopMoving(false);
-	                    _this._send(protocol);
+	                    _this2._send(protocol);
 	                }
 	                if (e.keyCode == 87) {
 	                    var _protocol2 = new fromClientPROT.startRunning(false);
-	                    _this._send(_protocol2);
+	                    _this2._send(_protocol2);
 	                }
 	            });
 	            this._canvas.addEventListener('blur', function (e) {
 	                var protocol = new fromClientPROT.stopMoving(true);
-	                _this._send(protocol);
+	                _this2._send(protocol);
 	            });
 	            this._canvas.addEventListener('mouseout', function (e) {
 	                var protocol = new fromClientPROT.stopMoving(true);
-	                _this._send(protocol);
+	                _this2._send(protocol);
 	            });
 	            this._canvas.addEventListener('click', function (e) {
-	                _this._sendFunc(new fromClientPROT.shoot());
+	                _this2._sendFunc(new fromClientPROT.shoot());
 	            });
 	            var reqAnimation = function reqAnimation() {
 	                window.requestAnimationFrame(function () {
-	                    _this._draw();
+	                    _this2._draw();
 	                    reqAnimation();
 	                });
 	            };
@@ -250,15 +259,22 @@
 	            this._playerBasicPROTs = protocol.players;
 	            this._barricades = protocol.barricades;
 	            this._isGameOn = true;
+	            this._sendPing();
+	        }
+	    }, {
+	        key: "_sendPing",
+	        value: function _sendPing() {
+	            this._pingTime = new Date();
+	            this._send(new fromClientPROT.pingProtocol());
 	        }
 	    }, {
 	        key: "_onMainPROT",
 	        value: function _onMainPROT(protocol) {
-	            var _this2 = this;
+	            var _this3 = this;
 	
 	            this._mainPROTCache = protocol;
 	            protocol.newPlayerBPROTs.forEach(function (p) {
-	                _this2._playerBasicPROTs.push(p);
+	                _this3._playerBasicPROTs.push(p);
 	            });
 	        }
 	    }, {
@@ -271,7 +287,7 @@
 	    }, {
 	        key: "_drawPlayer",
 	        value: function _drawPlayer(ctx, playerIds, fillStyle, strokeStyle) {
-	            var _this3 = this;
+	            var _this4 = this;
 	
 	            ctx.save();
 	            ctx.fillStyle = fillStyle;
@@ -285,7 +301,7 @@
 	                var _loop = function _loop() {
 	                    var playerId = _step.value;
 	
-	                    var player = _this3._getPlayerPROT(playerId);
+	                    var player = _this4._getPlayerPROT(playerId);
 	                    if (!player) return "continue";
 	                    ctx.beginPath();
 	                    ctx.arc(player.position.x, player.position.y, config.player.radius, 0, Math.PI * 2);
@@ -303,7 +319,7 @@
 	                        ctx.arc(player.position.x, player.position.y, config.player.radius - 1.5, i * perimeter / config.player.maxHp + i * gap - Math.PI / 2, (i + 1) * perimeter / config.player.maxHp + i * gap - Math.PI / 2);
 	                        ctx.stroke();
 	                    }
-	                    var playerBasic = _this3._playerBasicPROTs.find(function (p) {
+	                    var playerBasic = _this4._playerBasicPROTs.find(function (p) {
 	                        return player != null && p.id == player.id;
 	                    });
 	                    if (playerBasic) {
@@ -336,7 +352,7 @@
 	    }, {
 	        key: "_draw",
 	        value: function _draw() {
-	            var _this4 = this;
+	            var _this5 = this;
 	
 	            if (!this._isGameOn || !this._mainPROTCache) return;
 	            var ctx = this._canvas.getContext('2d');
@@ -448,10 +464,10 @@
 	                ctx.beginPath();
 	                ctx.arc(shootPROT.position.x, shootPROT.position.y, config.player.shootingSightRadius - 1, 0, Math.PI * 2);
 	                ctx.clip();
-	                _this4._drawPlayer(ctx, shootPROT.playerIdsInSight, '#fff', '#f00');
+	                _this5._drawPlayer(ctx, shootPROT.playerIdsInSight, '#fff', '#f00');
 	                ctx.restore();
 	                if (shootPROT.shootedPlayerId) {
-	                    _this4._drawPlayer(ctx, [shootPROT.shootedPlayerId], '#fff', '#f00');
+	                    _this5._drawPlayer(ctx, [shootPROT.shootedPlayerId], '#fff', '#f00');
 	                }
 	                // 绘制射击可见区域
 	                ctx.beginPath();
@@ -466,7 +482,7 @@
 	                if (shootPROT.collisionPoint) {
 	                    ctx.lineTo(shootPROT.collisionPoint.x, shootPROT.collisionPoint.y);
 	                } else {
-	                    var d = Math.max(_this4._canvas.width, _this4._canvas.height);
+	                    var d = Math.max(_this5._canvas.width, _this5._canvas.height);
 	                    ctx.lineTo(shootPROT.position.x + d * Math.cos(shootPROT.angle), shootPROT.position.y + d * Math.sin(shootPROT.angle));
 	                }
 	                ctx.stroke();
@@ -478,7 +494,7 @@
 	                ctx.beginPath();
 	                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
 	                ctx.clip();
-	                _this4._drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
+	                _this5._drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
 	                ctx.restore();
 	                // 绘制奔跑视野
 	                ctx.beginPath();
@@ -509,11 +525,12 @@
 	
 	var type;
 	(function (type) {
-	    type[type["init"] = 0] = "init";
-	    type[type["startRunning"] = 1] = "startRunning";
-	    type[type["stopMoving"] = 2] = "stopMoving";
-	    type[type["rotate"] = 3] = "rotate";
-	    type[type["shoot"] = 4] = "shoot";
+	    type[type["ping"] = 0] = "ping";
+	    type[type["init"] = 1] = "init";
+	    type[type["startRunning"] = 2] = "startRunning";
+	    type[type["stopMoving"] = 3] = "stopMoving";
+	    type[type["rotate"] = 4] = "rotate";
+	    type[type["shoot"] = 5] = "shoot";
 	})(type = exports.type || (exports.type = {}));
 	
 	var baseProtocol = function baseProtocol(type) {
@@ -524,16 +541,30 @@
 	
 	exports.baseProtocol = baseProtocol;
 	
-	var initialize = function (_baseProtocol) {
-	    _inherits(initialize, _baseProtocol);
+	var pingProtocol = function (_baseProtocol) {
+	    _inherits(pingProtocol, _baseProtocol);
+	
+	    function pingProtocol() {
+	        _classCallCheck(this, pingProtocol);
+	
+	        return _possibleConstructorReturn(this, (pingProtocol.__proto__ || Object.getPrototypeOf(pingProtocol)).call(this, type.ping));
+	    }
+	
+	    return pingProtocol;
+	}(baseProtocol);
+	
+	exports.pingProtocol = pingProtocol;
+	
+	var initialize = function (_baseProtocol2) {
+	    _inherits(initialize, _baseProtocol2);
 	
 	    function initialize(name) {
 	        _classCallCheck(this, initialize);
 	
-	        var _this = _possibleConstructorReturn(this, (initialize.__proto__ || Object.getPrototypeOf(initialize)).call(this, type.init));
+	        var _this2 = _possibleConstructorReturn(this, (initialize.__proto__ || Object.getPrototypeOf(initialize)).call(this, type.init));
 	
-	        _this.name = name;
-	        return _this;
+	        _this2.name = name;
+	        return _this2;
 	    }
 	
 	    return initialize;
@@ -541,16 +572,16 @@
 	
 	exports.initialize = initialize;
 	
-	var startRunning = function (_baseProtocol2) {
-	    _inherits(startRunning, _baseProtocol2);
+	var startRunning = function (_baseProtocol3) {
+	    _inherits(startRunning, _baseProtocol3);
 	
 	    function startRunning(active) {
 	        _classCallCheck(this, startRunning);
 	
-	        var _this2 = _possibleConstructorReturn(this, (startRunning.__proto__ || Object.getPrototypeOf(startRunning)).call(this, type.startRunning));
+	        var _this3 = _possibleConstructorReturn(this, (startRunning.__proto__ || Object.getPrototypeOf(startRunning)).call(this, type.startRunning));
 	
-	        _this2.active = active;
-	        return _this2;
+	        _this3.active = active;
+	        return _this3;
 	    }
 	
 	    return startRunning;
@@ -558,16 +589,16 @@
 	
 	exports.startRunning = startRunning;
 	
-	var stopMoving = function (_baseProtocol3) {
-	    _inherits(stopMoving, _baseProtocol3);
+	var stopMoving = function (_baseProtocol4) {
+	    _inherits(stopMoving, _baseProtocol4);
 	
 	    function stopMoving(active) {
 	        _classCallCheck(this, stopMoving);
 	
-	        var _this3 = _possibleConstructorReturn(this, (stopMoving.__proto__ || Object.getPrototypeOf(stopMoving)).call(this, type.stopMoving));
+	        var _this4 = _possibleConstructorReturn(this, (stopMoving.__proto__ || Object.getPrototypeOf(stopMoving)).call(this, type.stopMoving));
 	
-	        _this3.active = active;
-	        return _this3;
+	        _this4.active = active;
+	        return _this4;
 	    }
 	
 	    return stopMoving;
@@ -575,16 +606,16 @@
 	
 	exports.stopMoving = stopMoving;
 	
-	var rotate = function (_baseProtocol4) {
-	    _inherits(rotate, _baseProtocol4);
+	var rotate = function (_baseProtocol5) {
+	    _inherits(rotate, _baseProtocol5);
 	
 	    function rotate(angle) {
 	        _classCallCheck(this, rotate);
 	
-	        var _this4 = _possibleConstructorReturn(this, (rotate.__proto__ || Object.getPrototypeOf(rotate)).call(this, type.rotate));
+	        var _this5 = _possibleConstructorReturn(this, (rotate.__proto__ || Object.getPrototypeOf(rotate)).call(this, type.rotate));
 	
-	        _this4.angle = angle;
-	        return _this4;
+	        _this5.angle = angle;
+	        return _this5;
 	    }
 	
 	    return rotate;
@@ -592,8 +623,8 @@
 	
 	exports.rotate = rotate;
 	
-	var shoot = function (_baseProtocol5) {
-	    _inherits(shoot, _baseProtocol5);
+	var shoot = function (_baseProtocol6) {
+	    _inherits(shoot, _baseProtocol6);
 	
 	    function shoot() {
 	        _classCallCheck(this, shoot);
@@ -622,10 +653,11 @@
 	
 	var type;
 	(function (type) {
-	    type[type["init"] = 0] = "init";
-	    type[type["main"] = 1] = "main";
-	    type[type["shoot"] = 2] = "shoot";
-	    type[type["gameOver"] = 3] = "gameOver";
+	    type[type["pong"] = 0] = "pong";
+	    type[type["init"] = 1] = "init";
+	    type[type["main"] = 2] = "main";
+	    type[type["shoot"] = 3] = "shoot";
+	    type[type["gameOver"] = 4] = "gameOver";
 	})(type = exports.type || (exports.type = {}));
 	
 	var baseProtocol = function baseProtocol(type) {
@@ -636,19 +668,33 @@
 	
 	exports.baseProtocol = baseProtocol;
 	
-	var initialize = function (_baseProtocol) {
-	    _inherits(initialize, _baseProtocol);
+	var pongProtocol = function (_baseProtocol) {
+	    _inherits(pongProtocol, _baseProtocol);
+	
+	    function pongProtocol() {
+	        _classCallCheck(this, pongProtocol);
+	
+	        return _possibleConstructorReturn(this, (pongProtocol.__proto__ || Object.getPrototypeOf(pongProtocol)).call(this, type.pong));
+	    }
+	
+	    return pongProtocol;
+	}(baseProtocol);
+	
+	exports.pongProtocol = pongProtocol;
+	
+	var initialize = function (_baseProtocol2) {
+	    _inherits(initialize, _baseProtocol2);
 	
 	    function initialize(currPlayer, players, barricades, propHps) {
 	        _classCallCheck(this, initialize);
 	
-	        var _this = _possibleConstructorReturn(this, (initialize.__proto__ || Object.getPrototypeOf(initialize)).call(this, type.init));
+	        var _this2 = _possibleConstructorReturn(this, (initialize.__proto__ || Object.getPrototypeOf(initialize)).call(this, type.init));
 	
-	        _this.currPlayer = currPlayer;
-	        _this.players = players;
-	        _this.barricades = barricades;
-	        _this.propHps = propHps;
-	        return _this;
+	        _this2.currPlayer = currPlayer;
+	        _this2.players = players;
+	        _this2.barricades = barricades;
+	        _this2.propHps = propHps;
+	        return _this2;
 	    }
 	
 	    return initialize;
@@ -656,22 +702,22 @@
 	
 	exports.initialize = initialize;
 	
-	var mainPROT = function (_baseProtocol2) {
-	    _inherits(mainPROT, _baseProtocol2);
+	var mainPROT = function (_baseProtocol3) {
+	    _inherits(mainPROT, _baseProtocol3);
 	
 	    function mainPROT(currPlayer, playersInSight) {
 	        _classCallCheck(this, mainPROT);
 	
-	        var _this2 = _possibleConstructorReturn(this, (mainPROT.__proto__ || Object.getPrototypeOf(mainPROT)).call(this, type.main));
+	        var _this3 = _possibleConstructorReturn(this, (mainPROT.__proto__ || Object.getPrototypeOf(mainPROT)).call(this, type.main));
 	
-	        _this2.playerBPROTs = [];
-	        _this2.newPlayerBPROTs = [];
-	        _this2.shootPROTs = [];
-	        _this2.runningPROTs = [];
-	        _this2.propHpPROTs = [];
-	        _this2.currPlayerId = currPlayer;
-	        _this2.playerIdsInSight = playersInSight;
-	        return _this2;
+	        _this3.playerBPROTs = [];
+	        _this3.newPlayerBPROTs = [];
+	        _this3.shootPROTs = [];
+	        _this3.runningPROTs = [];
+	        _this3.propHpPROTs = [];
+	        _this3.currPlayerId = currPlayer;
+	        _this3.playerIdsInSight = playersInSight;
+	        return _this3;
 	    }
 	
 	    _createClass(mainPROT, [{
@@ -767,8 +813,8 @@
 	
 	exports.mainPROT = mainPROT;
 	
-	var gameOver = function (_baseProtocol3) {
-	    _inherits(gameOver, _baseProtocol3);
+	var gameOver = function (_baseProtocol4) {
+	    _inherits(gameOver, _baseProtocol4);
 	
 	    function gameOver() {
 	        _classCallCheck(this, gameOver);

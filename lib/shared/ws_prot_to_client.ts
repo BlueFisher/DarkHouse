@@ -35,6 +35,7 @@ export interface shootPROT {
 }
 
 export enum type {
+	pong,
 	init,
 	main,
 	shoot,
@@ -46,6 +47,12 @@ export class baseProtocol {
 		this.type = type;
 	}
 	type: type;
+}
+
+export class pongProtocol extends baseProtocol {
+	constructor() {
+		super(type.pong);
+	}
 }
 
 export class initialize extends baseProtocol {
