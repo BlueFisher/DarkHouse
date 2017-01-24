@@ -39,7 +39,6 @@ export class player {
 	}
 
 	setHp(hp: number) {
-		console.log(hp);
 		if (hp <= config.player.maxHp && hp >= 0)
 			this._hp = hp;
 	}
@@ -81,5 +80,68 @@ export class player {
 	}
 	getRayCollidedPoint(point: point, angle: number) {
 		return utils.getRayCircleCollidedPoint(point, angle, this._position, config.player.radius);
+	}
+}
+
+export class playerManager {
+	private _players: player[] = [];
+
+	getPlayers() {
+		return this._players;
+	}
+
+	findPlayerById(id: number) {
+		return this._players.find(p => p.id == id);
+	}
+
+	addNewPlayer(name: string, position: point) {
+		let newPlayer = new player(name, position);
+		this._players.push(newPlayer);
+
+		return newPlayer;
+	}
+	removePlayer(player: player) {
+		let i = this._players.findIndex(p => p == player);
+		if (i != -1) {
+			this._players.splice(i, 1);
+		}
+	}
+
+	getPlayersInPlayerSight(player: player, radius: number) {
+		return this._players.filter(p => {
+			if (p != player) {
+				return utils.didTwoCirclesCollied(p.getPosition(), radius, player.getPosition(), config.player.radius);
+			}
+			return false;
+		});
+	}
+	getPlayersInRadius(position: point, radius: number) {
+		return this._players.filter(p => {
+			return utils.didTwoCirclesCollied(p.getPosition(), radius, position, config.player.radius);
+		});
+	}
+
+	playerDisconnected(playerId: number) {
+		let player = this.findPlayerById(playerId);
+		if (player)
+			player.connected = false;
+	}
+
+	startRunning(playerId: number, active: boolean) {
+		let player = this.findPlayerById(playerId);
+		if (player)
+			player.isRunning = active;
+	}
+
+	stopMoving(playerId: number, active: boolean) {
+		let player = this.findPlayerById(playerId);
+		if (player)
+			player.canMove = !active;
+	}
+
+	rotate(playerId: number, angle: number) {
+		let player = this.findPlayerById(playerId);
+		if (player)
+			player.setDirectionAngle(angle);
 	}
 }

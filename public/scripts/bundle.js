@@ -837,6 +837,7 @@
 	(function (player) {
 	    player.movingStep = 2;
 	    player.runingStep = 5;
+	    player.movingInterval = 33;
 	    player.maxHp = 3;
 	    player.radius = 20;
 	    player.sightRadius = 100;

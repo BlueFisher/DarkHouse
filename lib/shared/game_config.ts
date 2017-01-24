@@ -1,6 +1,8 @@
 export namespace player {
 	export let movingStep = 2;
 	export let runingStep = 5;
+	export let movingInterval = 33;
+
 	export let maxHp = 3;
 	export let radius = 20;
 	export let sightRadius = 100;

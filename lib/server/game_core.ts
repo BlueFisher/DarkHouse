@@ -1,6 +1,6 @@
 import * as events from 'events';
 
-import { player } from './player';
+import { player, playerManager } from './player';
 import { barricade } from './barricade';
 import { propHp } from './prop_hp';
 import * as gameServer from './game_server';
@@ -21,7 +21,7 @@ export class gameCore extends events.EventEmitter {
 		gameOver: Symbol()
 	}
 
-	private _players: player[] = [];
+	private _playerManager: playerManager;
 	private _barricades: barricade[] = [];
 	private _propHps: propHp[] = [];
 	private _newPlayersCache: player[] = [];
@@ -38,6 +38,8 @@ export class gameCore extends events.EventEmitter {
 	constructor() {
 		super();
 
+		this._playerManager = new playerManager;
+
 		this._barricades.push(new barricade(new point(0, 0), new point(500, 10)));
 		this._barricades.push(new barricade(new point(0, 0), new point(10, 500)));
 		this._barricades.push(new barricade(new point(0, 490), new point(500, 500)));
@@ -47,14 +49,16 @@ export class gameCore extends events.EventEmitter {
 	}
 
 	private _initializeMainLoop() {
-		setInterval(() => {
-			let sendingMap = new Map<number, toClientPROT.mainPROT>();
-
+		// 生成新加入玩家的基础协议
+		let generateNewPlayersBasicPROTs = () => {
 			let newPlayersBasicPROTs = this._newPlayersCache.map(p => p.getPlayerBasicPROT());
 			this._newPlayersCache = [];
+			return newPlayersBasicPROTs;
+		}
 
+		// 生成射击协议
+		let generateShootPROTs = () => {
 			let shootPROTs: toClientPROT.shootPROT[] = [];
-
 			for (let i = this._shootingCache.length - 1; i >= 0; i--) {
 				let shootedPlayerId: number | undefined;
 				if (this._shootingCache[i].shootedPlayer) {
@@ -64,7 +68,7 @@ export class gameCore extends events.EventEmitter {
 				shootPROTs.push({
 					position: this._shootingCache[i].shootingPosition,
 					angle: this._shootingCache[i].angle,
-					playerIdsInSight: this._getPlayersInRadius(this._shootingCache[i].shootingPosition, config.player.shootingSightRadius)
+					playerIdsInSight: this._playerManager.getPlayersInRadius(this._shootingCache[i].shootingPosition, config.player.shootingSightRadius)
 						.map(p => p.id),
 					collisionPoint: this._shootingCache[i].collisionPoint,
 					shootedPlayerId: shootedPlayerId
@@ -73,9 +77,11 @@ export class gameCore extends events.EventEmitter {
 					this._shootingCache.splice(i, 1);
 				}
 			}
+			return shootPROTs;
+		}
 
-			let connectedPlayers = this._players.filter(p => p.connected);
-
+		// 生成奔跑协议
+		let generateRunningPROTs = (connectedPlayers: player[]) => {
 			let runningPROTs: toClientPROT.runningPROT[] = [];
 			for (let runningPlayer of connectedPlayers.filter(p => p.canMove && p.isRunning)) {
 				let runningCache = this._runningCache.get(runningPlayer);
@@ -87,7 +93,7 @@ export class gameCore extends events.EventEmitter {
 				if (runningCache >= 1 && runningCache <= 5) {
 					runningPROTs.push({
 						position: runningPlayer.getPosition(),
-						playerIdsInSight: this._getPlayersInRadius(runningPlayer.getPosition(), config.player.runningSightRadius)
+						playerIdsInSight: this._playerManager.getPlayersInRadius(runningPlayer.getPosition(), config.player.runningSightRadius)
 							.map(p => p.id)
 					});
 				}
@@ -98,19 +104,27 @@ export class gameCore extends events.EventEmitter {
 					this._runningCache.set(runningPlayer, runningCache + 1);
 				}
 			}
+			return runningPROTs;
+		}
+
+		// 主计时器循环
+		setInterval(() => {
+			let sendingMap = new Map<number, toClientPROT.mainPROT>();
+			let newPlayersBasicPROTs = generateNewPlayersBasicPROTs();
+			let shootPROTs = generateShootPROTs();
+			let connectedPlayers = this._playerManager.getPlayers().filter(p => p.connected);
+			let runningPROTs = generateRunningPROTs(connectedPlayers);
 
 			for (let player of connectedPlayers) {
-				this._playerMove(player);
-
 				let mainPROT = new toClientPROT.mainPROT(player.id,
-					this._getPlayersInPlayerSight(player, config.player.sightRadius).map(p => p.id));
+					this._playerManager.getPlayersInPlayerSight(player, config.player.sightRadius).map(p => p.id));
 				mainPROT.shootPROTs = shootPROTs;
 				mainPROT.runningPROTs = runningPROTs;
 				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
 				mainPROT.propHpPROTs = this._propHps.map(p => p.getPropHpPROT());
 
 				mainPROT.formatPlayerPROT((playerId) => {
-					let player = this._players.find(p => p.id == playerId);
+					let player = this._playerManager.findPlayerById(playerId);
 					if (player)
 						return player.getPlayerPROT();
 					else
@@ -119,78 +133,82 @@ export class gameCore extends events.EventEmitter {
 
 				sendingMap.set(player.id, mainPROT);
 			}
+
 			this.emit(gameCore.events.sendToPlayers, sendingMap);
 		}, 1000 / serverConfig.tickrate);
 
+		// 生命值道具计时器循环
 		setInterval(() => {
 			if (this._propHps.length < config.hp.maxNumber)
 				this._addNewPropHp();
-		}, config.hp.appearInterval)
-	}
+		}, config.hp.appearInterval);
 
-	private _getPlayersInPlayerSight(player: player, radius: number) {
-		return this._players.filter(p => {
-			if (p != player) {
-				return utils.didTwoCirclesCollied(p.getPosition(), radius, player.getPosition(), config.player.radius);
+		// 玩家移动计时器循环
+		setInterval(() => {
+			for (let player of this._playerManager.getPlayers().filter(p => p.connected)) {
+				this._playerMove(player);
 			}
-			return false;
-		});
-	}
-	private _getPlayersInRadius(position: point, radius: number) {
-		return this._players.filter(p => {
-			return utils.didTwoCirclesCollied(p.getPosition(), radius, position, config.player.radius);
-		});
+		}, config.player.movingInterval);
 	}
 
 	private _addNewPropHp() {
-		let newPoint: point | undefined;
-		while (!newPoint) {
-			newPoint = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
-			if (this._players.find(p => p.didPlayerCollided(newPoint as point))) {
-				newPoint = undefined;
+		let newPosition: point | undefined;
+		while (!newPosition) {
+			newPosition = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
+			if (this._playerManager.getPlayers().find(p => p.didPlayerCollided(newPosition as point))) {
+				newPosition = undefined;
 				continue;
 			}
-			if (this._barricades.find(p => p.didPlayerCollided(newPoint as point))) {
-				newPoint = undefined;
+			if (this._barricades.find(p => p.didPlayerCollided(newPosition as point))) {
+				newPosition = undefined;
 				continue;
 			}
 		}
-		this._propHps.push(new propHp(newPoint));
+		this._propHps.push(new propHp(newPosition));
 	}
 
 	addNewPlayer(name: string): [number, toClientPROT.initialize] {
-		let newPoint: point | undefined;
-		while (!newPoint) {
-			newPoint = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
-			if (this._players.find(p => p.didPlayerCollided(newPoint as point))) {
-				newPoint = undefined;
+		let newPoisition: point | undefined;
+		while (!newPoisition) {
+			newPoisition = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
+			if (this._playerManager.getPlayers().find(p => p.didPlayerCollided(newPoisition as point))) {
+				newPoisition = undefined;
 				continue;
 			}
-			if (this._barricades.find(p => p.didPlayerCollided(newPoint as point))) {
-				newPoint = undefined;
+			if (this._barricades.find(p => p.didPlayerCollided(newPoisition as point))) {
+				newPoisition = undefined;
 				continue;
 			}
 		}
 
-		let newPlayer = new player(name, newPoint);
+		let oldPlayers = this._playerManager.getPlayers();
+		let newPlayer = this._playerManager.addNewPlayer(name, newPoisition);
+
 		let initPROT = new toClientPROT.initialize(
 			newPlayer.getPlayerBasicPROT(),
-			this._players.map(p => p.getPlayerBasicPROT()),
+			oldPlayers.map(p => p.getPlayerBasicPROT()),
 			this._barricades.map(p => p.getBarricadePROT()),
 			this._propHps.map(p => p.getPropHpPROT())
 		);
-
-		this._players.push(newPlayer);
 		this._newPlayersCache.push(newPlayer);
 
 		return [newPlayer.id, initPROT];
 	}
 
 	playerDisconnected(playerId: number) {
-		let player = this._players.find(p => p.id == playerId);
-		if (player) {
-			player.connected = false;
-		}
+		this._playerManager.playerDisconnected(playerId);
+	}
+
+	startRunning(playerId: number, active: boolean) {
+		this._playerManager.startRunning(playerId, active);
+	}
+
+	stopMoving(playerId: number, active: boolean) {
+		this._playerManager.stopMoving(playerId, active);
+	}
+
+	rotate(playerId: number, angle: number) {
+		this._playerManager.rotate(playerId, angle);
 	}
 
 	private _playerMove(player: player) {
@@ -208,7 +226,7 @@ export class gameCore extends events.EventEmitter {
 			p.adjustPlayerCollided(oldPos, newPos);
 		});
 
-		this._players.forEach(p => {
+		this._playerManager.getPlayers().forEach(p => {
 			if (p == player)
 				return;
 
@@ -227,34 +245,13 @@ export class gameCore extends events.EventEmitter {
 		player.setPosition(newPos);
 	}
 
-	startRunning(playerId: number, active: boolean) {
-		let player = this._players.find(p => p.id == playerId);
-		if (player) {
-			player.isRunning = active;
-		}
-	}
-
-	stopMoving(playerId: number, active: boolean) {
-		let player = this._players.find(p => p.id == playerId);
-		if (player) {
-			player.canMove = !active;
-		}
-	}
-
-	rotate(playerId: number, angle: number) {
-		let player = this._players.find(p => p.id == playerId);
-		if (player) {
-			player.setDirectionAngle(angle);
-		}
-	}
-
 	shoot(playerId: number) {
-		let player = this._players.find(p => p.id == playerId);
+		let player = this._playerManager.findPlayerById(playerId);
 		if (player) {
 			let position = player.getPosition();
 			let angle = player.getDirectionAngle();
 
-			let playersInRay = this._players.map(p => {
+			let playersInRay = this._playerManager.getPlayers().map(p => {
 				if (p == player)
 					return null;
 
@@ -288,13 +285,13 @@ export class gameCore extends events.EventEmitter {
 				return b.getRayCollidedPoint(position, angle);
 			});
 
-			for (let b of collidedBarricadePoints) {
-				if (b) {
-					let d = Math.sqrt((b.x - position.x) ** 2
-						+ (b.y - position.y) ** 2);
+			for (let barricadePoint of collidedBarricadePoints) {
+				if (barricadePoint) {
+					let d = Math.sqrt((barricadePoint.x - position.x) ** 2
+						+ (barricadePoint.y - position.y) ** 2);
 					if (d < minDistance) {
 						minDistance = d;
-						minPoint = b;
+						minPoint = barricadePoint;
 						firstshootedPlayer = undefined;
 					}
 				}
@@ -304,10 +301,7 @@ export class gameCore extends events.EventEmitter {
 				let hp = firstshootedPlayer.getHp();
 				if (hp - 1 == 0) {
 					this.emit(gameCore.events.gameOver, firstshootedPlayer.id, new toClientPROT.gameOver());
-					let i = this._players.findIndex(p => p == firstshootedPlayer);
-					if (i != -1) {
-						this._players.splice(i, 1);
-					}
+					this._playerManager.removePlayer(firstshootedPlayer);
 				} else {
 					firstshootedPlayer.setHp(hp - 1);
 				}
