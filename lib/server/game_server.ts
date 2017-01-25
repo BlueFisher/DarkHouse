@@ -2,7 +2,7 @@ import * as websocket from 'ws';
 import * as express from 'express';
 import * as session from 'express-session';
 
-
+import { logger } from './log';
 import { gameCore } from './game_core';
 
 import * as fromClientPROT from '../shared/ws_prot_from_client';
@@ -47,9 +47,60 @@ export class gameServer {
 	}
 
 	private _onWebSocketConnection(socket: websocket) {
-		this._socketPlayerColl.push({
-			sessionId: '',
-			socket: socket
+		let req = socket.upgradeReq as express.Request;
+		this._sessionParser(req, <express.Response>{}, () => {
+			// 用户登录的用户id
+			let userId: string = (req.session as Express.Session)['userId'];
+			let sessionId: string = req.sessionID as string;
+
+			if (userId) {
+				let pairUser = this._socketPlayerColl.find(p => p.userId == userId);
+				if (pairUser) {
+					logger.info(`user ${userId} reconnected`);
+					this._closeSocket(pairUser.socket);
+					pairUser.sessionId = sessionId;
+					pairUser.socket = socket;
+				} else {
+					let pairSession = this._socketPlayerColl.find(p => p.sessionId == sessionId);
+					if (pairSession) {
+						logger.info(`user ${userId} connected in existed session ${sessionId}`);
+						this._closeSocket(pairSession.socket);
+						if (pairSession.userId != userId) {
+							delete pairSession.userId;
+						}
+						pairSession.userId = userId;
+						pairSession.socket = socket;
+					} else {
+						logger.info(`user ${userId} connected`);
+						this._socketPlayerColl.push({
+							userId: userId,
+							sessionId: sessionId,
+							socket: socket
+						});
+					}
+				}
+			} else {
+				let pair = this._socketPlayerColl.find(p => p.sessionId == sessionId);
+				if (pair) {
+					if (pair.userId) {
+						logger.info(`anonymouse user reconnected in existed user ${pair.userId}`);
+						this._closeSocket(pair.socket);
+						delete pair.userId;
+						pair.socket = socket;
+						delete pair.playerId;
+					} else {
+						logger.info(`anonymouse user reconnected`);
+						this._closeSocket(pair.socket);
+						pair.socket = socket;
+					}
+				} else {
+					logger.info(`anonymouse user connected`);
+					this._socketPlayerColl.push({
+						sessionId: sessionId,
+						socket: socket
+					});
+				}
+			}
 		});
 
 		socket.on('message', message => {
@@ -85,9 +136,9 @@ export class gameServer {
 
 		let onSocketClose = (socket: websocket) => {
 			let pair = this._socketPlayerColl.find(p => p.socket == socket);
-			if (pair) {
+			if (pair && pair.playerId) {
 				console.log(`player ${pair.playerId} disconnected`);
-				pair.playerId = undefined;
+				this._gameCore.playerDisconnected(pair.playerId);
 			}
 		}
 	}
@@ -101,9 +152,19 @@ export class gameServer {
 	private _onInitialize(protocol: fromClientPROT.initialize, socket: websocket) {
 		let pair = this._socketPlayerColl.find(p => p.socket == socket);
 		if (pair) {
-			let [newPlayerId, initPROT] = this._gameCore.addNewPlayer(protocol.name);
-			pair.playerId = newPlayerId;
-			this._send(JSON.stringify(initPROT), socket);
+			let currPlayerId: number;
+
+			if (pair.playerId && protocol.resumeGame && this._gameCore.isPlayerOnGame(pair.playerId)) {
+				currPlayerId = pair.playerId;
+				this._gameCore.playerReconnected(currPlayerId);
+				logger.info(`player ${pair.playerId} resume game`);
+			} else {
+				let newPlayerId = this._gameCore.addNewPlayer(protocol.name);
+				currPlayerId = pair.playerId = newPlayerId;
+				logger.info(`player ${pair.playerId} added in game`);
+			}
+
+			this._send(JSON.stringify(this._gameCore.getInitPROT(currPlayerId)), socket);
 		}
 	}
 
@@ -156,5 +217,31 @@ export class gameServer {
 				this._send(JSON.stringify(protocol), spMap.socket);
 			}
 		});
+	}
+
+	isPlayerOnGame(userId: string, sessionId: string): boolean {
+		if (userId) {
+			let pairUser = this._socketPlayerColl.find(p => p.userId == userId);
+			if (pairUser) {
+				return this._gameCore.isPlayerOnGame(pairUser.playerId);
+			} else {
+				let pairSession = this._socketPlayerColl.find(p => p.sessionId == sessionId);
+				if (pairSession) {
+					if (pairSession.userId != userId) {
+						return false;
+					}
+					return this._gameCore.isPlayerOnGame(pairSession.playerId);
+				} else {
+					return false;
+				}
+			}
+		} else {
+			let pair = this._socketPlayerColl.find(p => p.sessionId == sessionId);
+			if (pair && !pair.userId) {
+				return this._gameCore.isPlayerOnGame(pair.playerId);
+			} else {
+				return false;
+			}
+		}
 	}
 }

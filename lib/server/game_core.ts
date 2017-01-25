@@ -167,7 +167,24 @@ export class gameCore extends events.EventEmitter {
 		this._propHps.push(new propHp(newPosition));
 	}
 
-	addNewPlayer(name: string): [number, toClientPROT.initialize] {
+	getInitPROT(currPlayerId: number) {
+		let players = this._playerManager.getPlayers();
+
+		return new toClientPROT.initialize(
+			currPlayerId,
+			players.map(p => p.getPlayerBasicPROT()),
+			this._barricades.map(p => p.getBarricadePROT()),
+			this._propHps.map(p => p.getPropHpPROT())
+		);
+
+	}
+
+	isPlayerOnGame(playerId: number | undefined): boolean {
+		let player = this._playerManager.getPlayers().find(p => p.id == playerId);
+		return player != undefined;
+	}
+
+	addNewPlayer(name: string): number {
 		let newPoisition: point | undefined;
 		while (!newPoisition) {
 			newPoisition = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
@@ -181,34 +198,38 @@ export class gameCore extends events.EventEmitter {
 			}
 		}
 
-		let oldPlayers = this._playerManager.getPlayers();
 		let newPlayer = this._playerManager.addNewPlayer(name, newPoisition);
-
-		let initPROT = new toClientPROT.initialize(
-			newPlayer.getPlayerBasicPROT(),
-			oldPlayers.map(p => p.getPlayerBasicPROT()),
-			this._barricades.map(p => p.getBarricadePROT()),
-			this._propHps.map(p => p.getPropHpPROT())
-		);
 		this._newPlayersCache.push(newPlayer);
-
-		return [newPlayer.id, initPROT];
+		return newPlayer.id;
 	}
 
 	playerDisconnected(playerId: number) {
-		this._playerManager.playerDisconnected(playerId);
+		let player = this._playerManager.findPlayerById(playerId);
+		if (player)
+			player.connected = false;
+	}
+	playerReconnected(playerId: number) {
+		let player = this._playerManager.findPlayerById(playerId);
+		if (player)
+			player.connected = true;
 	}
 
 	startRunning(playerId: number, active: boolean) {
-		this._playerManager.startRunning(playerId, active);
+		let player = this._playerManager.findPlayerById(playerId);
+		if (player)
+			player.isRunning = active;
 	}
 
 	stopMoving(playerId: number, active: boolean) {
-		this._playerManager.stopMoving(playerId, active);
+		let player = this._playerManager.findPlayerById(playerId);
+		if (player)
+			player.canMove = !active;
 	}
 
 	rotate(playerId: number, angle: number) {
-		this._playerManager.rotate(playerId, angle);
+		let player = this._playerManager.findPlayerById(playerId);
+		if (player)
+			player.setDirectionAngle(angle);
 	}
 
 	private _playerMove(player: player) {

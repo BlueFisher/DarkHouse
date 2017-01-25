@@ -120,28 +120,4 @@ export class playerManager {
 			return utils.didTwoCirclesCollied(p.getPosition(), radius, position, config.player.radius);
 		});
 	}
-
-	playerDisconnected(playerId: number) {
-		let player = this.findPlayerById(playerId);
-		if (player)
-			player.connected = false;
-	}
-
-	startRunning(playerId: number, active: boolean) {
-		let player = this.findPlayerById(playerId);
-		if (player)
-			player.isRunning = active;
-	}
-
-	stopMoving(playerId: number, active: boolean) {
-		let player = this.findPlayerById(playerId);
-		if (player)
-			player.canMove = !active;
-	}
-
-	rotate(playerId: number, angle: number) {
-		let player = this.findPlayerById(playerId);
-		if (player)
-			player.setDirectionAngle(angle);
-	}
 }

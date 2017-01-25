@@ -1,14 +1,15 @@
 import * as express from 'express';
 import * as session from 'express-session';
 import * as bodyParser from 'body-parser';
-import * as log4js from 'log4js';
+import { useExpressLogger } from './log';
 
 import * as config from '../config';
+import * as httpPROT from '../shared/http_prot';
 
 import { gameServer } from './game_server';
 
 class server {
-	private _gameServers: gameServer;
+	private _gameServers: gameServer[] = [];
 
 	private _sessionParser = session({
 		secret: 'I6zoBZ0LVYPi9Ujt',
@@ -35,8 +36,10 @@ class server {
 			callback(true, config.httpPort);
 		});
 
-		new gameServer(config.webSocketIp, config.webSocketPort, this._sessionParser, () => {
-			callback(false, config.webSocketPort);
+		config.webSockets.forEach(p => {
+			this._gameServers.push(new gameServer(p.ip, p.port, this._sessionParser, () => {
+				callback(false, p.port);
+			}));
 		});
 	}
 	private _configExpress(app: express.Express) {
@@ -49,12 +52,26 @@ class server {
 			extended: true
 		}));
 		app.use(this._sessionParser);
-		// app.use(useLogger);
+		app.use(useExpressLogger);
 
 		app.use('/public', express.static('public'));
 
 		app.get('/', (req, res) => {
-			res.render('index', { useCDN: config.useCDN });
+			(req.session as Express.Session)['test'] = 1;
+			res.render('index', { useCDN: config.useCDN, user: null });
+		});
+
+		app.get('/websockets', (req, res) => {
+			let protocol: httpPROT.webSocketResponse[] = [];
+			this._gameServers.forEach(s => {
+				protocol.push({
+					ip: s.ip,
+					port: s.port,
+					canResumeGame: s.isPlayerOnGame((req.session as Express.Session)['userId'],
+						req.sessionID as string)
+				});
+			})
+			res.json(protocol);
 		});
 	}
 }

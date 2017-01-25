@@ -51,7 +51,10 @@
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	var toastr = __webpack_require__(1);
-	var game_core_1 = __webpack_require__(2);
+	var fromClientPROT = __webpack_require__(2);
+	var vueData = __webpack_require__(3);
+	var dom_manager_1 = __webpack_require__(4);
+	var game_core_1 = __webpack_require__(7);
 	
 	var main = function () {
 	    function main() {
@@ -60,16 +63,8 @@
 	        _classCallCheck(this, main);
 	
 	        this._dataLengthPerSec = 0;
-	        this._connectWebSocket();
-	        adjustCanvasSize();
-	        window.onresize = function () {
-	            adjustCanvasSize();
-	        };
-	        function adjustCanvasSize() {
-	            var canvas = document.querySelector('#stage');
-	            canvas.height = window.innerHeight;
-	            canvas.width = window.innerWidth;
-	        }
+	        var dm = new dom_manager_1.domManager(this._connectWebSocketServer.bind(this));
+	        this._gameCore = new game_core_1.gameCore(this._send.bind(this), dm);
 	        setInterval(function () {
 	            console.log(_this._dataLengthPerSec / 1024 + " KB/s");
 	            _this._dataLengthPerSec = 0;
@@ -77,10 +72,19 @@
 	    }
 	
 	    _createClass(main, [{
-	        key: "_connectWebSocket",
-	        value: function _connectWebSocket() {
-	            var url = "ws://localhost:8080/";
-	            this._connect(url);
+	        key: "_connectWebSocketServer",
+	        value: function _connectWebSocketServer() {
+	            if (vueData.indexCommon.activeWebSocket) {
+	                var url = "ws://" + vueData.indexCommon.activeWebSocket.ip + ":" + vueData.indexCommon.activeWebSocket.port + "/";
+	                if (this._ws == null) {
+	                    this._connect(url);
+	                } else if (this._ws.url != url) {
+	                    this._ws.close();
+	                    this._connect(url);
+	                } else {
+	                    this._send(new fromClientPROT.initialize(vueData.indexCommon.name, vueData.gameInitModal.resumeGame));
+	                }
+	            }
 	        }
 	    }, {
 	        key: "_connect",
@@ -92,7 +96,7 @@
 	            this._ws.onopen = function () {
 	                toastr.clear();
 	                toastr.success('服务器连接成功');
-	                _this2._gameCore = new game_core_1.gameCore(_this2._send.bind(_this2));
+	                _this2._send(new fromClientPROT.initialize(vueData.gameInitModal.common.name, vueData.gameInitModal.resumeGame));
 	            };
 	            this._ws.onmessage = function (e) {
 	                _this2._dataLengthPerSec += e.data.length;
@@ -106,7 +110,7 @@
 	    }, {
 	        key: "_send",
 	        value: function _send(protocol) {
-	            this._ws.send(JSON.stringify(protocol));
+	            if (this._ws && this._ws.readyState == WebSocket.OPEN) this._ws.send(JSON.stringify(protocol));
 	        }
 	    }]);
 	
@@ -123,6 +127,161 @@
 
 /***/ },
 /* 2 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var type;
+	(function (type) {
+	    type[type["ping"] = 0] = "ping";
+	    type[type["init"] = 1] = "init";
+	    type[type["startRunning"] = 2] = "startRunning";
+	    type[type["stopMoving"] = 3] = "stopMoving";
+	    type[type["rotate"] = 4] = "rotate";
+	    type[type["shoot"] = 5] = "shoot";
+	})(type = exports.type || (exports.type = {}));
+	
+	var baseProtocol = function baseProtocol(type) {
+	    _classCallCheck(this, baseProtocol);
+	
+	    this.type = type;
+	};
+	
+	exports.baseProtocol = baseProtocol;
+	
+	var pingProtocol = function (_baseProtocol) {
+	    _inherits(pingProtocol, _baseProtocol);
+	
+	    function pingProtocol() {
+	        _classCallCheck(this, pingProtocol);
+	
+	        return _possibleConstructorReturn(this, (pingProtocol.__proto__ || Object.getPrototypeOf(pingProtocol)).call(this, type.ping));
+	    }
+	
+	    return pingProtocol;
+	}(baseProtocol);
+	
+	exports.pingProtocol = pingProtocol;
+	
+	var initialize = function (_baseProtocol2) {
+	    _inherits(initialize, _baseProtocol2);
+	
+	    function initialize(name, resumeGame) {
+	        _classCallCheck(this, initialize);
+	
+	        var _this2 = _possibleConstructorReturn(this, (initialize.__proto__ || Object.getPrototypeOf(initialize)).call(this, type.init));
+	
+	        _this2.name = name;
+	        _this2.resumeGame = resumeGame;
+	        return _this2;
+	    }
+	
+	    return initialize;
+	}(baseProtocol);
+	
+	exports.initialize = initialize;
+	
+	var startRunning = function (_baseProtocol3) {
+	    _inherits(startRunning, _baseProtocol3);
+	
+	    function startRunning(active) {
+	        _classCallCheck(this, startRunning);
+	
+	        var _this3 = _possibleConstructorReturn(this, (startRunning.__proto__ || Object.getPrototypeOf(startRunning)).call(this, type.startRunning));
+	
+	        _this3.active = active;
+	        return _this3;
+	    }
+	
+	    return startRunning;
+	}(baseProtocol);
+	
+	exports.startRunning = startRunning;
+	
+	var stopMoving = function (_baseProtocol4) {
+	    _inherits(stopMoving, _baseProtocol4);
+	
+	    function stopMoving(active) {
+	        _classCallCheck(this, stopMoving);
+	
+	        var _this4 = _possibleConstructorReturn(this, (stopMoving.__proto__ || Object.getPrototypeOf(stopMoving)).call(this, type.stopMoving));
+	
+	        _this4.active = active;
+	        return _this4;
+	    }
+	
+	    return stopMoving;
+	}(baseProtocol);
+	
+	exports.stopMoving = stopMoving;
+	
+	var rotate = function (_baseProtocol5) {
+	    _inherits(rotate, _baseProtocol5);
+	
+	    function rotate(angle) {
+	        _classCallCheck(this, rotate);
+	
+	        var _this5 = _possibleConstructorReturn(this, (rotate.__proto__ || Object.getPrototypeOf(rotate)).call(this, type.rotate));
+	
+	        _this5.angle = angle;
+	        return _this5;
+	    }
+	
+	    return rotate;
+	}(baseProtocol);
+	
+	exports.rotate = rotate;
+	
+	var shoot = function (_baseProtocol6) {
+	    _inherits(shoot, _baseProtocol6);
+	
+	    function shoot() {
+	        _classCallCheck(this, shoot);
+	
+	        return _possibleConstructorReturn(this, (shoot.__proto__ || Object.getPrototypeOf(shoot)).call(this, type.shoot));
+	    }
+	
+	    return shoot;
+	}(baseProtocol);
+	
+	exports.shoot = shoot;
+
+/***/ },
+/* 3 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	var activeWebSocket = void 0;
+	var webSockets = [];
+	exports.indexCommon = {
+	    name: 'Default Player',
+	    activeWebSocket: activeWebSocket,
+	    webSockets: webSockets
+	};
+	exports.index = {
+	    ping: 0
+	};
+	exports.gameInitModal = {
+	    common: exports.indexCommon,
+	    resumeGame: true,
+	    email: '',
+	    password: '',
+	    showAccount: false
+	};
+	exports.gameOverModal = {
+	    common: exports.indexCommon,
+	    historyMaxShipsCount: 0
+	};
+
+/***/ },
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -131,12 +290,127 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var fromClientPROT = __webpack_require__(3);
-	var toClientPROT = __webpack_require__(4);
-	var config = __webpack_require__(5);
+	var $ = __webpack_require__(5);
+	var vue = __webpack_require__(6);
+	var vueData = __webpack_require__(3);
+	
+	var domManager = function () {
+	    function domManager(connectWebSocketServer) {
+	        _classCallCheck(this, domManager);
+	
+	        this._connectWebSocketServer = connectWebSocketServer;
+	        this._initializeVue();
+	        this._initializeCanvas();
+	        this._initializeGame();
+	    }
+	
+	    _createClass(domManager, [{
+	        key: "_initializeVue",
+	        value: function _initializeVue() {
+	            var _this = this;
+	
+	            new vue({
+	                el: '#modal-gameinit',
+	                data: vueData.gameInitModal,
+	                methods: {
+	                    startGame: function startGame() {
+	                        vueData.gameInitModal.resumeGame = false;
+	                        $('#modal-gameinit').modal('hide');
+	                        gameOn();
+	                    },
+	                    resumeGame: function resumeGame() {
+	                        vueData.gameInitModal.resumeGame = true;
+	                        $('#modal-gameinit').modal('hide');
+	                        gameOn();
+	                    }
+	                }
+	            });
+	            new vue({
+	                el: '#modal-gameover',
+	                data: vueData.gameOverModal,
+	                methods: {
+	                    startGameFromGameOver: function startGameFromGameOver() {
+	                        $('#modal-gameover').modal('hide');
+	                        gameOn();
+	                    }
+	                }
+	            });
+	            var gameOn = function gameOn() {
+	                _this._connectWebSocketServer();
+	            };
+	        }
+	    }, {
+	        key: "_initializeCanvas",
+	        value: function _initializeCanvas() {
+	            var adjustCanvasSize = function adjustCanvasSize() {
+	                var canvas = document.querySelector('#stage');
+	                canvas.height = window.innerHeight;
+	                canvas.width = window.innerWidth;
+	            };
+	            adjustCanvasSize();
+	            window.onresize = function () {
+	                adjustCanvasSize();
+	            };
+	        }
+	    }, {
+	        key: "gameOver",
+	        value: function gameOver(protocol) {
+	            $('#modal-gameover').on('shown.bs.modal', function () {
+	                $('#modal-gameover').find('.form-control').focus();
+	            }).modal({
+	                backdrop: 'static',
+	                keyboard: false
+	            });
+	        }
+	    }, {
+	        key: "_initializeGame",
+	        value: function _initializeGame() {
+	            $.getJSON('/websockets').then(function (protocol) {
+	                vueData.indexCommon.webSockets = protocol;
+	                vueData.indexCommon.activeWebSocket = protocol[0];
+	                $('#modal-gameinit').find('.form-control').focus();
+	            });
+	            $('#modal-gameinit').modal({
+	                backdrop: 'static',
+	                keyboard: false
+	            });
+	        }
+	    }]);
+	
+	    return domManager;
+	}();
+	
+	exports.domManager = domManager;
+
+/***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	module.exports = window.$;
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	module.exports = window.Vue;
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var fromClientPROT = __webpack_require__(2);
+	var toClientPROT = __webpack_require__(8);
+	var config = __webpack_require__(9);
+	var vueData = __webpack_require__(3);
 	
 	var gameCore = function () {
-	    function gameCore(sendFunc) {
+	    function gameCore(sendFunc, domManager) {
 	        _classCallCheck(this, gameCore);
 	
 	        this._isGameOn = false;
@@ -144,14 +418,14 @@
 	        this._playerBasicPROTs = [];
 	        this._barricades = [];
 	        this._sendFunc = sendFunc;
-	        this._initlializeCanvas();
-	        this._send(new fromClientPROT.initialize("Fisher"));
+	        this._domManager = domManager;
+	        this._initlializeCanvasEvents();
 	    }
 	
 	    _createClass(gameCore, [{
 	        key: "_send",
 	        value: function _send(protocol) {
-	            if (this._isGameOn || protocol.type == fromClientPROT.type.init || protocol.type == fromClientPROT.type.ping) {
+	            if (this._isGameOn || protocol.type == fromClientPROT.type.ping) {
 	                this._sendFunc(protocol);
 	            }
 	        }
@@ -163,8 +437,8 @@
 	            switch (protocol.type) {
 	                case toClientPROT.type.pong:
 	                    var now = new Date();
-	                    var delay = now.getTime() - this._pingTime.getTime();
-	                    console.log(delay + " ms");
+	                    var ping = now.getTime() - this._pingTime.getTime();
+	                    vueData.index.ping = ping;
 	                    setTimeout(function () {
 	                        _this._sendPing();
 	                    }, 1000);
@@ -176,15 +450,14 @@
 	                    this._onMainPROT(protocol);
 	                    break;
 	                case toClientPROT.type.gameOver:
-	                    console.log('gameover');
 	                    this._isGameOn = false;
-	                    this._send(new fromClientPROT.initialize("Fisher R"));
+	                    this._domManager.gameOver(protocol);
 	                    break;
 	            }
 	        }
 	    }, {
-	        key: "_initlializeCanvas",
-	        value: function _initlializeCanvas() {
+	        key: "_initlializeCanvasEvents",
+	        value: function _initlializeCanvasEvents() {
 	            var _this2 = this;
 	
 	            this._canvas.addEventListener('mousemove', function (e) {
@@ -255,7 +528,7 @@
 	        key: "_onInitialize",
 	        value: function _onInitialize(protocol) {
 	            this._canvas.focus();
-	            this._currentPlayerBasicPROT = protocol.currPlayer;
+	            this._currentPlayerId = protocol.currPlayerId;
 	            this._playerBasicPROTs = protocol.players;
 	            this._barricades = protocol.barricades;
 	            this._isGameOn = true;
@@ -512,133 +785,7 @@
 	exports.gameCore = gameCore;
 
 /***/ },
-/* 3 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-	
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var type;
-	(function (type) {
-	    type[type["ping"] = 0] = "ping";
-	    type[type["init"] = 1] = "init";
-	    type[type["startRunning"] = 2] = "startRunning";
-	    type[type["stopMoving"] = 3] = "stopMoving";
-	    type[type["rotate"] = 4] = "rotate";
-	    type[type["shoot"] = 5] = "shoot";
-	})(type = exports.type || (exports.type = {}));
-	
-	var baseProtocol = function baseProtocol(type) {
-	    _classCallCheck(this, baseProtocol);
-	
-	    this.type = type;
-	};
-	
-	exports.baseProtocol = baseProtocol;
-	
-	var pingProtocol = function (_baseProtocol) {
-	    _inherits(pingProtocol, _baseProtocol);
-	
-	    function pingProtocol() {
-	        _classCallCheck(this, pingProtocol);
-	
-	        return _possibleConstructorReturn(this, (pingProtocol.__proto__ || Object.getPrototypeOf(pingProtocol)).call(this, type.ping));
-	    }
-	
-	    return pingProtocol;
-	}(baseProtocol);
-	
-	exports.pingProtocol = pingProtocol;
-	
-	var initialize = function (_baseProtocol2) {
-	    _inherits(initialize, _baseProtocol2);
-	
-	    function initialize(name) {
-	        _classCallCheck(this, initialize);
-	
-	        var _this2 = _possibleConstructorReturn(this, (initialize.__proto__ || Object.getPrototypeOf(initialize)).call(this, type.init));
-	
-	        _this2.name = name;
-	        return _this2;
-	    }
-	
-	    return initialize;
-	}(baseProtocol);
-	
-	exports.initialize = initialize;
-	
-	var startRunning = function (_baseProtocol3) {
-	    _inherits(startRunning, _baseProtocol3);
-	
-	    function startRunning(active) {
-	        _classCallCheck(this, startRunning);
-	
-	        var _this3 = _possibleConstructorReturn(this, (startRunning.__proto__ || Object.getPrototypeOf(startRunning)).call(this, type.startRunning));
-	
-	        _this3.active = active;
-	        return _this3;
-	    }
-	
-	    return startRunning;
-	}(baseProtocol);
-	
-	exports.startRunning = startRunning;
-	
-	var stopMoving = function (_baseProtocol4) {
-	    _inherits(stopMoving, _baseProtocol4);
-	
-	    function stopMoving(active) {
-	        _classCallCheck(this, stopMoving);
-	
-	        var _this4 = _possibleConstructorReturn(this, (stopMoving.__proto__ || Object.getPrototypeOf(stopMoving)).call(this, type.stopMoving));
-	
-	        _this4.active = active;
-	        return _this4;
-	    }
-	
-	    return stopMoving;
-	}(baseProtocol);
-	
-	exports.stopMoving = stopMoving;
-	
-	var rotate = function (_baseProtocol5) {
-	    _inherits(rotate, _baseProtocol5);
-	
-	    function rotate(angle) {
-	        _classCallCheck(this, rotate);
-	
-	        var _this5 = _possibleConstructorReturn(this, (rotate.__proto__ || Object.getPrototypeOf(rotate)).call(this, type.rotate));
-	
-	        _this5.angle = angle;
-	        return _this5;
-	    }
-	
-	    return rotate;
-	}(baseProtocol);
-	
-	exports.rotate = rotate;
-	
-	var shoot = function (_baseProtocol6) {
-	    _inherits(shoot, _baseProtocol6);
-	
-	    function shoot() {
-	        _classCallCheck(this, shoot);
-	
-	        return _possibleConstructorReturn(this, (shoot.__proto__ || Object.getPrototypeOf(shoot)).call(this, type.shoot));
-	    }
-	
-	    return shoot;
-	}(baseProtocol);
-	
-	exports.shoot = shoot;
-
-/***/ },
-/* 4 */
+/* 8 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -685,12 +832,12 @@
 	var initialize = function (_baseProtocol2) {
 	    _inherits(initialize, _baseProtocol2);
 	
-	    function initialize(currPlayer, players, barricades, propHps) {
+	    function initialize(currPlayerId, players, barricades, propHps) {
 	        _classCallCheck(this, initialize);
 	
 	        var _this2 = _possibleConstructorReturn(this, (initialize.__proto__ || Object.getPrototypeOf(initialize)).call(this, type.init));
 	
-	        _this2.currPlayer = currPlayer;
+	        _this2.currPlayerId = currPlayerId;
 	        _this2.players = players;
 	        _this2.barricades = barricades;
 	        _this2.propHps = propHps;
@@ -828,7 +975,7 @@
 	exports.gameOver = gameOver;
 
 /***/ },
-/* 5 */
+/* 9 */
 /***/ function(module, exports) {
 
 	"use strict";

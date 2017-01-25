@@ -1,37 +1,41 @@
 import * as fromClientPROT from '../shared/ws_prot_from_client';
 import * as toClientPROT from '../shared/ws_prot_to_client';
 import * as config from '../shared/game_config';
+import { domManager } from './dom_manager';
+import * as vueData from './vue_data';
 
 export class gameCore {
+	private _domManager: domManager;
+
 	private _isGameOn = false;
 	private _sendFunc: (protocol: fromClientPROT.baseProtocol) => void;
 	private _send(protocol: fromClientPROT.baseProtocol) {
-		if (this._isGameOn || protocol.type == fromClientPROT.type.init || protocol.type == fromClientPROT.type.ping) {
+		if (this._isGameOn || protocol.type == fromClientPROT.type.ping) {
 			this._sendFunc(protocol);
 		}
 	}
 	private _canvas = document.querySelector('#stage') as HTMLCanvasElement;
 
-	private _currentPlayerBasicPROT: toClientPROT.playerBasicPROT;
+	private _currentPlayerId: number;
 	private _playerBasicPROTs: toClientPROT.playerBasicPROT[] = [];
 	private _barricades: toClientPROT.barricadePROT[] = [];
 	private _mainPROTCache: toClientPROT.mainPROT;
 
 	private _pingTime: Date;
 
-	constructor(sendFunc: (protocol: fromClientPROT.baseProtocol) => void) {
+	constructor(sendFunc: (protocol: fromClientPROT.baseProtocol) => void, domManager: domManager) {
 		this._sendFunc = sendFunc;
+		this._domManager = domManager;
 
-		this._initlializeCanvas();
-		this._send(new fromClientPROT.initialize("Fisher"));
+		this._initlializeCanvasEvents();
 	}
 
 	protocolReceived(protocol: toClientPROT.baseProtocol) {
 		switch (protocol.type) {
 			case toClientPROT.type.pong:
 				let now = new Date();
-				let delay = now.getTime() - this._pingTime.getTime();
-				console.log(`${delay} ms`);
+				let ping = now.getTime() - this._pingTime.getTime();
+				vueData.index.ping = ping;
 				setTimeout(() => {
 					this._sendPing();
 				}, 1000);
@@ -43,14 +47,13 @@ export class gameCore {
 				this._onMainPROT(protocol as toClientPROT.mainPROT);
 				break;
 			case toClientPROT.type.gameOver:
-				console.log('gameover');
 				this._isGameOn = false;
-				this._send(new fromClientPROT.initialize("Fisher R"));
+				this._domManager.gameOver(protocol as toClientPROT.gameOver);
 				break;
 		}
 	}
 
-	private _initlializeCanvas() {
+	private _initlializeCanvasEvents() {
 		this._canvas.addEventListener('mousemove', e => {
 			let point = {
 				x: e.pageX - this._canvas.offsetLeft,
@@ -126,7 +129,7 @@ export class gameCore {
 
 	private _onInitialize(protocol: toClientPROT.initialize) {
 		this._canvas.focus();
-		this._currentPlayerBasicPROT = protocol.currPlayer;
+		this._currentPlayerId = protocol.currPlayerId;
 		this._playerBasicPROTs = protocol.players;
 		this._barricades = protocol.barricades;
 		this._isGameOn = true;
@@ -196,6 +199,7 @@ export class gameCore {
 	private _draw() {
 		if (!this._isGameOn || !this._mainPROTCache)
 			return;
+
 
 		let ctx = this._canvas.getContext('2d') as CanvasRenderingContext2D;
 		ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);

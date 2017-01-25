@@ -56,15 +56,15 @@ export class pongProtocol extends baseProtocol {
 }
 
 export class initialize extends baseProtocol {
-	constructor(currPlayer: playerBasicPROT, players: playerBasicPROT[], barricades: barricadePROT[], propHps: propHpPROT[]) {
+	constructor(currPlayerId: number, players: playerBasicPROT[], barricades: barricadePROT[], propHps: propHpPROT[]) {
 		super(type.init);
 
-		this.currPlayer = currPlayer;
+		this.currPlayerId = currPlayerId;
 		this.players = players;
 		this.barricades = barricades;
 		this.propHps = propHps;
 	}
-	currPlayer: playerBasicPROT;
+	currPlayerId: number;
 	players: playerBasicPROT[];
 	barricades: barricadePROT[];
 	propHps: propHpPROT[];

@@ -4,7 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<title>DarkHouse</title>
-	
+
 	<% if (useCDN) { %>
 		<link href="//cdn.bootcss.com/rangeslider.js/2.2.1/rangeslider.min.css" rel="stylesheet" />
 		<link href="//cdn.bootcss.com/toastr.js/latest/css/toastr.min.css" rel="stylesheet" />
@@ -25,6 +25,90 @@
 		<canvas class="stage" id="stage" tabindex="0"></canvas>
 	</div>
 
+	<div class="modal fade" id="modal-gameinit">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-body">
+					<h3 class="text-center title">Dark House</h3>
+					<p class="text-center title">
+						<% if (user) { %>
+							<%- user.email %>
+						<% } %>
+					</p>
+					<form v-on:submit.prevent="startGame()">
+						<div class="list-group">
+							<a v-for="(webSocket, index) in common.webSockets" v-bind:class="{active: webSocket == common.activeWebSocket}" v-on:click="common.activeWebSocket = webSocket"
+								href="javascript:;" class="list-group-item">
+								{{index+1}}. {{webSocket.ip}}:{{webSocket.port}}
+								<span v-show="webSocket == common.activeWebSocket" class="pull-right"><i class="fa fa-check-circle"></i></span>
+							</a>
+						</div>
+						<div class="form-group">
+							<div class="input-group">
+								<input v-model="common.name" class="form-control" type="text">
+								<span class="input-group-btn">
+								<button type="submit" class="btn btn-default">开始新游戏</button>
+								<button type="button" class="btn btn-success" 
+										v-on:click="showAccount = !showAccount">登录 / 注册</button>
+								<button type="button" class="btn btn-success" 
+										v-show="common.activeWebSocket && common.activeWebSocket.canResumeGame" v-on:click="resumeGame()">继续游戏</button>
+							</span>
+							</div>
+						</div>
+						<template v-if="showAccount">
+							<div class="form-group">
+								<input type="email" class="form-control" placeholder="邮箱" v-model="email">
+							</div>
+							<div class="form-group">
+								<input type="password" class="form-control" placeholder="密码" v-model="password">
+							</div>
+							<div class="row">
+								<div class="col-md-6">
+									<button type="button" class="btn btn-primary btn-block" v-on:click="signin()">登录</button>
+								</div>
+								<div class="col-md-6">
+									<button type="button" class="btn btn-default btn-block" v-on:click="signup()">注册</button>
+								</div>
+							</div>
+						</template>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="modal-gameover">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-body">
+					<h3 class="text-center title">游戏结束</h3>
+					<p class="text-center title">
+						<% if (user) { %>
+							<%- user.email %>
+						<% } %>
+					</p>
+					<!--<p>你的最高分是 {{historyMaxShipsCount}}</p>-->
+					<form v-on:submit.prevent="startGameFromGameOver">
+						<div class="list-group">
+							<a v-for="(webSocket, index) in common.webSockets" v-bind:class="{active: webSocket == common.activeWebSocket}" v-on:click="common.activeWebSocket = webSocket"
+								href="javascript:;" class="list-group-item">
+								{{index+1}}. {{webSocket.ip}}:{{webSocket.port}}
+								<span v-show="webSocket == common.activeWebSocket" class="pull-right"><i class="fa fa-check-circle"></i></span>
+							</a>
+						</div>
+						<div class="input-group">
+							<input v-model="common.name" class="form-control" type="text">
+							<span class="input-group-btn">
+								<button type="submit" class="btn btn-default">重新开始</button>
+							</span>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
 	<% if (useCDN) { %>
 		<script src="//cdn.bootcss.com/vue/2.0.1/vue.min.js"></script>
 		<script src="//cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
@@ -40,6 +124,7 @@
 		<script src="/public/scripts/lib/rangeslider.min.js"></script>
 		<script src="/public/scripts/lib/toastr.min.js"></script>
 	<% } %>
+
 	<script src="/public/scripts/bundle.js"></script>
 </body>
 

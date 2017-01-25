@@ -1,9 +1,11 @@
 import * as toastr from 'toastr';
 
-
 import * as fromClientPROT from '../shared/ws_prot_from_client';
 import * as toClientPROT from '../shared/ws_prot_to_client';
 
+import * as vueData from './vue_data';
+
+import { domManager } from './dom_manager';
 import { gameCore } from './game_core';
 
 class main {
@@ -13,19 +15,8 @@ class main {
 	private _dataLengthPerSec: number = 0;
 
 	constructor() {
-		this._connectWebSocket();
-
-
-		adjustCanvasSize();
-		window.onresize = () => {
-			adjustCanvasSize();
-		}
-
-		function adjustCanvasSize() {
-			let canvas = document.querySelector('#stage') as HTMLCanvasElement;
-			canvas.height = window.innerHeight
-			canvas.width = window.innerWidth;
-		}
+		let dm = new domManager(this._connectWebSocketServer.bind(this));
+		this._gameCore = new gameCore(this._send.bind(this), dm);
 
 		setInterval(() => {
 			console.log(`${this._dataLengthPerSec / 1024} KB/s`);
@@ -33,10 +24,20 @@ class main {
 		}, 1000);
 	}
 
-	private _connectWebSocket() {
-		let url = `ws://localhost:8080/`;
-		this._connect(url);
+	private _connectWebSocketServer() {
+		if (vueData.indexCommon.activeWebSocket) {
+			let url = `ws://${vueData.indexCommon.activeWebSocket.ip}:${vueData.indexCommon.activeWebSocket.port}/`;
+			if (this._ws == null) {
+				this._connect(url);
+			} else if (this._ws.url != url) {
+				this._ws.close();
+				this._connect(url);
+			} else {
+				this._send(new fromClientPROT.initialize(vueData.indexCommon.name, vueData.gameInitModal.resumeGame));
+			}
+		}
 	}
+
 	private _connect(url: string) {
 		this._ws = new WebSocket(url);
 		toastr.info('正在连接服务器...');
@@ -44,7 +45,7 @@ class main {
 		this._ws.onopen = () => {
 			toastr.clear();
 			toastr.success('服务器连接成功');
-			this._gameCore = new gameCore(this._send.bind(this));
+			this._send(new fromClientPROT.initialize(vueData.gameInitModal.common.name, vueData.gameInitModal.resumeGame));
 		};
 
 		this._ws.onmessage = (e) => {
@@ -59,7 +60,8 @@ class main {
 	}
 
 	private _send(protocol: fromClientPROT.baseProtocol) {
-		this._ws.send(JSON.stringify(protocol));
+		if (this._ws && this._ws.readyState == WebSocket.OPEN)
+			this._ws.send(JSON.stringify(protocol));
 	}
 }
 

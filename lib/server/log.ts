@@ -16,7 +16,7 @@ log4js.configure({
 export let logger = log4js.getLogger('global');
 
 let expressLogger= log4js.getLogger('express');
-export let useLogger = log4js.connectLogger(expressLogger, {
-	level: log4js.levels.INFO,
+export let useExpressLogger = log4js.connectLogger(expressLogger, {
+	level: log4js.levels.WARN,
 	format: ':remote-addr :method :url :status - :response-time ms'
 });
