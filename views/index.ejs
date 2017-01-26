@@ -87,7 +87,10 @@
 							<%- user.email %>
 						<% } %>
 					</p>
-					<!--<p>你的最高分是 {{historyMaxShipsCount}}</p>-->
+					<p>一共射击：{{records.shootingTimes}} 次</p>
+					<p>击中：{{records.shootingInAimTimes}} 次</p>
+					<p>被击中：{{records.shootedTimes}} 次</p>
+					<p>杀死：{{records.killTimes}} 次</p>
 					<form v-on:submit.prevent="startGameFromGameOver">
 						<div class="list-group">
 							<a v-for="(webSocket, index) in common.webSockets" v-bind:class="{active: webSocket == common.activeWebSocket}" v-on:click="common.activeWebSocket = webSocket"

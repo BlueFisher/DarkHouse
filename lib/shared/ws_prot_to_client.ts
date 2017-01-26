@@ -112,8 +112,17 @@ export class mainPROT extends baseProtocol {
 	propHpPROTs: propHpPROT[] = [];
 }
 
+export interface records {
+	shootingTimes: number,
+	shootingInAimTimes: number,
+	shootedTimes: number,
+	killTimes: number
+}
 export class gameOver extends baseProtocol {
-	constructor() {
+	constructor(records: records) {
 		super(type.gameOver);
+		this.records = records;
 	}
+
+	records: records;
 }

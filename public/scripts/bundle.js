@@ -275,9 +275,15 @@
 	    password: '',
 	    showAccount: false
 	};
+	var records = {
+	    shootingTimes: 0,
+	    shootingInAimTimes: 0,
+	    shootedTimes: 0,
+	    killTimes: 0
+	};
 	exports.gameOverModal = {
 	    common: exports.indexCommon,
-	    historyMaxShipsCount: 0
+	    records: records
 	};
 
 /***/ },
@@ -355,6 +361,7 @@
 	    }, {
 	        key: "gameOver",
 	        value: function gameOver(protocol) {
+	            vueData.gameOverModal.records = protocol.records;
 	            $('#modal-gameover').on('shown.bs.modal', function () {
 	                $('#modal-gameover').find('.form-control').focus();
 	            }).modal({
@@ -963,10 +970,13 @@
 	var gameOver = function (_baseProtocol4) {
 	    _inherits(gameOver, _baseProtocol4);
 	
-	    function gameOver() {
+	    function gameOver(records) {
 	        _classCallCheck(this, gameOver);
 	
-	        return _possibleConstructorReturn(this, (gameOver.__proto__ || Object.getPrototypeOf(gameOver)).call(this, type.gameOver));
+	        var _this4 = _possibleConstructorReturn(this, (gameOver.__proto__ || Object.getPrototypeOf(gameOver)).call(this, type.gameOver));
+	
+	        _this4.records = records;
+	        return _this4;
 	    }
 	
 	    return gameOver;

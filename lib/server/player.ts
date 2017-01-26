@@ -10,24 +10,23 @@ let id = 0;
 export class player {
 	readonly id = ++id;
 	readonly name: string;
-	private _position: point;
 	private _angle = 0;
 	private _hp = config.player.maxHp;
 
+	position: point;
+	records: toClientPROT.records = {
+		shootingTimes: 0,
+		shootingInAimTimes: 0,
+		shootedTimes: 0,
+		killTimes: 0
+	};
 	canMove = true;
 	isRunning = false;
 	connected = true;
 
 	constructor(name: string, position: point) {
 		this.name = name;
-		this._position = position;
-	}
-
-	setPosition(position: point) {
-		this._position = position;
-	}
-	getPosition() {
-		return this._position;
+		this.position = position;
 	}
 
 	setDirectionAngle(angle: number) {
@@ -50,8 +49,8 @@ export class player {
 		return {
 			id: this.id,
 			position: {
-				x: parseFloat(this._position.x.toFixed(2)),
-				y: parseFloat(this._position.y.toFixed(2))
+				x: parseFloat(this.position.x.toFixed(2)),
+				y: parseFloat(this.position.y.toFixed(2))
 			},
 			angle: this._angle,
 			hp: this._hp
@@ -65,8 +64,8 @@ export class player {
 	}
 
 	adjustPlayerCollided(newPlayerPos: point) {
-		if (utils.didTwoCirclesCollied(this._position, config.player.radius, newPlayerPos, config.player.radius)) {
-			let pos = this._position;
+		if (utils.didTwoCirclesCollied(this.position, config.player.radius, newPlayerPos, config.player.radius)) {
+			let pos = this.position;
 			let d = utils.getTwoPointsDistance(pos, newPlayerPos);
 			let x = pos.x + 2 * config.player.radius * (newPlayerPos.x - pos.x) / d;
 			let y = pos.y + 2 * config.player.radius * (newPlayerPos.y - pos.y) / d;
@@ -76,15 +75,16 @@ export class player {
 	}
 
 	didPlayerCollided(playerPos: point) {
-		return utils.didTwoCirclesCollied(this._position, config.player.radius, playerPos, config.player.radius);
+		return utils.didTwoCirclesCollied(this.position, config.player.radius, playerPos, config.player.radius);
 	}
 	getRayCollidedPoint(point: point, angle: number) {
-		return utils.getRayCircleCollidedPoint(point, angle, this._position, config.player.radius);
+		return utils.getRayCircleCollidedPoint(point, angle, this.position, config.player.radius);
 	}
 }
 
 export class playerManager {
 	private _players: player[] = [];
+	private _newPlayersCache: player[] = [];
 
 	getPlayers() {
 		return this._players;
@@ -97,7 +97,7 @@ export class playerManager {
 	addNewPlayer(name: string, position: point) {
 		let newPlayer = new player(name, position);
 		this._players.push(newPlayer);
-
+		this._newPlayersCache.push(newPlayer);
 		return newPlayer;
 	}
 	removePlayer(player: player) {
@@ -107,17 +107,23 @@ export class playerManager {
 		}
 	}
 
+	getAndClearNewPlayersCache() {
+		let res = this._newPlayersCache;
+		this._newPlayersCache = [];
+		return res;
+	}
+
 	getPlayersInPlayerSight(player: player, radius: number) {
 		return this._players.filter(p => {
 			if (p != player) {
-				return utils.didTwoCirclesCollied(p.getPosition(), radius, player.getPosition(), config.player.radius);
+				return utils.didTwoCirclesCollied(p.position, radius, player.position, config.player.radius);
 			}
 			return false;
 		});
 	}
 	getPlayersInRadius(position: point, radius: number) {
 		return this._players.filter(p => {
-			return utils.didTwoCirclesCollied(p.getPosition(), radius, position, config.player.radius);
+			return utils.didTwoCirclesCollied(p.position, radius, position, config.player.radius);
 		});
 	}
 }

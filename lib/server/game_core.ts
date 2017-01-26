@@ -24,7 +24,6 @@ export class gameCore extends events.EventEmitter {
 	private _playerManager: playerManager;
 	private _barricades: barricade[] = [];
 	private _propHps: propHp[] = [];
-	private _newPlayersCache: player[] = [];
 	private _shootingCache: {
 		shootingPosition: point,
 		shootingPlayer: player,
@@ -51,8 +50,8 @@ export class gameCore extends events.EventEmitter {
 	private _initializeMainLoop() {
 		// 生成新加入玩家的基础协议
 		let generateNewPlayersBasicPROTs = () => {
-			let newPlayersBasicPROTs = this._newPlayersCache.map(p => p.getPlayerBasicPROT());
-			this._newPlayersCache = [];
+			let newPlayersBasicPROTs = this._playerManager.getAndClearNewPlayersCache().
+				map(p => p.getPlayerBasicPROT());
 			return newPlayersBasicPROTs;
 		}
 
@@ -68,7 +67,8 @@ export class gameCore extends events.EventEmitter {
 				shootPROTs.push({
 					position: this._shootingCache[i].shootingPosition,
 					angle: this._shootingCache[i].angle,
-					playerIdsInSight: this._playerManager.getPlayersInRadius(this._shootingCache[i].shootingPosition, config.player.shootingSightRadius)
+					playerIdsInSight: this._playerManager
+						.getPlayersInRadius(this._shootingCache[i].shootingPosition, config.player.shootingSightRadius)
 						.map(p => p.id),
 					collisionPoint: this._shootingCache[i].collisionPoint,
 					shootedPlayerId: shootedPlayerId
@@ -92,8 +92,9 @@ export class gameCore extends events.EventEmitter {
 
 				if (runningCache >= 1 && runningCache <= 5) {
 					runningPROTs.push({
-						position: runningPlayer.getPosition(),
-						playerIdsInSight: this._playerManager.getPlayersInRadius(runningPlayer.getPosition(), config.player.runningSightRadius)
+						position: runningPlayer.position,
+						playerIdsInSight: this._playerManager
+							.getPlayersInRadius(runningPlayer.position, config.player.runningSightRadius)
 							.map(p => p.id)
 					});
 				}
@@ -145,7 +146,7 @@ export class gameCore extends events.EventEmitter {
 
 		// 玩家移动计时器循环
 		setInterval(() => {
-			for (let player of this._playerManager.getPlayers().filter(p => p.connected)) {
+			for (let player of this._playerManager.getPlayers()) {
 				this._playerMove(player);
 			}
 		}, config.player.movingInterval);
@@ -199,7 +200,6 @@ export class gameCore extends events.EventEmitter {
 		}
 
 		let newPlayer = this._playerManager.addNewPlayer(name, newPoisition);
-		this._newPlayersCache.push(newPlayer);
 		return newPlayer.id;
 	}
 
@@ -233,11 +233,11 @@ export class gameCore extends events.EventEmitter {
 	}
 
 	private _playerMove(player: player) {
-		if (!player.canMove) {
+		if (!player.connected || !player.canMove) {
 			return;
 		}
 		let angle = player.getDirectionAngle();
-		let oldPos: point = player.getPosition();
+		let oldPos: point = player.position;
 		let step = player.isRunning ? config.player.runingStep : config.player.movingStep;
 		let x = oldPos.x + Math.cos(angle) * step;
 		let y = oldPos.y + Math.sin(angle) * step;
@@ -254,7 +254,6 @@ export class gameCore extends events.EventEmitter {
 			p.adjustPlayerCollided(newPos);
 		});
 
-
 		for (let i = this._propHps.length - 1; i >= 0; i--) {
 			let propHp = this._propHps[i];
 			if (utils.didTwoCirclesCollied(propHp.position, config.hp.activeRadius, newPos, config.player.radius)) {
@@ -263,13 +262,15 @@ export class gameCore extends events.EventEmitter {
 			}
 		}
 
-		player.setPosition(newPos);
+		player.position = newPos;
 	}
 
 	shoot(playerId: number) {
 		let player = this._playerManager.findPlayerById(playerId);
 		if (player) {
-			let position = player.getPosition();
+			player.records.shootingTimes++;
+
+			let position = player.position;
 			let angle = player.getDirectionAngle();
 
 			let playersInRay = this._playerManager.getPlayers().map(p => {
@@ -319,9 +320,14 @@ export class gameCore extends events.EventEmitter {
 			}
 
 			if (firstshootedPlayer) {
+				player.records.shootingInAimTimes++;
+				firstshootedPlayer.records.shootedTimes++;
+
 				let hp = firstshootedPlayer.getHp();
 				if (hp - 1 == 0) {
-					this.emit(gameCore.events.gameOver, firstshootedPlayer.id, new toClientPROT.gameOver());
+					player.records.killTimes++;
+					this.emit(gameCore.events.gameOver, firstshootedPlayer.id,
+						new toClientPROT.gameOver(firstshootedPlayer.records));
 					this._playerManager.removePlayer(firstshootedPlayer);
 				} else {
 					firstshootedPlayer.setHp(hp - 1);
@@ -329,7 +335,7 @@ export class gameCore extends events.EventEmitter {
 			}
 
 			this._shootingCache.push({
-				shootingPosition: player.getPosition(),
+				shootingPosition: player.position,
 				shootingPlayer: player,
 				angle: angle,
 				collisionPoint: minPoint,

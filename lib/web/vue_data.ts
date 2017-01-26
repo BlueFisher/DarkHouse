@@ -1,4 +1,6 @@
 import * as httpPROTs from '../shared/http_prot';
+import * as toClientPROT from '../shared/ws_prot_to_client';
+
 
 let activeWebSocket: httpPROTs.webSocketResponse | undefined;
 let webSockets: httpPROTs.webSocketResponse[] = [];
@@ -21,7 +23,13 @@ export let gameInitModal = {
 	showAccount: false,
 }
 
+let records: toClientPROT.records = {
+	shootingTimes: 0,
+	shootingInAimTimes: 0,
+	shootedTimes: 0,
+	killTimes: 0
+};
 export let gameOverModal = {
 	common: indexCommon,
-	historyMaxShipsCount: 0
+	records: records
 }

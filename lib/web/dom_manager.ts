@@ -94,6 +94,8 @@ export class domManager {
 	}
 
 	gameOver(protocol: toClientPROT.gameOver) {
+		vueData.gameOverModal.records = protocol.records;
+
 		$('#modal-gameover').on('shown.bs.modal', function () {
 			$('#modal-gameover').find('.form-control').focus();
 		}).modal({
