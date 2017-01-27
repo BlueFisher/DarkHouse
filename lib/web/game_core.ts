@@ -142,6 +142,16 @@ export class gameCore {
 	}
 
 	private _onMainPROT(protocol: toClientPROT.mainPROT) {
+		vueData.index.rankList = [];
+		protocol.rankList.forEach(p => {
+			let player = this._playerBasicPROTs.find(pp => pp.id == p.id);
+			if (player)
+				vueData.index.rankList.push({
+					name: player.name,
+					killTimes: p.killTimes
+				});
+		});
+
 		this._mainPROTCache = protocol;
 		protocol.newPlayerBPROTs.forEach(p => {
 			this._playerBasicPROTs.push(p);

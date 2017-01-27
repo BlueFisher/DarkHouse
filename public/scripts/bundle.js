@@ -265,8 +265,10 @@
 	    activeWebSocket: activeWebSocket,
 	    webSockets: webSockets
 	};
+	var rankList = [];
 	exports.index = {
-	    ping: 0
+	    ping: 0,
+	    rankList: rankList
 	};
 	exports.gameInitModal = {
 	    common: exports.indexCommon,
@@ -340,6 +342,10 @@
 	                        gameOn();
 	                    }
 	                }
+	            });
+	            new vue({
+	                el: '#ranklist',
+	                data: vueData.index
 	            });
 	            var gameOn = function gameOn() {
 	                _this._connectWebSocketServer();
@@ -552,6 +558,16 @@
 	        value: function _onMainPROT(protocol) {
 	            var _this3 = this;
 	
+	            vueData.index.rankList = [];
+	            protocol.rankList.forEach(function (p) {
+	                var player = _this3._playerBasicPROTs.find(function (pp) {
+	                    return pp.id == p.id;
+	                });
+	                if (player) vueData.index.rankList.push({
+	                    name: player.name,
+	                    killTimes: p.killTimes
+	                });
+	            });
 	            this._mainPROTCache = protocol;
 	            protocol.newPlayerBPROTs.forEach(function (p) {
 	                _this3._playerBasicPROTs.push(p);
@@ -869,6 +885,7 @@
 	        _this3.shootPROTs = [];
 	        _this3.runningPROTs = [];
 	        _this3.propHpPROTs = [];
+	        _this3.rankList = [];
 	        _this3.currPlayerId = currPlayer;
 	        _this3.playerIdsInSight = playersInSight;
 	        return _this3;

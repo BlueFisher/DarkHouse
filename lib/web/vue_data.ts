@@ -11,8 +11,13 @@ export let indexCommon = {
 	webSockets: webSockets,
 }
 
+let rankList: {
+	name: string,
+	killTimes: number
+}[] = [];
 export let index = {
-	ping: 0
+	ping: 0,
+	rankList: rankList
 }
 
 export let gameInitModal = {

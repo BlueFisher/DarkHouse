@@ -126,4 +126,15 @@ export class playerManager {
 			return utils.didTwoCirclesCollied(p.position, radius, position, config.player.radius);
 		});
 	}
+
+	getRankList(): toClientPROT.rankPROT[] {
+		return this._players.sort((a, b) => {
+			return a.records.killTimes > b.records.killTimes ? -1 : 1;
+		}).map(p => {
+			return {
+				id: p.id,
+				killTimes: p.records.killTimes
+			}
+		}).slice(0, 10);
+	}
 }

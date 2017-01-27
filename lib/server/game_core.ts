@@ -123,6 +123,7 @@ export class gameCore extends events.EventEmitter {
 				mainPROT.runningPROTs = runningPROTs;
 				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
 				mainPROT.propHpPROTs = this._propHps.map(p => p.getPropHpPROT());
+				mainPROT.rankList = this._playerManager.getRankList();
 
 				mainPROT.formatPlayerPROT((playerId) => {
 					let player = this._playerManager.findPlayerById(playerId);

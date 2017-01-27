@@ -30,37 +30,7 @@ export class domManager {
 					vueData.gameInitModal.resumeGame = true;
 					$('#modal-gameinit').modal('hide');
 					gameOn();
-				},
-				// signin: () => {
-				// 	let protocol: HttpProtocols.AccountRequest = {
-				// 		email: vueData.gameInitModal.email,
-				// 		password: vueData.gameInitModal.password
-				// 	};
-				// 	$.ajax('/signin', {
-				// 		method: 'POST',
-				// 		contentType: "application/json",
-				// 		data: JSON.stringify(protocol)
-				// 	}).then(function (data: HttpProtocols.AccountResponse) {
-				// 		location.reload();
-				// 	}, (function (xhr) {
-				// 		toastr.error((xhr.responseJSON as HttpProtocols.ErrorResponse).message);
-				// 	}));
-				// },
-				// signup: () => {
-				// 	let protocol: HttpProtocols.AccountRequest = {
-				// 		email: vueData.gameInitModal.email,
-				// 		password: vueData.gameInitModal.password
-				// 	};
-				// 	$.ajax('/signup', {
-				// 		method: 'POST',
-				// 		contentType: "application/json",
-				// 		data: JSON.stringify(protocol)
-				// 	}).then(function (data: HttpProtocols.AccountResponse) {
-				// 		location.reload();
-				// 	}, (function (xhr) {
-				// 		toastr.error((xhr.responseJSON as HttpProtocols.ErrorResponse).message);
-				// 	}));
-				// }
+				}
 			}
 		});
 
@@ -73,6 +43,11 @@ export class domManager {
 					gameOn();
 				}
 			}
+		});
+
+		new vue({
+			el: '#ranklist',
+			data: vueData.index
 		});
 
 		let gameOn = () => {

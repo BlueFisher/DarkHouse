@@ -33,6 +33,10 @@ export interface shootPROT {
 	collisionPoint?: point,
 	shootedPlayerId?: number
 }
+export interface rankPROT {
+	id: number,
+	killTimes: number
+}
 
 export enum type {
 	pong,
@@ -110,6 +114,7 @@ export class mainPROT extends baseProtocol {
 	shootPROTs: shootPROT[] = [];
 	runningPROTs: runningPROT[] = [];
 	propHpPROTs: propHpPROT[] = [];
+	rankList: rankPROT[] = [];
 }
 
 export interface records {
