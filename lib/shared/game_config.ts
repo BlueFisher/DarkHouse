@@ -20,6 +20,30 @@ export namespace hp {
 	export let appearInterval = 10000;
 }
 
+export namespace gun {
+	export enum type {
+		pistol,
+		rifle
+	}
+
+	export interface defaultSetting {
+		shootingInterval: number,
+		shootingSightRadius: number,
+		shootingSightTimeOut: number,
+		bullet: number,
+		maxBullet: number
+	}
+
+	export let defaultSetting = new Map<type, defaultSetting>();
+	defaultSetting.set(type.pistol, {
+		shootingInterval: 500,
+		shootingSightRadius: 130,
+		shootingSightTimeOut: 100,
+		bullet: 15,
+		maxBullet: 30
+	});
+}
+
 export namespace stage {
 	export let width = 500;
 	export let height = 500;

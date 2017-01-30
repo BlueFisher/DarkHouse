@@ -19,6 +19,8 @@ export class gameCore {
 	private _currentPlayerId: number;
 	private _playerBasicPROTs: toClientPROT.playerBasicPROT[] = [];
 	private _barricades: toClientPROT.barricadePROT[] = [];
+	private _propHps: toClientPROT.propHpPROT[] = [];
+	private _propGuns: toClientPROT.propGunPROT[] = [];
 	private _mainPROTCache: toClientPROT.mainPROT;
 
 	private _pingTime: Date;
@@ -78,44 +80,46 @@ export class gameCore {
 				}
 			}
 
-			let protocol = new fromClientPROT.rotate(angle);
-			this._send(protocol);
+			this._send(new fromClientPROT.rotate(angle));
 		});
 
 		this._canvas.addEventListener('keydown', e => {
 			if (e.keyCode == 32) {
-				let protocol = new fromClientPROT.stopMoving(true);
-				this._send(protocol);
+				this._send(new fromClientPROT.stopMoving(true));
 			}
 			if (e.keyCode == 87) {
-				let protocol = new fromClientPROT.startRunning(true);
-				this._send(protocol);
+				this._send(new fromClientPROT.startRunning(true));
 			}
 		});
 
 		this._canvas.addEventListener('keyup', e => {
 			if (e.keyCode == 32) {
-				let protocol = new fromClientPROT.stopMoving(false);
-				this._send(protocol);
+				this._send(new fromClientPROT.stopMoving(false));
 			}
 			if (e.keyCode == 87) {
-				let protocol = new fromClientPROT.startRunning(false);
-				this._send(protocol);
+				this._send(new fromClientPROT.startRunning(false));
 			}
 		});
 
 		this._canvas.addEventListener('blur', e => {
-			let protocol = new fromClientPROT.stopMoving(true);
-			this._send(protocol);
+			this._send(new fromClientPROT.stopMoving(true));
+			this._send(new fromClientPROT.startShoot(false));
 		});
 
 		this._canvas.addEventListener('mouseout', e => {
-			let protocol = new fromClientPROT.stopMoving(true);
-			this._send(protocol);
+			this._send(new fromClientPROT.stopMoving(true));
+			this._send(new fromClientPROT.startShoot(false));
 		});
 
-		this._canvas.addEventListener('click', e => {
-			this._sendFunc(new fromClientPROT.shoot());
+		this._canvas.addEventListener('mouseover', e => {
+			this._send(new fromClientPROT.stopMoving(false));
+		});
+
+		this._canvas.addEventListener('mousedown', e => {
+			this._send(new fromClientPROT.startShoot(true));
+		});
+		this._canvas.addEventListener('mouseup', e => {
+			this._send(new fromClientPROT.startShoot(false));
 		});
 
 		let reqAnimation = () => {
@@ -155,6 +159,23 @@ export class gameCore {
 		this._mainPROTCache = protocol;
 		protocol.newPlayerBPROTs.forEach(p => {
 			this._playerBasicPROTs.push(p);
+		});
+
+		protocol.newPropHpPROTs.forEach(p => {
+			this._propHps.push(p);
+		});
+		protocol.newPropGunPROTs.forEach(p => {
+			this._propGuns.push(p);
+		});
+		protocol.removedPropHpIds.forEach(p => {
+			let i = this._propHps.findIndex(pp => pp.id == p);
+			if (i != -1)
+				this._propHps.splice(i, 1);
+		});
+		protocol.removedPropGunIds.forEach(p => {
+			let i = this._propGuns.findIndex(pp => pp.id == p);
+			if (i != -1)
+				this._propGuns.splice(i, 1);
 		});
 	}
 
@@ -197,6 +218,28 @@ export class gameCore {
 				ctx.stroke();
 			}
 
+			ctx.strokeStyle = 'rgba(0,0,0,.5)';
+			ctx.lineWidth = 3;
+			gap = Math.PI / 50;
+			perimeter = Math.PI * 2 - player.maxBullet * gap;
+			for (let i = 0; i < player.maxBullet; i++) {
+				ctx.beginPath();
+				ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5,
+					i * perimeter / player.maxBullet + i * gap - Math.PI / 2,
+					(i + 1) * perimeter / player.maxBullet + i * gap - Math.PI / 2);
+				ctx.stroke();
+			}
+
+			ctx.strokeStyle = 'rgba(255,255,255,.5)';
+			ctx.lineWidth = 3;
+			for (let i = 0; i < player.bullet; i++) {
+				ctx.beginPath();
+				ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5,
+					i * perimeter / player.maxBullet + i * gap - Math.PI / 2,
+					(i + 1) * perimeter / player.maxBullet + i * gap - Math.PI / 2);
+				ctx.stroke();
+			}
+
 			let playerBasic = this._playerBasicPROTs.find(p => player != null && p.id == player.id);
 			if (playerBasic) {
 				ctx.fillText(playerBasic.name, player.position.x, player.position.y + config.player.radius + 15);
@@ -229,7 +272,7 @@ export class gameCore {
 		}
 
 		ctx.fillStyle = '#f00';
-		for (let propHp of this._mainPROTCache.propHpPROTs) {
+		for (let propHp of this._propHps) {
 			ctx.beginPath();
 			ctx.arc(propHp.position.x, propHp.position.y, config.hp.radius, 0, Math.PI * 2);
 			ctx.fill();

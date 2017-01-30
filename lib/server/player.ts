@@ -1,6 +1,7 @@
 import * as utils from '../shared/utils';
 import * as config from '../shared/game_config';
 import * as toClientPROT from '../shared/ws_prot_to_client';
+import { gun } from './gun';
 
 const point = utils.point;
 type point = utils.point;
@@ -12,6 +13,7 @@ export class player {
 	readonly name: string;
 	private _angle = 0;
 	private _hp = config.player.maxHp;
+	private _gun: gun;
 
 	position: point;
 	records: toClientPROT.records = {
@@ -27,6 +29,9 @@ export class player {
 	constructor(name: string, position: point) {
 		this.name = name;
 		this.position = position;
+		let gunSetting = config.gun.defaultSetting.get(config.gun.type.pistol);
+		if (gunSetting)
+			this._gun = new gun(config.gun.type.pistol, gunSetting);
 	}
 
 	setDirectionAngle(angle: number) {
@@ -45,6 +50,10 @@ export class player {
 		return this._hp;
 	}
 
+	getGun() {
+		return this._gun;
+	}
+
 	getPlayerPROT(): toClientPROT.playerPROT {
 		return {
 			id: this.id,
@@ -53,7 +62,9 @@ export class player {
 				y: parseFloat(this.position.y.toFixed(2))
 			},
 			angle: this._angle,
-			hp: this._hp
+			hp: this._hp,
+			bullet: this._gun.getBullet(),
+			maxBullet: this._gun.getMaxBullet()
 		}
 	}
 	getPlayerBasicPROT(): toClientPROT.playerBasicPROT {
@@ -79,6 +90,24 @@ export class player {
 	}
 	getRayCollidedPoint(point: point, angle: number) {
 		return utils.getRayCircleCollidedPoint(point, angle, this.position, config.player.radius);
+	}
+
+	private _canContinueShooting = false;
+	private _shootingFinishedCallback: () => void;
+
+	startShooting(active: boolean, shootingFinishedCallback: () => void) {
+		this._canContinueShooting = active;
+		this._shootingFinishedCallback = shootingFinishedCallback;
+		if (active)
+			this._shoot();
+	}
+
+	private _shoot() {
+		if (this._canContinueShooting) {
+			if (this._gun.shoot(this._shoot.bind(this))) {
+				this._shootingFinishedCallback();
+			}
+		}
 	}
 }
 

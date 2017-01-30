@@ -1,5 +1,5 @@
 import { point } from './utils';
-
+import * as config from '../shared/game_config';
 
 export interface playerBasicPROT {
 	id: number,
@@ -10,6 +10,8 @@ export interface playerPROT {
 	position: point,
 	angle: number,
 	hp: number,
+	bullet: number,
+	maxBullet: number
 }
 
 export interface barricadePROT {
@@ -17,8 +19,15 @@ export interface barricadePROT {
 	point2: point
 }
 
-export interface propHpPROT {
+export interface propPROT {
+	id: number,
 	position: point
+}
+export interface propHpPROT extends propPROT {
+
+}
+export interface propGunPROT extends propPROT {
+	type: config.gun.type
 }
 
 export interface runningPROT {
@@ -113,8 +122,13 @@ export class mainPROT extends baseProtocol {
 
 	shootPROTs: shootPROT[] = [];
 	runningPROTs: runningPROT[] = [];
-	propHpPROTs: propHpPROT[] = [];
+	// propHpPROTs: propHpPROT[] = [];
 	rankList: rankPROT[] = [];
+
+	newPropGunPROTs: propGunPROT[] = [];
+	removedPropGunIds: number[] = [];
+	newPropHpPROTs: propHpPROT[] = [];
+	removedPropHpIds: number[] = [];
 }
 
 export interface records {

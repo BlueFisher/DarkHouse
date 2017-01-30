@@ -22,7 +22,7 @@
 	<div class="stage-container">
 		<canvas class="stage" id="stage" tabindex="0"></canvas>
 	</div>
-
+	<div class="ping" id="ping">{{ping}} ms</div>
 	<div class="ranklist" id="ranklist">
 		<p v-for="(player, index) in rankList">
 			{{index+1}} {{player.name}} {{player.killTimes}}
@@ -114,7 +114,6 @@
 			</div>
 		</div>
 	</div>
-
 
 	<% if (useCDN) { %>
 		<script src="//cdn.bootcss.com/vue/2.0.1/vue.min.js"></script>

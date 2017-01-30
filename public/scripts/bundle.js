@@ -144,7 +144,7 @@
 	    type[type["startRunning"] = 2] = "startRunning";
 	    type[type["stopMoving"] = 3] = "stopMoving";
 	    type[type["rotate"] = 4] = "rotate";
-	    type[type["shoot"] = 5] = "shoot";
+	    type[type["startShooting"] = 5] = "startShooting";
 	})(type = exports.type || (exports.type = {}));
 	
 	var baseProtocol = function baseProtocol(type) {
@@ -238,19 +238,22 @@
 	
 	exports.rotate = rotate;
 	
-	var shoot = function (_baseProtocol6) {
-	    _inherits(shoot, _baseProtocol6);
+	var startShoot = function (_baseProtocol6) {
+	    _inherits(startShoot, _baseProtocol6);
 	
-	    function shoot() {
-	        _classCallCheck(this, shoot);
+	    function startShoot(active) {
+	        _classCallCheck(this, startShoot);
 	
-	        return _possibleConstructorReturn(this, (shoot.__proto__ || Object.getPrototypeOf(shoot)).call(this, type.shoot));
+	        var _this6 = _possibleConstructorReturn(this, (startShoot.__proto__ || Object.getPrototypeOf(startShoot)).call(this, type.startShooting));
+	
+	        _this6.active = active;
+	        return _this6;
 	    }
 	
-	    return shoot;
+	    return startShoot;
 	}(baseProtocol);
 	
-	exports.shoot = shoot;
+	exports.startShoot = startShoot;
 
 /***/ },
 /* 3 */
@@ -350,6 +353,10 @@
 	            var gameOn = function gameOn() {
 	                _this._connectWebSocketServer();
 	            };
+	            new vue({
+	                el: '#ping',
+	                data: vueData.index
+	            });
 	        }
 	    }, {
 	        key: "_initializeCanvas",
@@ -430,6 +437,8 @@
 	        this._canvas = document.querySelector('#stage');
 	        this._playerBasicPROTs = [];
 	        this._barricades = [];
+	        this._propHps = [];
+	        this._propGuns = [];
 	        this._sendFunc = sendFunc;
 	        this._domManager = domManager;
 	        this._initlializeCanvasEvents();
@@ -495,39 +504,40 @@
 	                        angle = 2 * Math.PI + angle;
 	                    }
 	                }
-	                var protocol = new fromClientPROT.rotate(angle);
-	                _this2._send(protocol);
+	                _this2._send(new fromClientPROT.rotate(angle));
 	            });
 	            this._canvas.addEventListener('keydown', function (e) {
 	                if (e.keyCode == 32) {
-	                    var protocol = new fromClientPROT.stopMoving(true);
-	                    _this2._send(protocol);
+	                    _this2._send(new fromClientPROT.stopMoving(true));
 	                }
 	                if (e.keyCode == 87) {
-	                    var _protocol = new fromClientPROT.startRunning(true);
-	                    _this2._send(_protocol);
+	                    _this2._send(new fromClientPROT.startRunning(true));
 	                }
 	            });
 	            this._canvas.addEventListener('keyup', function (e) {
 	                if (e.keyCode == 32) {
-	                    var protocol = new fromClientPROT.stopMoving(false);
-	                    _this2._send(protocol);
+	                    _this2._send(new fromClientPROT.stopMoving(false));
 	                }
 	                if (e.keyCode == 87) {
-	                    var _protocol2 = new fromClientPROT.startRunning(false);
-	                    _this2._send(_protocol2);
+	                    _this2._send(new fromClientPROT.startRunning(false));
 	                }
 	            });
 	            this._canvas.addEventListener('blur', function (e) {
-	                var protocol = new fromClientPROT.stopMoving(true);
-	                _this2._send(protocol);
+	                _this2._send(new fromClientPROT.stopMoving(true));
+	                _this2._send(new fromClientPROT.startShoot(false));
 	            });
 	            this._canvas.addEventListener('mouseout', function (e) {
-	                var protocol = new fromClientPROT.stopMoving(true);
-	                _this2._send(protocol);
+	                _this2._send(new fromClientPROT.stopMoving(true));
+	                _this2._send(new fromClientPROT.startShoot(false));
 	            });
-	            this._canvas.addEventListener('click', function (e) {
-	                _this2._sendFunc(new fromClientPROT.shoot());
+	            this._canvas.addEventListener('mouseover', function (e) {
+	                _this2._send(new fromClientPROT.stopMoving(false));
+	            });
+	            this._canvas.addEventListener('mousedown', function (e) {
+	                _this2._send(new fromClientPROT.startShoot(true));
+	            });
+	            this._canvas.addEventListener('mouseup', function (e) {
+	                _this2._send(new fromClientPROT.startShoot(false));
 	            });
 	            var reqAnimation = function reqAnimation() {
 	                window.requestAnimationFrame(function () {
@@ -572,6 +582,24 @@
 	            protocol.newPlayerBPROTs.forEach(function (p) {
 	                _this3._playerBasicPROTs.push(p);
 	            });
+	            protocol.newPropHpPROTs.forEach(function (p) {
+	                _this3._propHps.push(p);
+	            });
+	            protocol.newPropGunPROTs.forEach(function (p) {
+	                _this3._propGuns.push(p);
+	            });
+	            protocol.removedPropHpIds.forEach(function (p) {
+	                var i = _this3._propHps.findIndex(function (pp) {
+	                    return pp.id == p;
+	                });
+	                if (i != -1) _this3._propHps.splice(i, 1);
+	            });
+	            protocol.removedPropGunIds.forEach(function (p) {
+	                var i = _this3._propGuns.findIndex(function (pp) {
+	                    return pp.id == p;
+	                });
+	                if (i != -1) _this3._propGuns.splice(i, 1);
+	            });
 	        }
 	    }, {
 	        key: "_getPlayerPROT",
@@ -613,6 +641,22 @@
 	                    for (var i = 0; i < player.hp; i++) {
 	                        ctx.beginPath();
 	                        ctx.arc(player.position.x, player.position.y, config.player.radius - 1.5, i * perimeter / config.player.maxHp + i * gap - Math.PI / 2, (i + 1) * perimeter / config.player.maxHp + i * gap - Math.PI / 2);
+	                        ctx.stroke();
+	                    }
+	                    ctx.strokeStyle = 'rgba(0,0,0,.5)';
+	                    ctx.lineWidth = 3;
+	                    gap = Math.PI / 50;
+	                    perimeter = Math.PI * 2 - player.maxBullet * gap;
+	                    for (var _i = 0; _i < player.maxBullet; _i++) {
+	                        ctx.beginPath();
+	                        ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i * perimeter / player.maxBullet + _i * gap - Math.PI / 2, (_i + 1) * perimeter / player.maxBullet + _i * gap - Math.PI / 2);
+	                        ctx.stroke();
+	                    }
+	                    ctx.strokeStyle = 'rgba(255,255,255,.5)';
+	                    ctx.lineWidth = 3;
+	                    for (var _i2 = 0; _i2 < player.bullet; _i2++) {
+	                        ctx.beginPath();
+	                        ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i2 * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2, (_i2 + 1) * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2);
 	                        ctx.stroke();
 	                    }
 	                    var playerBasic = _this4._playerBasicPROTs.find(function (p) {
@@ -689,7 +733,7 @@
 	            var _iteratorError3 = undefined;
 	
 	            try {
-	                for (var _iterator3 = this._mainPROTCache.propHpPROTs[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+	                for (var _iterator3 = this._propHps[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
 	                    var propHp = _step3.value;
 	
 	                    ctx.beginPath();
@@ -884,8 +928,12 @@
 	        _this3.newPlayerBPROTs = [];
 	        _this3.shootPROTs = [];
 	        _this3.runningPROTs = [];
-	        _this3.propHpPROTs = [];
+	        // propHpPROTs: propHpPROT[] = [];
 	        _this3.rankList = [];
+	        _this3.newPropGunPROTs = [];
+	        _this3.removedPropGunIds = [];
+	        _this3.newPropHpPROTs = [];
+	        _this3.removedPropHpIds = [];
 	        _this3.currPlayerId = currPlayer;
 	        _this3.playerIdsInSight = playersInSight;
 	        return _this3;
@@ -1028,6 +1076,22 @@
 	    // 血包出现时间间隔
 	    hp.appearInterval = 10000;
 	})(hp = exports.hp || (exports.hp = {}));
+	var gun;
+	(function (gun) {
+	    var type;
+	    (function (type) {
+	        type[type["pistol"] = 0] = "pistol";
+	        type[type["rifle"] = 1] = "rifle";
+	    })(type = gun.type || (gun.type = {}));
+	    gun.defaultSetting = new Map();
+	    gun.defaultSetting.set(type.pistol, {
+	        shootingInterval: 500,
+	        shootingSightRadius: 130,
+	        shootingSightTimeOut: 100,
+	        bullet: 15,
+	        maxBullet: 30
+	    });
+	})(gun = exports.gun || (exports.gun = {}));
 	var stage;
 	(function (stage) {
 	    stage.width = 500;

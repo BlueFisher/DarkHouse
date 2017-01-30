@@ -53,6 +53,10 @@ export class domManager {
 		let gameOn = () => {
 			this._connectWebSocketServer();
 		}
+		new vue({
+			el: '#ping',
+			data: vueData.index
+		});
 	}
 
 	private _initializeCanvas() {

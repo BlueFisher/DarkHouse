@@ -30,12 +30,19 @@ html, body {
 	z-index: 5;
 }
 
+.ping {
+	position: absolute;
+	padding: 2px 5px;
+	color: #fff;
+}
+
 .ranklist {
 	position: absolute;
 	top: 0;
 	right: 0;
 	padding: 2px 5px;
 	z-index: 5;
+	color: #fff;
 }
 
 .ranklist p:last-child {
