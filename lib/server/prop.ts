@@ -25,13 +25,19 @@ export class propHp extends prop {
 }
 
 export class propGun extends prop {
-	readonly type: config.gun.type;
+	readonly gun: gun;
+
+	constructor(position: point, gun: gun) {
+		super(position);
+
+		this.gun = gun;
+	}
 
 	getPropGunPROT(): toClientPROT.propGunPROT {
 		return {
 			id: this.id,
 			position: this.position,
-			type: this.type
+			type: this.gun.type
 		}
 	}
 }

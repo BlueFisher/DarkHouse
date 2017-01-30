@@ -271,8 +271,15 @@ export class gameCore {
 				barricade.point2.x - barricade.point1.x, barricade.point2.y - barricade.point1.y);
 		}
 
+		// 绘制道具
 		ctx.fillStyle = '#f00';
 		for (let propHp of this._propHps) {
+			ctx.beginPath();
+			ctx.arc(propHp.position.x, propHp.position.y, config.hp.radius, 0, Math.PI * 2);
+			ctx.fill();
+		}
+		ctx.fillStyle = '#0f0';
+		for (let propHp of this._propGuns) {
 			ctx.beginPath();
 			ctx.arc(propHp.position.x, propHp.position.y, config.hp.radius, 0, Math.PI * 2);
 			ctx.fill();

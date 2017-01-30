@@ -4,11 +4,12 @@ module.exports = {
 		filename: "./public/scripts/bundle.js"
 	},
 	module: {
-		preLoaders: [
-			{ test: /\.js$/, loader: "source-map-loader" }
-		],
-		loaders: [
+		rules: [
 			{
+				test: /\.js$/,
+				enforce: "pre",
+				loader: "source-map-loader"
+			}, {
 				test: /\.js$/,
 				exclude: /(node_modules|bower_components)/,
 				loader: 'babel-loader',

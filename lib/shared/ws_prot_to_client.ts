@@ -69,18 +69,22 @@ export class pongProtocol extends baseProtocol {
 }
 
 export class initialize extends baseProtocol {
-	constructor(currPlayerId: number, players: playerBasicPROT[], barricades: barricadePROT[], propHps: propHpPROT[]) {
+	constructor(currPlayerId: number, players: playerBasicPROT[],
+		barricades: barricadePROT[],
+		propHps: propHpPROT[], propGuns: propGunPROT[]) {
 		super(type.init);
 
 		this.currPlayerId = currPlayerId;
 		this.players = players;
 		this.barricades = barricades;
 		this.propHps = propHps;
+		this.propGuns = propGuns;
 	}
 	currPlayerId: number;
 	players: playerBasicPROT[];
 	barricades: barricadePROT[];
 	propHps: propHpPROT[];
+	propGuns: propGunPROT[];
 }
 
 export class mainPROT extends baseProtocol {
@@ -122,7 +126,7 @@ export class mainPROT extends baseProtocol {
 
 	shootPROTs: shootPROT[] = [];
 	runningPROTs: runningPROT[] = [];
-	// propHpPROTs: propHpPROT[] = [];
+
 	rankList: rankPROT[] = [];
 
 	newPropGunPROTs: propGunPROT[] = [];
