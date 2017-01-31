@@ -223,14 +223,14 @@ export class gameServer {
 		if (userId) {
 			let pairUser = this._socketPlayerColl.find(p => p.userId == userId);
 			if (pairUser) {
-				return this._gameCore.isPlayerOnGame(pairUser.playerId);
+				return pairUser.playerId != undefined && this._gameCore.isPlayerOnGame(pairUser.playerId);
 			} else {
 				let pairSession = this._socketPlayerColl.find(p => p.sessionId == sessionId);
 				if (pairSession) {
 					if (pairSession.userId != userId) {
 						return false;
 					}
-					return this._gameCore.isPlayerOnGame(pairSession.playerId);
+					return pairSession.playerId != undefined && this._gameCore.isPlayerOnGame(pairSession.playerId);
 				} else {
 					return false;
 				}
@@ -238,7 +238,7 @@ export class gameServer {
 		} else {
 			let pair = this._socketPlayerColl.find(p => p.sessionId == sessionId);
 			if (pair && !pair.userId) {
-				return this._gameCore.isPlayerOnGame(pair.playerId);
+				return pair.playerId != undefined && this._gameCore.isPlayerOnGame(pair.playerId);
 			} else {
 				return false;
 			}

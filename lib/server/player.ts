@@ -112,27 +112,23 @@ export class player {
 }
 
 export class playerManager {
-	private _players: player[] = [];
+	readonly players: player[] = [];
 	private _newPlayersCache: player[] = [];
 
-	getPlayers() {
-		return this._players;
-	}
-
 	findPlayerById(id: number) {
-		return this._players.find(p => p.id == id);
+		return this.players.find(p => p.id == id);
 	}
 
 	addNewPlayer(name: string, position: point) {
 		let newPlayer = new player(name, position);
-		this._players.push(newPlayer);
+		this.players.push(newPlayer);
 		this._newPlayersCache.push(newPlayer);
 		return newPlayer;
 	}
 	removePlayer(player: player) {
-		let i = this._players.findIndex(p => p == player);
+		let i = this.players.findIndex(p => p == player);
 		if (i != -1) {
-			this._players.splice(i, 1);
+			this.players.splice(i, 1);
 		}
 	}
 
@@ -143,7 +139,7 @@ export class playerManager {
 	}
 
 	getPlayersInPlayerSight(player: player, radius: number) {
-		return this._players.filter(p => {
+		return this.players.filter(p => {
 			if (p != player) {
 				return utils.didTwoCirclesCollied(p.position, radius, player.position, config.player.radius);
 			}
@@ -151,13 +147,13 @@ export class playerManager {
 		});
 	}
 	getPlayersInRadius(position: point, radius: number) {
-		return this._players.filter(p => {
+		return this.players.filter(p => {
 			return utils.didTwoCirclesCollied(p.position, radius, position, config.player.radius);
 		});
 	}
 
 	getRankList(): toClientPROT.rankPROT[] {
-		return this._players.sort((a, b) => {
+		return this.players.sort((a, b) => {
 			return a.records.killTimes > b.records.killTimes ? -1 : 1;
 		}).map(p => {
 			return {

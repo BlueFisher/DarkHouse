@@ -2,7 +2,7 @@ import * as events from 'events';
 
 import { player, playerManager } from './player';
 import { barricade } from './barricade';
-import { propHp, propGun } from './prop';
+import { propManager, propHp, propGun } from './prop';
 import * as gameServer from './game_server';
 
 import * as config from '../shared/game_config';
@@ -23,13 +23,7 @@ export class gameCore extends events.EventEmitter {
 
 	private _playerManager: playerManager;
 	private _barricades: barricade[] = [];
-	private _propHps: propHp[] = [];
-	private _propGuns: propGun[] = [];
-
-	private _newPropHpsCache: propHp[] = [];
-	private _removedPropHpIdsCache: number[] = [];
-	private _newPropGunsCache: propGun[] = [];
-	private _removedPropGunIdsCache: number[] = [];
+	private _propManager: propManager;
 
 	private _shootingCache: {
 		shootingPosition: point,
@@ -44,7 +38,8 @@ export class gameCore extends events.EventEmitter {
 	constructor() {
 		super();
 
-		this._playerManager = new playerManager;
+		this._playerManager = new playerManager();
+		this._propManager = new propManager();
 
 		this._barricades.push(new barricade(new point(0, 0), new point(500, 10)));
 		this._barricades.push(new barricade(new point(0, 0), new point(10, 500)));
@@ -116,28 +111,14 @@ export class gameCore extends events.EventEmitter {
 			return runningPROTs;
 		}
 
-		let generatePropPROTs = () => {
-			let res = {
-				newPropHps: this._newPropHpsCache.map(p => p.getPropHpPROT()),
-				removedPropHpIds: this._removedPropHpIdsCache,
-				newPropGuns: this._newPropGunsCache.map(p => p.getPropGunPROT()),
-				removedPropGunIds: this._removedPropGunIdsCache
-			}
-			this._newPropHpsCache = [];
-			this._removedPropHpIdsCache = [];
-			this._newPropGunsCache = [];
-			this._removedPropGunIdsCache = [];
-			return res;
-		}
-
 		// 主计时器循环
 		setInterval(() => {
 			let sendingMap = new Map<number, toClientPROT.mainPROT>();
 			let newPlayersBasicPROTs = generateNewPlayersBasicPROTs();
 			let shootPROTs = generateShootPROTs();
-			let connectedPlayers = this._playerManager.getPlayers().filter(p => p.connected);
+			let connectedPlayers = this._playerManager.players.filter(p => p.connected);
 			let runningPROTs = generateRunningPROTs(connectedPlayers);
-			let propPROTs = generatePropPROTs();
+			let propPROTs = this._propManager.getAndClearPropPROTs();
 
 			for (let player of connectedPlayers) {
 				let mainPROT = new toClientPROT.mainPROT(player.id,
@@ -169,13 +150,13 @@ export class gameCore extends events.EventEmitter {
 
 		// 生命值道具计时器循环
 		setInterval(() => {
-			if (this._propHps.length < config.hp.maxNumber)
+			if (this._propManager.propHps.length < config.hp.maxNumber)
 				this._addNewPropHp();
 		}, config.hp.appearInterval);
 
 		// 玩家移动计时器循环
 		setInterval(() => {
-			for (let player of this._playerManager.getPlayers()) {
+			for (let player of this._playerManager.players) {
 				this._playerMove(player);
 			}
 		}, config.player.movingInterval);
@@ -185,7 +166,7 @@ export class gameCore extends events.EventEmitter {
 		let newPosition: point | undefined;
 		while (!newPosition) {
 			newPosition = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
-			if (this._playerManager.getPlayers().find(p => p.didPlayerCollided(newPosition as point))) {
+			if (this._playerManager.players.find(p => p.didPlayerCollided(newPosition as point))) {
 				newPosition = undefined;
 				continue;
 			}
@@ -194,34 +175,32 @@ export class gameCore extends events.EventEmitter {
 				continue;
 			}
 		}
-		let newPropHp = new propHp(newPosition);
-		this._propHps.push(newPropHp);
-		this._newPropHpsCache.push(newPropHp);
+		this._propManager.addPropHp(newPosition);
 	}
 
+	/**获取玩家的初始化协议 */
 	getInitPROT(currPlayerId: number) {
-		let players = this._playerManager.getPlayers();
+		let players = this._playerManager.players;
 
-		return new toClientPROT.initialize(
-			currPlayerId,
+		return new toClientPROT.initialize(currPlayerId,
 			players.map(p => p.getPlayerBasicPROT()),
 			this._barricades.map(p => p.getBarricadePROT()),
-			this._propHps.map(p => p.getPropHpPROT()),
-			this._propGuns.map(p => p.getPropGunPROT())
+			this._propManager.propHps.map(p => p.getPropHpPROT()),
+			this._propManager.propGuns.map(p => p.getPropGunPROT())
 		);
-
 	}
 
-	isPlayerOnGame(playerId: number | undefined): boolean {
-		let player = this._playerManager.getPlayers().find(p => p.id == playerId);
+	/**玩家是否还在游戏中 */
+	isPlayerOnGame(playerId: number): boolean {
+		let player = this._playerManager.players.find(p => p.id == playerId);
 		return player != undefined;
 	}
-
+	/**添加新玩家 */
 	addNewPlayer(name: string): number {
 		let newPoisition: point | undefined;
 		while (!newPoisition) {
 			newPoisition = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
-			if (this._playerManager.getPlayers().find(p => p.didPlayerCollided(newPoisition as point))) {
+			if (this._playerManager.players.find(p => p.didPlayerCollided(newPoisition as point))) {
 				newPoisition = undefined;
 				continue;
 			}
@@ -279,29 +258,14 @@ export class gameCore extends events.EventEmitter {
 			p.adjustPlayerCollided(oldPos, newPos);
 		});
 
-		this._playerManager.getPlayers().forEach(p => {
+		this._playerManager.players.forEach(p => {
 			if (p == player)
 				return;
 
 			p.adjustPlayerCollided(newPos);
 		});
 
-		for (let i = this._propHps.length - 1; i >= 0; i--) {
-			let propHp = this._propHps[i];
-			if (utils.didTwoCirclesCollied(propHp.position, config.hp.activeRadius, newPos, config.player.radius)) {
-				player.setHp(player.getHp() + 1);
-				this._propHps.splice(i, 1);
-				this._removedPropHpIdsCache.push(propHp.id);
-			}
-		}
-		for (let i = this._propGuns.length - 1; i >= 0; i--) {
-			let propGun = this._propGuns[i];
-			if (utils.didTwoCirclesCollied(propGun.position, config.hp.activeRadius, newPos, config.player.radius)) {
-				player.getGun().addBuilet(propGun.gun.getBullet());
-				this._propGuns.splice(i, 1);
-				this._removedPropGunIdsCache.push(propGun.id);
-			}
-		}
+		this._propManager.tryCoverProp(player, newPos);
 
 		player.position = newPos;
 	}
@@ -322,7 +286,7 @@ export class gameCore extends events.EventEmitter {
 		let position = player.position;
 		let angle = player.getDirectionAngle();
 
-		let playersInRay = this._playerManager.getPlayers().map(p => {
+		let playersInRay = this._playerManager.players.map(p => {
 			if (p == player)
 				return null;
 
@@ -380,9 +344,7 @@ export class gameCore extends events.EventEmitter {
 				this._playerManager.removePlayer(firstshootedPlayer);
 
 				if (firstshootedPlayer.getGun().getBullet() > 0) {
-					let newPropGun = new propGun(firstshootedPlayer.position, player.getGun());
-					this._propGuns.push(newPropGun);
-					this._newPropGunsCache.push(newPropGun);
+					this._propManager.addPropGun(firstshootedPlayer.position, firstshootedPlayer.getGun());
 				}
 			} else {
 				firstshootedPlayer.setHp(hp - 1);
