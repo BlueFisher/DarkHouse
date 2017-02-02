@@ -487,6 +487,8 @@ var gameCore = function () {
             this._currentPlayerId = protocol.currPlayerId;
             this._playerBasicPROTs = protocol.players;
             this._barricades = protocol.barricades;
+            this._propHps = protocol.propHps;
+            this._propGuns = protocol.propGuns;
             this._isGameOn = true;
             this._sendPing();
         }
@@ -854,13 +856,20 @@ var gun;
         type[type["pistol"] = 0] = "pistol";
         type[type["rifle"] = 1] = "rifle";
     })(type = gun.type || (gun.type = {}));
-    gun.defaultSetting = new Map();
-    gun.defaultSetting.set(type.pistol, {
+    gun.defaultSettings = new Map();
+    gun.defaultSettings.set(type.pistol, {
         shootingInterval: 500,
         shootingSightRadius: 130,
         shootingSightTimeOut: 100,
         bullet: 15,
         maxBullet: 30
+    });
+    gun.defaultSettings.set(type.rifle, {
+        shootingInterval: 200,
+        shootingSightRadius: 200,
+        shootingSightTimeOut: 100,
+        bullet: 30,
+        maxBullet: 60
     });
 })(gun = exports.gun || (exports.gun = {}));
 var stage;

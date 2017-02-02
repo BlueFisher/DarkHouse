@@ -53,13 +53,10 @@ export class propManager {
 	private _newPropGunsCache: propGun[] = [];
 	private _removedPropGunIdsCache: number[] = [];
 
-	// constructor() {
-	// 	// 生命值道具计时器循环
-	// 	setInterval(() => {
-	// 		if (this._propHps.length < config.hp.maxNumber)
-	// 			this._addNewPropHp();
-	// 	}, config.hp.appearInterval);
-	// }
+	constructor() {
+		let a = config.gun.defaultSettings.get(config.gun.type.rifle) as config.gun.defaultSetting;
+		this.propGuns.push(new propGun(new point(200, 200), new gun(config.gun.type.rifle, a)));
+	}
 
 	getAndClearPropPROTs() {
 		let res = {
@@ -98,7 +95,12 @@ export class propManager {
 		for (let i = this.propGuns.length - 1; i >= 0; i--) {
 			let propGun = this.propGuns[i];
 			if (utils.didTwoCirclesCollied(propGun.position, config.hp.activeRadius, newPos, config.player.radius)) {
-				player.getGun().addBuilet(propGun.gun.getBullet());
+				// 如果道具枪与玩家现有枪的类型
+				if (player.getGun().type == propGun.gun.type) {
+					player.getGun().addBuilet(propGun.gun.getBullet());
+				} else {
+					player.setGun(propGun.gun);
+				}
 				this.propGuns.splice(i, 1);
 				this._removedPropGunIdsCache.push(propGun.id);
 			}

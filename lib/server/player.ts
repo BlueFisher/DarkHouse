@@ -29,7 +29,7 @@ export class player {
 	constructor(name: string, position: point) {
 		this.name = name;
 		this.position = position;
-		let gunSetting = config.gun.defaultSetting.get(config.gun.type.pistol);
+		let gunSetting = config.gun.defaultSettings.get(config.gun.type.pistol);
 		if (gunSetting)
 			this._gun = new gun(config.gun.type.pistol, gunSetting);
 	}
@@ -52,6 +52,9 @@ export class player {
 
 	getGun() {
 		return this._gun;
+	}
+	setGun(gun: gun) {
+		this._gun = gun;
 	}
 
 	getPlayerPROT(): toClientPROT.playerPROT {

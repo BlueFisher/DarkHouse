@@ -29,18 +29,25 @@ export namespace gun {
 	export interface defaultSetting {
 		shootingInterval: number,
 		shootingSightRadius: number,
-		shootingSightTimeOut: number,
+		shootingSightTimeOut: number, // 射击视野停留时间
 		bullet: number,
 		maxBullet: number
 	}
 
-	export let defaultSetting = new Map<type, defaultSetting>();
-	defaultSetting.set(type.pistol, {
+	export let defaultSettings = new Map<type, defaultSetting>();
+	defaultSettings.set(type.pistol, {
 		shootingInterval: 500,
 		shootingSightRadius: 130,
 		shootingSightTimeOut: 100,
 		bullet: 15,
 		maxBullet: 30
+	});
+	defaultSettings.set(type.rifle, {
+		shootingInterval: 200,
+		shootingSightRadius: 200,
+		shootingSightTimeOut: 100,
+		bullet: 30,
+		maxBullet: 60
 	});
 }
 

@@ -136,6 +136,8 @@ export class gameCore {
 		this._currentPlayerId = protocol.currPlayerId;
 		this._playerBasicPROTs = protocol.players;
 		this._barricades = protocol.barricades;
+		this._propHps = protocol.propHps;
+		this._propGuns = protocol.propGuns;
 		this._isGameOn = true;
 		this._sendPing();
 	}
