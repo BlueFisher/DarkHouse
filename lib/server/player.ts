@@ -112,6 +112,10 @@ export class player {
 			}
 		}
 	}
+
+	beKilled() {
+		this._canContinueShooting = false;
+	}
 }
 
 export class playerManager {
@@ -131,6 +135,7 @@ export class playerManager {
 	removePlayer(player: player) {
 		let i = this.players.findIndex(p => p == player);
 		if (i != -1) {
+			this.players[i].beKilled();
 			this.players.splice(i, 1);
 		}
 	}
