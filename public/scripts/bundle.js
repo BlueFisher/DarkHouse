@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 9);
+/******/ 	return __webpack_require__(__webpack_require__.s = 10);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -245,8 +245,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var $ = __webpack_require__(7);
-var vue = __webpack_require__(8);
+var $ = __webpack_require__(8);
+var vue = __webpack_require__(9);
 var vueData = __webpack_require__(0);
 
 var domManager = function () {
@@ -359,22 +359,28 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var fromClientPROT = __webpack_require__(1);
 var toClientPROT = __webpack_require__(6);
-var config = __webpack_require__(5);
+var render_1 = __webpack_require__(7);
 var vueData = __webpack_require__(0);
 
 var gameCore = function () {
     function gameCore(sendFunc, domManager) {
+        var _this = this;
+
         _classCallCheck(this, gameCore);
 
         this._isGameOn = false;
         this._canvas = document.querySelector('#stage');
-        this._playerBasicPROTs = [];
-        this._barricades = [];
-        this._propHps = [];
-        this._propGuns = [];
         this._sendFunc = sendFunc;
         this._domManager = domManager;
         this._initlializeCanvasEvents();
+        var ctx = this._canvas.getContext('2d');
+        var reqAnimation = function reqAnimation() {
+            window.requestAnimationFrame(function () {
+                if (_this._isGameOn) _this._render.draw(ctx);
+                reqAnimation();
+            });
+        };
+        reqAnimation();
     }
 
     _createClass(gameCore, [{
@@ -387,7 +393,7 @@ var gameCore = function () {
     }, {
         key: "protocolReceived",
         value: function protocolReceived(protocol) {
-            var _this = this;
+            var _this2 = this;
 
             switch (protocol.type) {
                 case toClientPROT.type.pong:
@@ -395,7 +401,7 @@ var gameCore = function () {
                     var ping = now.getTime() - this._pingTime.getTime();
                     vueData.index.ping = ping;
                     setTimeout(function () {
-                        _this._sendPing();
+                        _this2._sendPing();
                     }, 1000);
                     break;
                 case toClientPROT.type.init:
@@ -413,15 +419,15 @@ var gameCore = function () {
     }, {
         key: "_initlializeCanvasEvents",
         value: function _initlializeCanvasEvents() {
-            var _this2 = this;
+            var _this3 = this;
 
             this._canvas.addEventListener('mousemove', function (e) {
                 var point = {
-                    x: e.pageX - _this2._canvas.offsetLeft,
-                    y: e.pageY - _this2._canvas.offsetTop
+                    x: e.pageX - _this3._canvas.offsetLeft,
+                    y: e.pageY - _this3._canvas.offsetTop
                 };
-                var x = point.x - _this2._canvas.width / 2;
-                var y = point.y - _this2._canvas.height / 2;
+                var x = point.x - _this3._canvas.width / 2;
+                var y = point.y - _this3._canvas.height / 2;
                 var angle = void 0;
                 if (x == 0) {
                     if (y >= 0) {
@@ -437,58 +443,47 @@ var gameCore = function () {
                         angle = 2 * Math.PI + angle;
                     }
                 }
-                _this2._send(new fromClientPROT.rotate(angle));
+                _this3._send(new fromClientPROT.rotate(angle));
             });
             this._canvas.addEventListener('keydown', function (e) {
                 if (e.keyCode == 32) {
-                    _this2._send(new fromClientPROT.stopMoving(true));
+                    _this3._send(new fromClientPROT.stopMoving(true));
                 }
                 if (e.keyCode == 87) {
-                    _this2._send(new fromClientPROT.startRunning(true));
+                    _this3._send(new fromClientPROT.startRunning(true));
                 }
             });
             this._canvas.addEventListener('keyup', function (e) {
                 if (e.keyCode == 32) {
-                    _this2._send(new fromClientPROT.stopMoving(false));
+                    _this3._send(new fromClientPROT.stopMoving(false));
                 }
                 if (e.keyCode == 87) {
-                    _this2._send(new fromClientPROT.startRunning(false));
+                    _this3._send(new fromClientPROT.startRunning(false));
                 }
             });
             this._canvas.addEventListener('blur', function (e) {
-                _this2._send(new fromClientPROT.stopMoving(true));
-                _this2._send(new fromClientPROT.startShoot(false));
+                _this3._send(new fromClientPROT.stopMoving(true));
+                _this3._send(new fromClientPROT.startShoot(false));
             });
             this._canvas.addEventListener('mouseout', function (e) {
-                _this2._send(new fromClientPROT.stopMoving(true));
-                _this2._send(new fromClientPROT.startShoot(false));
+                _this3._send(new fromClientPROT.stopMoving(true));
+                _this3._send(new fromClientPROT.startShoot(false));
             });
             this._canvas.addEventListener('mouseover', function (e) {
-                _this2._send(new fromClientPROT.stopMoving(false));
+                _this3._send(new fromClientPROT.stopMoving(false));
             });
             this._canvas.addEventListener('mousedown', function (e) {
-                _this2._send(new fromClientPROT.startShoot(true));
+                _this3._send(new fromClientPROT.startShoot(true));
             });
             this._canvas.addEventListener('mouseup', function (e) {
-                _this2._send(new fromClientPROT.startShoot(false));
+                _this3._send(new fromClientPROT.startShoot(false));
             });
-            var reqAnimation = function reqAnimation() {
-                window.requestAnimationFrame(function () {
-                    _this2._draw();
-                    reqAnimation();
-                });
-            };
-            reqAnimation();
         }
     }, {
         key: "_onInitialize",
         value: function _onInitialize(protocol) {
             this._canvas.focus();
-            this._currentPlayerId = protocol.currPlayerId;
-            this._playerBasicPROTs = protocol.players;
-            this._barricades = protocol.barricades;
-            this._propHps = protocol.propHps;
-            this._propGuns = protocol.propGuns;
+            this._render = new render_1.render(protocol);
             this._isGameOn = true;
             this._sendPing();
         }
@@ -501,312 +496,17 @@ var gameCore = function () {
     }, {
         key: "_onMainPROT",
         value: function _onMainPROT(protocol) {
-            var _this3 = this;
+            var _this4 = this;
 
             vueData.index.rankList = [];
             protocol.rankList.forEach(function (p) {
-                var player = _this3._playerBasicPROTs.find(function (pp) {
-                    return pp.id == p.id;
-                });
+                var player = _this4._render.getPlayerBPROT(p.id);
                 if (player) vueData.index.rankList.push({
                     name: player.name,
                     killTimes: p.killTimes
                 });
             });
-            this._mainPROTCache = protocol;
-            protocol.newPlayerBPROTs.forEach(function (p) {
-                _this3._playerBasicPROTs.push(p);
-            });
-            protocol.newPropHpPROTs.forEach(function (p) {
-                _this3._propHps.push(p);
-            });
-            protocol.newPropGunPROTs.forEach(function (p) {
-                _this3._propGuns.push(p);
-            });
-            protocol.removedPropHpIds.forEach(function (p) {
-                var i = _this3._propHps.findIndex(function (pp) {
-                    return pp.id == p;
-                });
-                if (i != -1) _this3._propHps.splice(i, 1);
-            });
-            protocol.removedPropGunIds.forEach(function (p) {
-                var i = _this3._propGuns.findIndex(function (pp) {
-                    return pp.id == p;
-                });
-                if (i != -1) _this3._propGuns.splice(i, 1);
-            });
-        }
-    }, {
-        key: "_getPlayerPROT",
-        value: function _getPlayerPROT(playerId) {
-            return this._mainPROTCache.playerBPROTs.find(function (p) {
-                return p.id == playerId;
-            });
-        }
-    }, {
-        key: "_drawPlayer",
-        value: function _drawPlayer(ctx, playerIds, fillStyle, strokeStyle) {
-            var _this4 = this;
-
-            ctx.save();
-            ctx.fillStyle = fillStyle;
-            ctx.strokeStyle = strokeStyle;
-            ctx.textAlign = 'center';
-            var _iteratorNormalCompletion = true;
-            var _didIteratorError = false;
-            var _iteratorError = undefined;
-
-            try {
-                var _loop = function _loop() {
-                    var playerId = _step.value;
-
-                    var player = _this4._getPlayerPROT(playerId);
-                    if (!player) return "continue";
-                    ctx.beginPath();
-                    ctx.arc(player.position.x, player.position.y, config.player.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.moveTo(player.position.x, player.position.y);
-                    ctx.lineTo(config.player.radius * Math.cos(player.angle) + player.position.x, config.player.radius * Math.sin(player.angle) + player.position.y);
-                    ctx.stroke();
-                    ctx.strokeStyle = 'rgba(0,255,0,.5)';
-                    ctx.lineWidth = 3;
-                    var gap = Math.PI / 25;
-                    var perimeter = Math.PI * 2 - config.player.maxHp * gap;
-                    for (var i = 0; i < player.hp; i++) {
-                        ctx.beginPath();
-                        ctx.arc(player.position.x, player.position.y, config.player.radius - 1.5, i * perimeter / config.player.maxHp + i * gap - Math.PI / 2, (i + 1) * perimeter / config.player.maxHp + i * gap - Math.PI / 2);
-                        ctx.stroke();
-                    }
-                    ctx.strokeStyle = 'rgba(0,0,0,.5)';
-                    ctx.lineWidth = 3;
-                    gap = Math.PI / 50;
-                    perimeter = Math.PI * 2 - player.maxBullet * gap;
-                    for (var _i = 0; _i < player.maxBullet; _i++) {
-                        ctx.beginPath();
-                        ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i * perimeter / player.maxBullet + _i * gap - Math.PI / 2, (_i + 1) * perimeter / player.maxBullet + _i * gap - Math.PI / 2);
-                        ctx.stroke();
-                    }
-                    ctx.strokeStyle = 'rgba(255,255,255,.5)';
-                    ctx.lineWidth = 3;
-                    for (var _i2 = 0; _i2 < player.bullet; _i2++) {
-                        ctx.beginPath();
-                        ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i2 * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2, (_i2 + 1) * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2);
-                        ctx.stroke();
-                    }
-                    var playerBasic = _this4._playerBasicPROTs.find(function (p) {
-                        return player != null && p.id == player.id;
-                    });
-                    if (playerBasic) {
-                        ctx.fillText(playerBasic.name, player.position.x, player.position.y + config.player.radius + 15);
-                    }
-                };
-
-                for (var _iterator = playerIds[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var _ret = _loop();
-
-                    if (_ret === "continue") continue;
-                }
-            } catch (err) {
-                _didIteratorError = true;
-                _iteratorError = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion && _iterator.return) {
-                        _iterator.return();
-                    }
-                } finally {
-                    if (_didIteratorError) {
-                        throw _iteratorError;
-                    }
-                }
-            }
-
-            ctx.restore();
-        }
-    }, {
-        key: "_draw",
-        value: function _draw() {
-            var _this5 = this;
-
-            if (!this._isGameOn || !this._mainPROTCache) return;
-            var ctx = this._canvas.getContext('2d');
-            ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-            var currPlayer = this._getPlayerPROT(this._mainPROTCache.currPlayerId);
-            ctx.save();
-            if (currPlayer) ctx.setTransform(1.5, 0, 0, 1.5, this._canvas.width / 2 - currPlayer.position.x * 1.5, this._canvas.height / 2 - currPlayer.position.y * 1.5);
-            // 绘制障碍物
-            ctx.fillStyle = '#111';
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
-
-            try {
-                for (var _iterator2 = this._barricades[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    var barricade = _step2.value;
-
-                    ctx.fillRect(barricade.point1.x, barricade.point1.y, barricade.point2.x - barricade.point1.x, barricade.point2.y - barricade.point1.y);
-                }
-                // 绘制道具
-            } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                        _iterator2.return();
-                    }
-                } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
-                    }
-                }
-            }
-
-            ctx.fillStyle = '#f00';
-            var _iteratorNormalCompletion3 = true;
-            var _didIteratorError3 = false;
-            var _iteratorError3 = undefined;
-
-            try {
-                for (var _iterator3 = this._propHps[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                    var propHp = _step3.value;
-
-                    ctx.beginPath();
-                    ctx.arc(propHp.position.x, propHp.position.y, config.hp.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            } catch (err) {
-                _didIteratorError3 = true;
-                _iteratorError3 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                        _iterator3.return();
-                    }
-                } finally {
-                    if (_didIteratorError3) {
-                        throw _iteratorError3;
-                    }
-                }
-            }
-
-            ctx.fillStyle = '#0f0';
-            var _iteratorNormalCompletion4 = true;
-            var _didIteratorError4 = false;
-            var _iteratorError4 = undefined;
-
-            try {
-                for (var _iterator4 = this._propGuns[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                    var _propHp = _step4.value;
-
-                    ctx.beginPath();
-                    ctx.arc(_propHp.position.x, _propHp.position.y, config.hp.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                // 绘制可见区域
-            } catch (err) {
-                _didIteratorError4 = true;
-                _iteratorError4 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                        _iterator4.return();
-                    }
-                } finally {
-                    if (_didIteratorError4) {
-                        throw _iteratorError4;
-                    }
-                }
-            }
-
-            ctx.save();
-            // 绘制可见区域中所有玩家
-            ctx.beginPath();
-            if (currPlayer) ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius - 1, 0, Math.PI * 2);
-            ctx.clip();
-            this._drawPlayer(ctx, this._mainPROTCache.playerIdsInSight, '#fff', '#f00');
-            // 绘制可见区域中所有障碍物
-            ctx.fillStyle = '#fff';
-            var _iteratorNormalCompletion5 = true;
-            var _didIteratorError5 = false;
-            var _iteratorError5 = undefined;
-
-            try {
-                for (var _iterator5 = this._barricades[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                    var _barricade = _step5.value;
-
-                    ctx.fillRect(_barricade.point1.x, _barricade.point1.y, _barricade.point2.x - _barricade.point1.x, _barricade.point2.y - _barricade.point1.y);
-                }
-            } catch (err) {
-                _didIteratorError5 = true;
-                _iteratorError5 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion5 && _iterator5.return) {
-                        _iterator5.return();
-                    }
-                } finally {
-                    if (_didIteratorError5) {
-                        throw _iteratorError5;
-                    }
-                }
-            }
-
-            ctx.restore();
-            // 绘制可见区域光线
-            ctx.beginPath();
-            ctx.fillStyle = 'rgba(255,255,255,0.25)';
-            if (currPlayer) ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius, 0, Math.PI * 2);
-            ctx.fill();
-            // 绘制本玩家
-            this._drawPlayer(ctx, [this._mainPROTCache.currPlayerId], '#333', '#f00');
-            // 绘制射击
-            this._mainPROTCache.shootPROTs.forEach(function (shootPROT) {
-                ctx.save();
-                // 绘制射击可见区域中所有玩家
-                ctx.beginPath();
-                ctx.arc(shootPROT.position.x, shootPROT.position.y, config.player.shootingSightRadius - 1, 0, Math.PI * 2);
-                ctx.clip();
-                _this5._drawPlayer(ctx, shootPROT.playerIdsInSight, '#fff', '#f00');
-                ctx.restore();
-                if (shootPROT.shootedPlayerId) {
-                    _this5._drawPlayer(ctx, [shootPROT.shootedPlayerId], '#fff', '#f00');
-                }
-                // 绘制射击可见区域
-                ctx.beginPath();
-                ctx.fillStyle = 'rgba(255,255,0,0.25)';
-                ctx.strokeStyle = 'rgba(255,255,0,0.25)';
-                ctx.lineWidth = 3;
-                ctx.arc(shootPROT.position.x, shootPROT.position.y, config.player.shootingSightRadius, 0, Math.PI * 2);
-                ctx.fill();
-                // 绘制射击射线
-                ctx.beginPath();
-                ctx.moveTo(shootPROT.position.x, shootPROT.position.y);
-                if (shootPROT.collisionPoint) {
-                    ctx.lineTo(shootPROT.collisionPoint.x, shootPROT.collisionPoint.y);
-                } else {
-                    var d = Math.max(_this5._canvas.width, _this5._canvas.height);
-                    ctx.lineTo(shootPROT.position.x + d * Math.cos(shootPROT.angle), shootPROT.position.y + d * Math.sin(shootPROT.angle));
-                }
-                ctx.stroke();
-            });
-            // 绘制奔跑
-            this._mainPROTCache.runningPROTs.forEach(function (runningPROT) {
-                ctx.save();
-                // 绘制奔跑范围视野中所有的玩家
-                ctx.beginPath();
-                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
-                ctx.clip();
-                _this5._drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
-                ctx.restore();
-                // 绘制奔跑视野
-                ctx.beginPath();
-                ctx.fillStyle = 'rgba(255,255,255,0.75)';
-                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            ctx.restore();
+            this._render.onMainProtocol(protocol);
         }
     }]);
 
@@ -948,29 +648,29 @@ exports.initialize = initialize;
 var mainPROT = function (_baseProtocol3) {
     _inherits(mainPROT, _baseProtocol3);
 
-    function mainPROT(currPlayer, playersInSight) {
+    function mainPROT(playersInSight) {
         _classCallCheck(this, mainPROT);
 
         var _this3 = _possibleConstructorReturn(this, (mainPROT.__proto__ || Object.getPrototypeOf(mainPROT)).call(this, type.main));
 
-        _this3.playerBPROTs = [];
+        _this3.playerPROTs = [];
         _this3.newPlayerBPROTs = [];
         _this3.shootPROTs = [];
+        _this3.duringShootingPROTs = [];
         _this3.runningPROTs = [];
         _this3.rankList = [];
         _this3.newPropGunPROTs = [];
         _this3.removedPropGunIds = [];
         _this3.newPropHpPROTs = [];
         _this3.removedPropHpIds = [];
-        _this3.currPlayerId = currPlayer;
         _this3.playerIdsInSight = playersInSight;
         return _this3;
     }
 
     _createClass(mainPROT, [{
         key: "formatPlayerPROT",
-        value: function formatPlayerPROT(format) {
-            var arr = [this.currPlayerId];
+        value: function formatPlayerPROT(currPlayerId, format) {
+            var arr = [currPlayerId];
             arr = arr.concat(this.playerIdsInSight);
             var _iteratorNormalCompletion = true;
             var _didIteratorError = false;
@@ -1035,7 +735,7 @@ var mainPROT = function (_baseProtocol3) {
                     if (!json[i]) {
                         json[i] = 1;
                         var playerPROT = format(i);
-                        if (playerPROT) this.playerBPROTs.push(playerPROT);
+                        if (playerPROT) this.playerPROTs.push(playerPROT);
                     }
                 }
             } catch (err) {
@@ -1079,18 +779,469 @@ exports.gameOver = gameOver;
 
 /***/ }),
 /* 7 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
-module.exports = window.$;
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var config = __webpack_require__(5);
+
+var render = function () {
+    function render(protocol) {
+        _classCallCheck(this, render);
+
+        this.playerBasicPROTs = [];
+        this.barricades = [];
+        this.propHps = [];
+        this.propGuns = [];
+        this._shootingCache = [];
+        this._shootedEffects = [];
+        this.currentPlayerId = protocol.currPlayerId;
+        this.playerBasicPROTs = protocol.players;
+        this.barricades = protocol.barricades;
+        this.propHps = protocol.propHps;
+        this.propGuns = protocol.propGuns;
+    }
+
+    _createClass(render, [{
+        key: "onMainProtocol",
+        value: function onMainProtocol(protocol) {
+            var _this = this;
+
+            this._mainPROTCache = protocol;
+            protocol.shootPROTs.forEach(function (p) {
+                _this._shootingCache.push(p);
+                if (p.shootingPlayerId == _this.currentPlayerId && p.shootedPlayerId) {
+                    _this._shooingInAimEffect = new shootingInAimEffect('击中');
+                }
+                if (p.shootedPlayerId == _this.currentPlayerId) {
+                    _this._shootedEffects.push(new shootedEffect(p.angle + Math.PI));
+                }
+            });
+            protocol.duringShootingPROTs.forEach(function (p) {
+                var i = _this._shootingCache.findIndex(function (pp) {
+                    return pp.id == p.id;
+                });
+                if (i != -1) {
+                    if (p.isEnd) {
+                        _this._shootingCache.splice(i, 1);
+                    } else {
+                        var shootingCache = _this._shootingCache[i];
+                        shootingCache.playerIdsInSight = p.playerIdsInSight;
+                    }
+                }
+            });
+            protocol.newPlayerBPROTs.forEach(function (p) {
+                _this.playerBasicPROTs.push(p);
+            });
+            protocol.newPropHpPROTs.forEach(function (p) {
+                _this.propHps.push(p);
+            });
+            protocol.newPropGunPROTs.forEach(function (p) {
+                _this.propGuns.push(p);
+            });
+            protocol.removedPropHpIds.forEach(function (p) {
+                var i = _this.propHps.findIndex(function (pp) {
+                    return pp.id == p;
+                });
+                if (i != -1) _this.propHps.splice(i, 1);
+            });
+            protocol.removedPropGunIds.forEach(function (p) {
+                var i = _this.propGuns.findIndex(function (pp) {
+                    return pp.id == p;
+                });
+                if (i != -1) _this.propGuns.splice(i, 1);
+            });
+        }
+    }, {
+        key: "getPlayerPROT",
+        value: function getPlayerPROT(playerId) {
+            return this._mainPROTCache.playerPROTs.find(function (p) {
+                return p.id == playerId;
+            });
+        }
+    }, {
+        key: "getPlayerBPROT",
+        value: function getPlayerBPROT(playerId) {
+            return this.playerBasicPROTs.find(function (p) {
+                return p.id == playerId;
+            });
+        }
+    }, {
+        key: "_drawPlayer",
+        value: function _drawPlayer(ctx, playerIds, fillStyle, strokeStyle) {
+            ctx.save();
+            ctx.fillStyle = fillStyle;
+            ctx.strokeStyle = strokeStyle;
+            ctx.textAlign = 'center';
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = playerIds[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var playerId = _step.value;
+
+                    var player = this.getPlayerPROT(playerId);
+                    if (!player) continue;
+                    ctx.beginPath();
+                    ctx.arc(player.position.x, player.position.y, config.player.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(player.position.x, player.position.y);
+                    ctx.lineTo(config.player.radius * Math.cos(player.angle) + player.position.x, config.player.radius * Math.sin(player.angle) + player.position.y);
+                    ctx.stroke();
+                    ctx.strokeStyle = 'rgba(0,255,0,.5)';
+                    ctx.lineWidth = 3;
+                    var gap = Math.PI / 25;
+                    var perimeter = Math.PI * 2 - config.player.maxHp * gap;
+                    for (var i = 0; i < player.hp; i++) {
+                        ctx.beginPath();
+                        ctx.arc(player.position.x, player.position.y, config.player.radius - 1.5, i * perimeter / config.player.maxHp + i * gap - Math.PI / 2, (i + 1) * perimeter / config.player.maxHp + i * gap - Math.PI / 2);
+                        ctx.stroke();
+                    }
+                    ctx.strokeStyle = 'rgba(0,0,0,.5)';
+                    ctx.lineWidth = 3;
+                    gap = Math.PI / 50;
+                    perimeter = Math.PI * 2 - player.maxBullet * gap;
+                    for (var _i = 0; _i < player.maxBullet; _i++) {
+                        ctx.beginPath();
+                        ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i * perimeter / player.maxBullet + _i * gap - Math.PI / 2, (_i + 1) * perimeter / player.maxBullet + _i * gap - Math.PI / 2);
+                        ctx.stroke();
+                    }
+                    ctx.strokeStyle = 'rgba(255,255,255,.5)';
+                    ctx.lineWidth = 3;
+                    for (var _i2 = 0; _i2 < player.bullet; _i2++) {
+                        ctx.beginPath();
+                        ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i2 * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2, (_i2 + 1) * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2);
+                        ctx.stroke();
+                    }
+                    var playerBasic = this.getPlayerBPROT(player.id);
+                    if (playerBasic) {
+                        ctx.fillText(playerBasic.name, player.position.x, player.position.y + config.player.radius + 15);
+                    }
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
+
+            ctx.restore();
+        }
+    }, {
+        key: "draw",
+        value: function draw(ctx) {
+            var _this2 = this;
+
+            if (!this._mainPROTCache) return;
+            var canvas = ctx.canvas;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            var currPlayer = this.getPlayerPROT(this.currentPlayerId);
+            if (!currPlayer) return;
+            ctx.save();
+            if (currPlayer) ctx.setTransform(1.5, 0, 0, 1.5, canvas.width / 2 - currPlayer.position.x * 1.5, canvas.height / 2 - currPlayer.position.y * 1.5);
+            // 绘制障碍物
+            ctx.fillStyle = '#111';
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
+
+            try {
+                for (var _iterator2 = this.barricades[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var barricade = _step2.value;
+
+                    ctx.fillRect(barricade.point1.x, barricade.point1.y, barricade.point2.x - barricade.point1.x, barricade.point2.y - barricade.point1.y);
+                }
+                // 绘制道具
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
+                }
+            }
+
+            ctx.fillStyle = '#f00';
+            var _iteratorNormalCompletion3 = true;
+            var _didIteratorError3 = false;
+            var _iteratorError3 = undefined;
+
+            try {
+                for (var _iterator3 = this.propHps[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                    var propHp = _step3.value;
+
+                    ctx.beginPath();
+                    ctx.arc(propHp.position.x, propHp.position.y, config.hp.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } catch (err) {
+                _didIteratorError3 = true;
+                _iteratorError3 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                        _iterator3.return();
+                    }
+                } finally {
+                    if (_didIteratorError3) {
+                        throw _iteratorError3;
+                    }
+                }
+            }
+
+            ctx.fillStyle = '#0f0';
+            var _iteratorNormalCompletion4 = true;
+            var _didIteratorError4 = false;
+            var _iteratorError4 = undefined;
+
+            try {
+                for (var _iterator4 = this.propGuns[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                    var _propHp = _step4.value;
+
+                    ctx.beginPath();
+                    ctx.arc(_propHp.position.x, _propHp.position.y, config.hp.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // 绘制可见区域
+            } catch (err) {
+                _didIteratorError4 = true;
+                _iteratorError4 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                        _iterator4.return();
+                    }
+                } finally {
+                    if (_didIteratorError4) {
+                        throw _iteratorError4;
+                    }
+                }
+            }
+
+            ctx.save();
+            // 绘制可见区域中所有玩家
+            ctx.beginPath();
+            if (currPlayer) ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius - 1, 0, Math.PI * 2);
+            ctx.clip();
+            this._drawPlayer(ctx, this._mainPROTCache.playerIdsInSight, '#fff', '#f00');
+            // 绘制可见区域中所有障碍物
+            ctx.fillStyle = '#fff';
+            var _iteratorNormalCompletion5 = true;
+            var _didIteratorError5 = false;
+            var _iteratorError5 = undefined;
+
+            try {
+                for (var _iterator5 = this.barricades[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                    var _barricade = _step5.value;
+
+                    ctx.fillRect(_barricade.point1.x, _barricade.point1.y, _barricade.point2.x - _barricade.point1.x, _barricade.point2.y - _barricade.point1.y);
+                }
+            } catch (err) {
+                _didIteratorError5 = true;
+                _iteratorError5 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                        _iterator5.return();
+                    }
+                } finally {
+                    if (_didIteratorError5) {
+                        throw _iteratorError5;
+                    }
+                }
+            }
+
+            ctx.restore();
+            // 绘制可见区域光线
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(255,255,255,0.25)';
+            if (currPlayer) ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius, 0, Math.PI * 2);
+            ctx.fill();
+            // 绘制本玩家
+            this._drawPlayer(ctx, [this.currentPlayerId], '#333', '#f00');
+            // 绘制射击
+            var isShooted = false;
+            this._mainPROTCache.shootPROTs.forEach(function (shootPROT) {
+                ctx.save();
+                if (shootPROT.shootingPlayerId == _this2.currentPlayerId && shootPROT.shootedPlayerId) {
+                    isShooted = true;
+                }
+                // 绘制射击可见区域中所有玩家
+                ctx.beginPath();
+                ctx.arc(shootPROT.position.x, shootPROT.position.y, config.player.shootingSightRadius - 1, 0, Math.PI * 2);
+                ctx.clip();
+                _this2._drawPlayer(ctx, shootPROT.playerIdsInSight, '#fff', '#f00');
+                ctx.restore();
+                if (shootPROT.shootedPlayerId) {
+                    _this2._drawPlayer(ctx, [shootPROT.shootedPlayerId], '#fff', '#f00');
+                }
+                // 绘制射击可见区域
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(255,255,0,0.25)';
+                ctx.strokeStyle = 'rgba(255,255,0,0.25)';
+                ctx.lineWidth = 3;
+                ctx.arc(shootPROT.position.x, shootPROT.position.y, config.player.shootingSightRadius, 0, Math.PI * 2);
+                ctx.fill();
+                // 绘制射击射线
+                ctx.beginPath();
+                ctx.moveTo(shootPROT.position.x, shootPROT.position.y);
+                if (shootPROT.collisionPoint) {
+                    ctx.lineTo(shootPROT.collisionPoint.x, shootPROT.collisionPoint.y);
+                } else {
+                    var d = Math.max(canvas.width, canvas.height);
+                    ctx.lineTo(shootPROT.position.x + d * Math.cos(shootPROT.angle), shootPROT.position.y + d * Math.sin(shootPROT.angle));
+                }
+                ctx.stroke();
+            });
+            // 绘制奔跑
+            this._mainPROTCache.runningPROTs.forEach(function (runningPROT) {
+                ctx.save();
+                // 绘制奔跑范围视野中所有的玩家
+                ctx.beginPath();
+                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
+                ctx.clip();
+                _this2._drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
+                ctx.restore();
+                // 绘制奔跑视野
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.restore();
+            if (this._shooingInAimEffect) this._shooingInAimEffect.draw(ctx);
+            this._shootedEffects.forEach(function (p) {
+                return p.draw(ctx);
+            });
+        }
+    }]);
+
+    return render;
+}();
+
+exports.render = render;
+
+var resource = function () {
+    function resource() {
+        _classCallCheck(this, resource);
+
+        this._isDisposed = false;
+    }
+
+    _createClass(resource, [{
+        key: "dispose",
+        value: function dispose() {
+            this._isDisposed = true;
+        }
+    }]);
+
+    return resource;
+}();
+
+var shootedEffect = function (_resource) {
+    _inherits(shootedEffect, _resource);
+
+    function shootedEffect(angle) {
+        _classCallCheck(this, shootedEffect);
+
+        var _this3 = _possibleConstructorReturn(this, (shootedEffect.__proto__ || Object.getPrototypeOf(shootedEffect)).call(this));
+
+        _this3._timeout = 10;
+        _this3._angle = angle;
+        return _this3;
+    }
+
+    _createClass(shootedEffect, [{
+        key: "draw",
+        value: function draw(ctx) {
+            if (this._isDisposed) return;
+            ctx.save();
+            ctx.strokeStyle = '#f00';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(ctx.canvas.width / 2, ctx.canvas.height / 2, 50, this._angle - Math.PI / 32, this._angle + Math.PI / 32);
+            ctx.stroke();
+            ctx.restore();
+            if (--this._timeout <= 0) {
+                this.dispose();
+            }
+        }
+    }]);
+
+    return shootedEffect;
+}(resource);
+
+var shootingInAimEffect = function (_resource2) {
+    _inherits(shootingInAimEffect, _resource2);
+
+    function shootingInAimEffect(text) {
+        _classCallCheck(this, shootingInAimEffect);
+
+        var _this4 = _possibleConstructorReturn(this, (shootingInAimEffect.__proto__ || Object.getPrototypeOf(shootingInAimEffect)).call(this));
+
+        _this4._fontsize = 20;
+        _this4._text = text;
+        return _this4;
+    }
+
+    _createClass(shootingInAimEffect, [{
+        key: "draw",
+        value: function draw(ctx) {
+            if (this._isDisposed) return;
+            ctx.save();
+            ctx.font = this._fontsize + "px \u5FAE\u8F6F\u96C5\u9ED1";
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(this._text, ctx.canvas.width / 2, 50);
+            ctx.restore();
+            if (++this._fontsize > 50) {
+                this.dispose();
+            }
+        }
+    }]);
+
+    return shootingInAimEffect;
+}(resource);
 
 /***/ }),
 /* 8 */
 /***/ (function(module, exports) {
 
-module.exports = window.Vue;
+module.exports = window.$;
 
 /***/ }),
 /* 9 */
+/***/ (function(module, exports) {
+
+module.exports = window.Vue;
+
+/***/ }),
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1116,7 +1267,7 @@ var main = function () {
         var dm = new dom_manager_1.domManager(this._connectWebSocketServer.bind(this));
         this._gameCore = new game_core_1.gameCore(this._send.bind(this), dm);
         setInterval(function () {
-            console.log(_this._dataLengthPerSec / 1024 + " KB/s");
+            // console.log(`${this._dataLengthPerSec / 1024} KB/s`);
             _this._dataLengthPerSec = 0;
         }, 1000);
     }

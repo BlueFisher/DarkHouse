@@ -25,7 +25,9 @@ export class gameCore extends events.EventEmitter {
 	private _barricades: barricade[] = [];
 	private _propManager: propManager;
 
+	private _shootingCacheId = 0;
 	private _shootingCache: {
+		id: number,
 		shootingPosition: point,
 		shootingPlayer: player,
 		angle: number,
@@ -58,29 +60,47 @@ export class gameCore extends events.EventEmitter {
 		}
 
 		// 生成射击协议
-		let generateShootPROTs = () => {
+		let generateShootPROTs: () => [toClientPROT.shootPROT[], toClientPROT.duringShootingPROT[]] = () => {
 			let shootPROTs: toClientPROT.shootPROT[] = [];
+			let duringShootingPROTs: toClientPROT.duringShootingPROT[] = [];
+
 			for (let i = this._shootingCache.length - 1; i >= 0; i--) {
 				let shootingCache = this._shootingCache[i];
-				let shootedPlayerId: number | undefined;
-				if (shootingCache.shootedPlayer) {
-					shootedPlayerId = (shootingCache.shootedPlayer as player).id;
-				}
+				// 如果是初次加入到射击缓存中
+				if (shootingCache.timeCount == shootingCache.shootingPlayer.getGun().shootingSightTimeOut / serverConfig.tickrate) {
+					shootPROTs.push({
+						id: shootingCache.id,
+						position: shootingCache.shootingPosition,
+						angle: shootingCache.angle,
+						playerIdsInSight: this._playerManager
+							.getPlayersInRadius(shootingCache.shootingPosition, shootingCache.shootingPlayer.getGun().shootingSightRadius)
+							.map(p => p.id),
+						shootingPlayerId: shootingCache.shootingPlayer.id,
+						collisionPoint: shootingCache.collisionPoint,
+						shootedPlayerId: shootingCache.shootedPlayer ? shootingCache.shootedPlayer.id : undefined
+					});
+					shootingCache.timeCount--;
+				} else {
+					if (--shootingCache.timeCount <= 0) {
+						duringShootingPROTs.push({
+							id: shootingCache.id,
+							playerIdsInSight: [],
+							isEnd: true
+						});
+						this._shootingCache.splice(i, 1);
+					} else {
+						duringShootingPROTs.push({
+							id: shootingCache.id,
+							playerIdsInSight: this._playerManager
+								.getPlayersInRadius(shootingCache.shootingPosition, shootingCache.shootingPlayer.getGun().shootingSightRadius)
+								.map(p => p.id),
+							isEnd: false
+						});
+					}
 
-				shootPROTs.push({
-					position: shootingCache.shootingPosition,
-					angle: shootingCache.angle,
-					playerIdsInSight: this._playerManager
-						.getPlayersInRadius(shootingCache.shootingPosition, shootingCache.shootingPlayer.getGun().shootingSightRadius)
-						.map(p => p.id),
-					collisionPoint: shootingCache.collisionPoint,
-					shootedPlayerId: shootedPlayerId
-				});
-				if (--shootingCache.timeCount <= 0) {
-					this._shootingCache.splice(i, 1);
 				}
 			}
-			return shootPROTs;
+			return [shootPROTs, duringShootingPROTs];
 		}
 
 		// 生成奔跑协议
@@ -115,15 +135,16 @@ export class gameCore extends events.EventEmitter {
 		setInterval(() => {
 			let sendingMap = new Map<number, toClientPROT.mainPROT>();
 			let newPlayersBasicPROTs = generateNewPlayersBasicPROTs();
-			let shootPROTs = generateShootPROTs();
+			let [shootPROTs, duringShootingPROTs] = generateShootPROTs();
 			let connectedPlayers = this._playerManager.players.filter(p => p.connected);
 			let runningPROTs = generateRunningPROTs(connectedPlayers);
 			let propPROTs = this._propManager.getAndClearPropPROTs();
 
 			for (let player of connectedPlayers) {
-				let mainPROT = new toClientPROT.mainPROT(player.id,
+				let mainPROT = new toClientPROT.mainPROT(
 					this._playerManager.getPlayersInPlayerSight(player, config.player.sightRadius).map(p => p.id));
 				mainPROT.shootPROTs = shootPROTs;
+				mainPROT.duringShootingPROTs = duringShootingPROTs;
 				mainPROT.runningPROTs = runningPROTs;
 				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
 
@@ -134,7 +155,7 @@ export class gameCore extends events.EventEmitter {
 
 				mainPROT.rankList = this._playerManager.getRankList();
 
-				mainPROT.formatPlayerPROT((playerId) => {
+				mainPROT.formatPlayerPROT(player.id, (playerId) => {
 					let player = this._playerManager.findPlayerById(playerId);
 					if (player)
 						return player.getPlayerPROT();
@@ -352,6 +373,7 @@ export class gameCore extends events.EventEmitter {
 		}
 
 		this._shootingCache.push({
+			id: ++this._shootingCacheId,
 			shootingPosition: player.position,
 			shootingPlayer: player,
 			angle: angle,

@@ -19,7 +19,7 @@ class main {
 		this._gameCore = new gameCore(this._send.bind(this), dm);
 
 		setInterval(() => {
-			console.log(`${this._dataLengthPerSec / 1024} KB/s`);
+			// console.log(`${this._dataLengthPerSec / 1024} KB/s`);
 			this._dataLengthPerSec = 0;
 		}, 1000);
 	}
