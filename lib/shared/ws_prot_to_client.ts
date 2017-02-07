@@ -14,6 +14,10 @@ export interface playerPROT {
 	maxBullet: number
 }
 
+export interface edgePROT {
+	point1: point,
+	point2: point
+}
 export interface barricadePROT {
 	point1: point,
 	point2: point
@@ -41,12 +45,14 @@ export interface shootPROT {
 	angle: number,
 	playerIdsInSight: number[],
 	shootingPlayerId: number,
-	collisionPoint?: point,
-	shootedPlayerId?: number
+	bulletPosition: point,
 }
 export interface duringShootingPROT {
 	id: number,
+	bulletPosition: point,
 	playerIdsInSight: number[],
+	shootedPlayerId?: number,
+	isSightEnd: boolean,
 	isEnd: boolean
 }
 
@@ -78,18 +84,21 @@ export class pongProtocol extends baseProtocol {
 
 export class initialize extends baseProtocol {
 	constructor(currPlayerId: number, players: playerBasicPROT[],
+		edge: edgePROT,
 		barricades: barricadePROT[],
 		propHps: propHpPROT[], propGuns: propGunPROT[]) {
 		super(type.init);
 
 		this.currPlayerId = currPlayerId;
 		this.players = players;
+		this.edge = edge;
 		this.barricades = barricades;
 		this.propHps = propHps;
 		this.propGuns = propGuns;
 	}
 	currPlayerId: number;
 	players: playerBasicPROT[];
+	edge: edgePROT;
 	barricades: barricadePROT[];
 	propHps: propHpPROT[];
 	propGuns: propGunPROT[];
@@ -107,8 +116,9 @@ export class mainPROT extends baseProtocol {
 		arr = arr.concat(this.playerIdsInSight);
 		for (let shootPROT of this.shootPROTs) {
 			arr = arr.concat(shootPROT.playerIdsInSight);
-			if (shootPROT.shootedPlayerId)
-				arr.push(shootPROT.shootedPlayerId)
+		}
+		for (let duringShootingPROT of this.duringShootingPROTs) {
+			arr = arr.concat(duringShootingPROT.playerIdsInSight);
 		}
 		for (let runningPROT of this.runningPROTs) {
 			arr = arr.concat(runningPROT.playerIdsInSight);

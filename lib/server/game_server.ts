@@ -5,6 +5,7 @@ import * as session from 'express-session';
 import { logger } from './log';
 import { gameCore } from './game_core';
 
+import * as config from '../shared/game_config';
 import * as fromClientPROT from '../shared/ws_prot_from_client';
 import * as toClientPROT from '../shared/ws_prot_to_client';
 
@@ -202,7 +203,7 @@ export class gameServer {
 	}
 
 	private _initializeGameCore() {
-		this._gameCore = new gameCore();
+		this._gameCore = new gameCore(config.stage.height, config.stage.width);
 		this._gameCore.on(gameCore.events.sendToPlayers, (map: Map<number, toClientPROT.baseProtocol>) => {
 			map.forEach((v, k) => {
 				let spMap = this._socketPlayerColl.find(p => p.playerId == k);

@@ -77,22 +77,40 @@ export class player {
 		}
 	}
 
-	adjustPlayerCollided(newPlayerPos: point) {
-		if (utils.didTwoCirclesCollied(this.position, config.player.radius, newPlayerPos, config.player.radius)) {
+	adjustCircleCollided(newPos: point, r: number) {
+		if (utils.didTwoCirclesCollied(this.position, config.player.radius, newPos, r)) {
 			let pos = this.position;
-			let d = utils.getTwoPointsDistance(pos, newPlayerPos);
-			let x = pos.x + 2 * config.player.radius * (newPlayerPos.x - pos.x) / d;
-			let y = pos.y + 2 * config.player.radius * (newPlayerPos.y - pos.y) / d;
-			newPlayerPos.x = x;
-			newPlayerPos.y = y;
+			let d = utils.getTwoPointsDistance(pos, newPos);
+			let x = pos.x + (config.player.radius + r) * (newPos.x - pos.x) / d;
+			let y = pos.y + (config.player.radius + r) * (newPos.y - pos.y) / d;
+			newPos.x = x;
+			newPos.y = y;
 		}
 	}
 
-	didPlayerCollided(playerPos: point) {
-		return utils.didTwoCirclesCollied(this.position, config.player.radius, playerPos, config.player.radius);
+	didCircleCollided(pos: point, r: number) {
+		return utils.didTwoCirclesCollied(this.position, config.player.radius, pos, r);
 	}
-	getRayCollidedPoint(point: point, angle: number) {
-		return utils.getRayCircleCollidedPoint(point, angle, this.position, config.player.radius);
+
+	getLineCollidedPoint(oldPos: point, newPos: point) {
+		let collidedPoints = utils.getLineCircleCrossPoints(oldPos, newPos, this.position, config.player.radius);
+
+		if (collidedPoints.length == 0)
+			return null;
+		else if (collidedPoints.length == 1)
+			return collidedPoints[0];
+		else {
+			let minPoint = collidedPoints[0];
+			let minDistant = utils.getTwoPointsDistance(collidedPoints[0], oldPos);
+			for (let i = 1; i < collidedPoints.length; i++) {
+				let d = utils.getTwoPointsDistance(collidedPoints[i], oldPos);
+				if (d < minDistant) {
+					minPoint = collidedPoints[i];
+					minDistant = d;
+				}
+			}
+			return minPoint;
+		}
 	}
 
 	private _canContinueShooting = false;

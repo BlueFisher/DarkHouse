@@ -1,7 +1,8 @@
+import * as serverConfig from '../config';
+
 export namespace player {
-	export let movingStep = 2;
-	export let runingStep = 5;
-	export let movingInterval = 33;
+	export let movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
+	export let runingStep = 0.2 * serverConfig.mainInterval;  // 每循环跑步前进距离
 
 	export let maxHp = 3;
 	export let radius = 20;
@@ -29,8 +30,9 @@ export namespace gun {
 	export interface defaultSetting {
 		shootingInterval: number,
 		shootingSightRadius: number,
-		shootingSightTimeOut: number, // 射击视野停留时间
+		shootingSightRemainsTime: number, // 射击视野停留时间(ms)
 		bullet: number,
+		bulletFlyStep: number, // 每循环子弹前进距离
 		maxBullet: number
 	}
 
@@ -38,15 +40,17 @@ export namespace gun {
 	defaultSettings.set(type.pistol, {
 		shootingInterval: 500,
 		shootingSightRadius: 130,
-		shootingSightTimeOut: 100,
+		shootingSightRemainsTime: 70,
 		bullet: 15,
+		bulletFlyStep: 3 * serverConfig.mainInterval,
 		maxBullet: 30
 	});
 	defaultSettings.set(type.rifle, {
 		shootingInterval: 200,
 		shootingSightRadius: 200,
-		shootingSightTimeOut: 100,
+		shootingSightRemainsTime: 60,
 		bullet: 30,
+		bulletFlyStep: 0.8 * serverConfig.mainInterval,
 		maxBullet: 60
 	});
 }

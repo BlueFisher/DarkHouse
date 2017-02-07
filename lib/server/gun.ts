@@ -1,22 +1,26 @@
 import * as config from '../shared/game_config';
+import * as serverConfig from '../config';
 
 export class gun {
 	readonly type: config.gun.type;
 
-	readonly shootingInterval: number;
+	readonly bulletFlyStep: number;
 	readonly shootingSightRadius: number;
 	readonly shootingSightTimeOut: number;
 
 	private _bullet = 15;
 	private _maxBullet = 30;
+	private _shootingInterval: number;
 
 	private _canShoot = true;
 
 	constructor(type: config.gun.type, defaultSetting: config.gun.defaultSetting) {
 		this.type = type;
-		this.shootingInterval = defaultSetting.shootingInterval;
+		this._shootingInterval = defaultSetting.shootingInterval;
 		this.shootingSightRadius = defaultSetting.shootingSightRadius;
-		this.shootingSightTimeOut = defaultSetting.shootingSightTimeOut;
+		this.shootingSightTimeOut = defaultSetting.shootingSightRemainsTime / serverConfig.mainInterval;
+		this.bulletFlyStep = defaultSetting.bulletFlyStep;
+
 		this._bullet = defaultSetting.bullet;
 		this._maxBullet = defaultSetting.maxBullet;
 	}
@@ -28,7 +32,7 @@ export class gun {
 			setTimeout(() => {
 				this._canShoot = true;
 				canShootCallback();
-			}, this.shootingInterval);
+			}, this._shootingInterval);
 			return true;
 		}
 		return false;

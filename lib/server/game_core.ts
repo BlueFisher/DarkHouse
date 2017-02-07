@@ -1,9 +1,10 @@
 import * as events from 'events';
 
 import { player, playerManager } from './player';
-import { barricade } from './barricade';
+import { edge, barricade } from './barricade';
 import { propManager, propHp, propGun } from './prop';
 import * as gameServer from './game_server';
+import { gun } from './gun';
 
 import * as config from '../shared/game_config';
 import * as serverConfig from '../config';
@@ -21,32 +22,36 @@ export class gameCore extends events.EventEmitter {
 		gameOver: Symbol()
 	}
 
+	private _edge: edge;
+
 	private _playerManager: playerManager;
 	private _barricades: barricade[] = [];
 	private _propManager: propManager;
 
 	private _shootingCacheId = 0;
-	private _shootingCache: {
+	private _shootingCaches: {
 		id: number,
+		gun: gun,
 		shootingPosition: point,
 		shootingPlayer: player,
 		angle: number,
+		bulletPosition: point,
 		collisionPoint?: point,
 		shootedPlayer?: player,
-		timeCount: number
+		sightTimeCount: number
 	}[] = [];
 	private _runningCache: Map<player, number> = new Map();
 
-	constructor() {
+	constructor(width: number, height: number, edgeX = 0, edgeY = 0, ) {
 		super();
 
 		this._playerManager = new playerManager();
 		this._propManager = new propManager();
 
-		this._barricades.push(new barricade(new point(0, 0), new point(500, 10)));
-		this._barricades.push(new barricade(new point(0, 0), new point(10, 500)));
-		this._barricades.push(new barricade(new point(0, 490), new point(500, 500)));
-		this._barricades.push(new barricade(new point(490, 0), new point(500, 500)));
+		this._edge = new edge(new point(edgeX, edgeY), new point(edgeX + width, edgeY + height));
+
+		this._barricades.push(new barricade(new point(400, 80), new point(420, 400)));
+		this._barricades.push(new barricade(new point(80, 400), new point(400, 420)));
 
 		this._initializeMainLoop();
 	}
@@ -64,40 +69,43 @@ export class gameCore extends events.EventEmitter {
 			let shootPROTs: toClientPROT.shootPROT[] = [];
 			let duringShootingPROTs: toClientPROT.duringShootingPROT[] = [];
 
-			for (let i = this._shootingCache.length - 1; i >= 0; i--) {
-				let shootingCache = this._shootingCache[i];
+			for (let i = this._shootingCaches.length - 1; i >= 0; i--) {
+				let cache = this._shootingCaches[i];
 				// 如果是初次加入到射击缓存中
-				if (shootingCache.timeCount == shootingCache.shootingPlayer.getGun().shootingSightTimeOut / serverConfig.tickrate) {
+				if (cache.sightTimeCount == cache.shootingPlayer.getGun().shootingSightTimeOut) {
 					shootPROTs.push({
-						id: shootingCache.id,
-						position: shootingCache.shootingPosition,
-						angle: shootingCache.angle,
+						id: cache.id,
+						position: cache.shootingPosition,
+						angle: cache.angle,
 						playerIdsInSight: this._playerManager
-							.getPlayersInRadius(shootingCache.shootingPosition, shootingCache.shootingPlayer.getGun().shootingSightRadius)
+							.getPlayersInRadius(cache.shootingPosition, cache.shootingPlayer.getGun().shootingSightRadius)
 							.map(p => p.id),
-						shootingPlayerId: shootingCache.shootingPlayer.id,
-						collisionPoint: shootingCache.collisionPoint,
-						shootedPlayerId: shootingCache.shootedPlayer ? shootingCache.shootedPlayer.id : undefined
+						shootingPlayerId: cache.shootingPlayer.id,
+						bulletPosition: cache.bulletPosition
 					});
-					shootingCache.timeCount--;
+					cache.sightTimeCount--;
 				} else {
-					if (--shootingCache.timeCount <= 0) {
-						duringShootingPROTs.push({
-							id: shootingCache.id,
-							playerIdsInSight: [],
-							isEnd: true
-						});
-						this._shootingCache.splice(i, 1);
+					let duringShootingPROT: toClientPROT.duringShootingPROT = {
+						id: cache.id,
+						bulletPosition: cache.bulletPosition,
+						playerIdsInSight: [],
+						isSightEnd: false,
+						isEnd: false
+					};
+					if (--cache.sightTimeCount <= 0) {
+						duringShootingPROT.isSightEnd = true;
 					} else {
-						duringShootingPROTs.push({
-							id: shootingCache.id,
-							playerIdsInSight: this._playerManager
-								.getPlayersInRadius(shootingCache.shootingPosition, shootingCache.shootingPlayer.getGun().shootingSightRadius)
-								.map(p => p.id),
-							isEnd: false
-						});
+						duringShootingPROT.playerIdsInSight = this._playerManager
+							.getPlayersInRadius(cache.shootingPosition, cache.shootingPlayer.getGun().shootingSightRadius)
+							.map(p => p.id);
+					}
+					if (cache.collisionPoint) {
+						duringShootingPROT.shootedPlayerId = cache.shootedPlayer ? cache.shootedPlayer.id : undefined;
+						duringShootingPROT.isEnd = true;
+						this._shootingCaches.splice(i, 1);
 					}
 
+					duringShootingPROTs.push(duringShootingPROT);
 				}
 			}
 			return [shootPROTs, duringShootingPROTs];
@@ -129,6 +137,83 @@ export class gameCore extends events.EventEmitter {
 				}
 			}
 			return runningPROTs;
+		}
+
+		let handleShootingCache = () => {
+			for (let cache of this._shootingCaches.filter(p => !p.collisionPoint)) {
+				let oldPos = cache.bulletPosition,
+					newPos = new point(oldPos.x + cache.gun.bulletFlyStep * Math.cos(cache.angle),
+						oldPos.y + cache.gun.bulletFlyStep * Math.sin(cache.angle));
+
+				let collidedPlayers = this._playerManager.players.map(p => {
+					if (p == cache.shootingPlayer)
+						return null;
+
+					let collidedPoint = p.getLineCollidedPoint(oldPos, newPos);
+					if (collidedPoint) {
+						return {
+							player: p,
+							point: collidedPoint
+						}
+					} else {
+						return null;
+					}
+				});
+
+				let minDistance = Infinity;
+				let minPoint: point | null = null;
+				let firstshootedPlayer: player | null = null;
+
+				for (let collidedPlayer of collidedPlayers) {
+					if (!collidedPlayer)
+						continue;
+					let d = utils.getTwoPointsDistance(collidedPlayer.point, cache.shootingPosition);
+					if (d < minDistance) {
+						minDistance = d;
+						minPoint = collidedPlayer.point;
+						firstshootedPlayer = collidedPlayer.player;
+					}
+				}
+
+				let collidedBarricadePoints = this._barricades.map(b => {
+					return b.getLineCollidedPoint(oldPos, newPos);
+				});
+
+				for (let barricadePoint of collidedBarricadePoints) {
+					if (barricadePoint) {
+						let d = utils.getTwoPointsDistance(barricadePoint, cache.shootingPosition);
+						if (d < minDistance) {
+							minDistance = d;
+							minPoint = barricadePoint;
+							firstshootedPlayer = null;
+						}
+					}
+				}
+
+				if (!minPoint) {
+					let collidedEdgePoint = this._edge.getLineCollidedPoint(oldPos, newPos);
+					if (collidedEdgePoint) {
+						minPoint = collidedEdgePoint;
+					}
+				}
+
+				if (firstshootedPlayer) {
+					cache.shootedPlayer = firstshootedPlayer;
+					this._playerShooted(firstshootedPlayer);
+				}
+
+				if (minPoint) {
+					cache.bulletPosition = cache.collisionPoint = minPoint;
+				} else {
+					cache.bulletPosition = newPos;
+				}
+			}
+		}
+
+		let handlePlayerMoving = () => {
+			for (let player of this._playerManager.players) {
+				this._playerMove(player);
+			}
 		}
 
 		// 主计时器循环
@@ -167,31 +252,32 @@ export class gameCore extends events.EventEmitter {
 			}
 
 			this.emit(gameCore.events.sendToPlayers, sendingMap);
-		}, 1000 / serverConfig.tickrate);
+
+			handleShootingCache();
+			handlePlayerMoving();
+
+		}, serverConfig.mainInterval);
 
 		// 生命值道具计时器循环
 		setInterval(() => {
 			if (this._propManager.propHps.length < config.hp.maxNumber)
 				this._addNewPropHp();
 		}, config.hp.appearInterval);
-
-		// 玩家移动计时器循环
-		setInterval(() => {
-			for (let player of this._playerManager.players) {
-				this._playerMove(player);
-			}
-		}, config.player.movingInterval);
 	}
 
 	private _addNewPropHp() {
 		let newPosition: point | undefined;
 		while (!newPosition) {
 			newPosition = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
-			if (this._playerManager.players.find(p => p.didPlayerCollided(newPosition as point))) {
+			if (this._edge.didCircleCollided(newPosition, config.player.radius)) {
 				newPosition = undefined;
 				continue;
 			}
-			if (this._barricades.find(p => p.didPlayerCollided(newPosition as point))) {
+			if (this._playerManager.players.find(p => p.didCircleCollided(newPosition as point, config.player.radius))) {
+				newPosition = undefined;
+				continue;
+			}
+			if (this._barricades.find(p => p.didCircleCollided(newPosition as point, config.player.radius))) {
 				newPosition = undefined;
 				continue;
 			}
@@ -205,6 +291,7 @@ export class gameCore extends events.EventEmitter {
 
 		return new toClientPROT.initialize(currPlayerId,
 			players.map(p => p.getPlayerBasicPROT()),
+			this._edge.getEdgePROT(),
 			this._barricades.map(p => p.getBarricadePROT()),
 			this._propManager.propHps.map(p => p.getPropHpPROT()),
 			this._propManager.propGuns.map(p => p.getPropGunPROT())
@@ -220,12 +307,18 @@ export class gameCore extends events.EventEmitter {
 	addNewPlayer(name: string): number {
 		let newPoisition: point | undefined;
 		while (!newPoisition) {
-			newPoisition = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
-			if (this._playerManager.players.find(p => p.didPlayerCollided(newPoisition as point))) {
+			newPoisition = new point(Math.random() * this._edge.getWidth() + this._edge.vertex1.x,
+				Math.random() * this._edge.getHeight() + this._edge.vertex1.y);
+
+			if (this._edge.didCircleCollided(newPoisition, config.player.radius)) {
 				newPoisition = undefined;
 				continue;
 			}
-			if (this._barricades.find(p => p.didPlayerCollided(newPoisition as point))) {
+			if (this._playerManager.players.find(p => p.didCircleCollided(newPoisition as point, config.player.radius))) {
+				newPoisition = undefined;
+				continue;
+			}
+			if (this._barricades.find(p => p.didCircleCollided(newPoisition as point, config.player.radius))) {
 				newPoisition = undefined;
 				continue;
 			}
@@ -275,15 +368,16 @@ export class gameCore extends events.EventEmitter {
 		let y = oldPos.y + Math.sin(angle) * step;
 		let newPos = new point(x, y);
 
+		this._edge.adjustCircleCollided(newPos, config.player.radius);
 		this._barricades.forEach(p => {
-			p.adjustPlayerCollided(oldPos, newPos);
+			p.adjustCircleCollided(oldPos, newPos, config.player.radius);
 		});
 
 		this._playerManager.players.forEach(p => {
 			if (p == player)
 				return;
 
-			p.adjustPlayerCollided(newPos);
+			p.adjustCircleCollided(newPos, config.player.radius);
 		});
 
 		this._propManager.tryCoverProp(player, newPos);
@@ -301,85 +395,40 @@ export class gameCore extends events.EventEmitter {
 		}
 	}
 
+	private _playerShooted(player: player) {
+		player.records.shootingInAimTimes++;
+		player.records.shootedTimes++;
+
+		let hp = player.getHp();
+		if (hp - 1 == 0) {
+			player.records.killTimes++;
+			this.emit(gameCore.events.gameOver, player.id,
+				new toClientPROT.gameOver(player.records));
+			this._playerManager.removePlayer(player);
+
+			if (player.getGun().getBullet() > 0) {
+				this._propManager.addPropGun(player.position, player.getGun());
+			}
+		} else {
+			player.setHp(hp - 1);
+		}
+	}
+
 	private _playerShoot(player: player) {
 		player.records.shootingTimes++;
 
 		let position = player.position;
 		let angle = player.getDirectionAngle();
 
-		let playersInRay = this._playerManager.players.map(p => {
-			if (p == player)
-				return null;
-
-			let collidedPoint = p.getRayCollidedPoint(position, angle);
-			if (collidedPoint) {
-				return {
-					player: p,
-					point: collidedPoint
-				}
-			} else {
-				return null;
-			}
-		});
-
-		let minDistance = Infinity;
-		let minPoint: point | undefined;
-		let firstshootedPlayer: player | undefined;
-
-		for (let playerInRay of playersInRay) {
-			if (playerInRay) {
-				let d = utils.getTwoPointsDistance(playerInRay.point, position);
-				if (d < minDistance) {
-					minDistance = d;
-					minPoint = playerInRay.point;
-					firstshootedPlayer = playerInRay.player;
-				}
-			}
-		}
-
-		let collidedBarricadePoints = this._barricades.map(b => {
-			return b.getRayCollidedPoint(position, angle);
-		});
-
-		for (let barricadePoint of collidedBarricadePoints) {
-			if (barricadePoint) {
-				let d = Math.sqrt((barricadePoint.x - position.x) ** 2
-					+ (barricadePoint.y - position.y) ** 2);
-				if (d < minDistance) {
-					minDistance = d;
-					minPoint = barricadePoint;
-					firstshootedPlayer = undefined;
-				}
-			}
-		}
-
-		if (firstshootedPlayer) {
-			player.records.shootingInAimTimes++;
-			firstshootedPlayer.records.shootedTimes++;
-
-			let hp = firstshootedPlayer.getHp();
-			if (hp - 1 == 0) {
-				player.records.killTimes++;
-				this.emit(gameCore.events.gameOver, firstshootedPlayer.id,
-					new toClientPROT.gameOver(firstshootedPlayer.records));
-				this._playerManager.removePlayer(firstshootedPlayer);
-
-				if (firstshootedPlayer.getGun().getBullet() > 0) {
-					this._propManager.addPropGun(firstshootedPlayer.position, firstshootedPlayer.getGun());
-				}
-			} else {
-				firstshootedPlayer.setHp(hp - 1);
-			}
-		}
-
-		this._shootingCache.push({
+		this._shootingCaches.push({
 			id: ++this._shootingCacheId,
-			shootingPosition: player.position,
+			gun: player.getGun(),
+			bulletPosition: new point(position.x + config.player.radius * Math.cos(angle),
+				position.y + config.player.radius * Math.sin(angle)),
+			shootingPosition: point.getNewInstance(position),
 			shootingPlayer: player,
 			angle: angle,
-			collisionPoint: minPoint,
-			shootedPlayer: firstshootedPlayer,
-			timeCount: player.getGun().shootingSightTimeOut / serverConfig.tickrate
+			sightTimeCount: player.getGun().shootingSightTimeOut
 		});
 	}
 }

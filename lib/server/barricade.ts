@@ -21,28 +21,26 @@ export class barricade {
 		}
 	}
 
-	didPlayerCollided(playerPos: point) {
-		let r = config.player.radius;
-
-		if (playerPos.x >= this.vertex1.x &&
-			playerPos.y > this.vertex1.y - r &&
-			playerPos.x <= this.vertex2.x &&
-			playerPos.y < this.vertex2.y + r) {
+	didCircleCollided(pos: point, r: number) {
+		if (pos.x >= this.vertex1.x &&
+			pos.y > this.vertex1.y - r &&
+			pos.x <= this.vertex2.x &&
+			pos.y < this.vertex2.y + r) {
 
 			return true;
 		}
 
-		if (playerPos.x > this.vertex1.x - r &&
-			playerPos.y >= this.vertex1.y &&
-			playerPos.x < this.vertex2.x + r &&
-			playerPos.y <= this.vertex2.y) {
+		if (pos.x > this.vertex1.x - r &&
+			pos.y >= this.vertex1.y &&
+			pos.x < this.vertex2.x + r &&
+			pos.y <= this.vertex2.y) {
 
 			return true;
 		}
 
 		for (let vertex of [this.vertex1, new point(this.vertex2.x, this.vertex1.y),
 		this.vertex2, new point(this.vertex1.x, this.vertex2.y)]) {
-			if (utils.didDotInCircle(playerPos, vertex, r)) {
+			if (utils.didDotInCircle(pos, vertex, r)) {
 				return true;
 			}
 		}
@@ -50,51 +48,49 @@ export class barricade {
 		return false;
 	}
 
-	adjustPlayerCollided(oldPlayerPos: point, newPlayerPos: point) {
-		let r = config.player.radius;
+	adjustCircleCollided(oldPos: point, newPos: point, r: number) {
+		if (newPos.x >= this.vertex1.x &&
+			newPos.y > this.vertex1.y - r &&
+			newPos.x <= this.vertex2.x &&
+			newPos.y < this.vertex2.y + r) {
 
-		if (newPlayerPos.x >= this.vertex1.x &&
-			newPlayerPos.y > this.vertex1.y - r &&
-			newPlayerPos.x <= this.vertex2.x &&
-			newPlayerPos.y < this.vertex2.y + r) {
-
-			if (oldPlayerPos.y < this.vertex1.y)
-				newPlayerPos.y = this.vertex1.y - r;
-			else if (oldPlayerPos.y > this.vertex2.y) {
-				newPlayerPos.y = this.vertex2.y + r;
+			if (oldPos.y < this.vertex1.y)
+				newPos.y = this.vertex1.y - r;
+			else if (oldPos.y > this.vertex2.y) {
+				newPos.y = this.vertex2.y + r;
 			}
 		}
 
-		if (newPlayerPos.x > this.vertex1.x - r &&
-			newPlayerPos.y >= this.vertex1.y &&
-			newPlayerPos.x < this.vertex2.x + r &&
-			newPlayerPos.y <= this.vertex2.y) {
+		if (newPos.x > this.vertex1.x - r &&
+			newPos.y >= this.vertex1.y &&
+			newPos.x < this.vertex2.x + r &&
+			newPos.y <= this.vertex2.y) {
 
-			if (oldPlayerPos.x < this.vertex1.x)
-				newPlayerPos.x = this.vertex1.x - r;
-			else if (oldPlayerPos.x > this.vertex2.x) {
-				newPlayerPos.x = this.vertex2.x + r;
+			if (oldPos.x < this.vertex1.x)
+				newPos.x = this.vertex1.x - r;
+			else if (oldPos.x > this.vertex2.x) {
+				newPos.x = this.vertex2.x + r;
 			}
 		}
 
 		for (let vertex of [this.vertex1, new point(this.vertex2.x, this.vertex1.y),
 		this.vertex2, new point(this.vertex1.x, this.vertex2.y)]) {
-			if (utils.didDotInCircle(newPlayerPos, vertex, r)) {
-				let d = utils.getTwoPointsDistance(newPlayerPos, vertex);
-				newPlayerPos.x = vertex.x + r * (newPlayerPos.x - vertex.x) / d;
-				newPlayerPos.y = vertex.y + r * (newPlayerPos.y - vertex.y) / d;
+			if (utils.didDotInCircle(newPos, vertex, r)) {
+				let d = utils.getTwoPointsDistance(newPos, vertex);
+				newPos.x = vertex.x + r * (newPos.x - vertex.x) / d;
+				newPos.y = vertex.y + r * (newPos.y - vertex.y) / d;
 				break;
 			}
 		}
 	}
 
-	getRayCollidedPoint(rayPoint: point, angle: number): point | null {
+	getLineCollidedPoint(oldPos: point, newPos: point) {
 		let collidedPoints: point[] = [];
 		let vertexes = [this.vertex1, new point(this.vertex2.x, this.vertex1.y),
 		this.vertex2, new point(this.vertex1.x, this.vertex2.y)];
 
 		for (let i = 0; i < 4; i++) {
-			let collidedPoint = utils.getRayLineCollidedPoint(rayPoint, angle, vertexes[i], vertexes[(i + 1) % 4]);
+			let collidedPoint = utils.getTwoLinesCrossPoint(oldPos, newPos, vertexes[i], vertexes[(i + 1) % 4]);
 			if (collidedPoint) {
 				collidedPoints.push(collidedPoint);
 			}
@@ -106,9 +102,88 @@ export class barricade {
 			return collidedPoints[0];
 		else {
 			let minPoint = collidedPoints[0];
-			let minDistant = Infinity;
-			for (let i = 0; i < collidedPoints.length; i++) {
-				let d = Math.sqrt((collidedPoints[i].x - rayPoint.x) ** 2 + (collidedPoints[i].y - rayPoint.y) ** 2);
+			let minDistant = utils.getTwoPointsDistance(collidedPoints[0], oldPos);
+			for (let i = 1; i < collidedPoints.length; i++) {
+				let d = utils.getTwoPointsDistance(collidedPoints[i], oldPos);
+				if (d < minDistant) {
+					minPoint = collidedPoints[i];
+					minDistant = d;
+				}
+			}
+			return minPoint;
+		}
+	}
+}
+
+export class edge {
+	readonly vertex1: point;
+	readonly vertex2: point;
+
+	constructor(vertex1: point, vertex2: point) {
+		this.vertex1 = vertex1;
+		this.vertex2 = vertex2;
+	}
+
+	getWidth() {
+		return Math.abs(this.vertex2.x - this.vertex1.x);
+	}
+	getHeight() {
+		return Math.abs(this.vertex2.y - this.vertex1.y);
+	}
+
+	getEdgePROT(): toClientPROT.edgePROT {
+		return {
+			point1: this.vertex1,
+			point2: this.vertex2
+		}
+	}
+
+	didCircleCollided(pos: point, r: number) {
+		if (pos.x - r < this.vertex1.x ||
+			pos.y - r < this.vertex1.y ||
+			pos.x + r > this.vertex2.x ||
+			pos.y + r > this.vertex2.y) {
+			return true;
+		}
+		return false;
+	}
+
+	adjustCircleCollided(pos: point, r: number) {
+		if (pos.x - r < this.vertex1.x) {
+			pos.x = this.vertex1.x + r;
+		}
+		if (pos.y - r < this.vertex1.y) {
+			pos.y = this.vertex1.y + r;
+		}
+		if (pos.x + r > this.vertex2.x) {
+			pos.x = this.vertex2.x - r;
+		}
+		if (pos.y + r > this.vertex2.y) {
+			pos.y = this.vertex2.y - r;
+		}
+	}
+
+	getLineCollidedPoint(oldPos: point, newPos: point) {
+		let collidedPoints: point[] = [];
+		let vertexes = [this.vertex1, new point(this.vertex2.x, this.vertex1.y),
+		this.vertex2, new point(this.vertex1.x, this.vertex2.y)];
+
+		for (let i = 0; i < 4; i++) {
+			let collidedPoint = utils.getTwoLinesCrossPoint(oldPos, newPos, vertexes[i], vertexes[(i + 1) % 4]);
+			if (collidedPoint) {
+				collidedPoints.push(collidedPoint);
+			}
+		}
+
+		if (collidedPoints.length == 0)
+			return null;
+		else if (collidedPoints.length == 1)
+			return collidedPoints[0];
+		else {
+			let minPoint = collidedPoints[0];
+			let minDistant = utils.getTwoPointsDistance(collidedPoints[0], oldPos);
+			for (let i = 1; i < collidedPoints.length; i++) {
+				let d = utils.getTwoPointsDistance(collidedPoints[i], oldPos);
 				if (d < minDistant) {
 					minPoint = collidedPoints[i];
 					minDistant = d;
