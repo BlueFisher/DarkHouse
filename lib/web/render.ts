@@ -183,7 +183,11 @@ class resourcesManager {
 
 	drawEdge(ctx: CanvasRenderingContext2D) {
 		ctx.beginPath();
-		ctx.strokeStyle = '#fff';
+		ctx.strokeStyle = '#111';
+		ctx.fillStyle = '#000';
+		ctx.fillRect(this.edge.point1.x, this.edge.point1.y,
+			this.edge.point2.x - this.edge.point1.x,
+			this.edge.point2.y - this.edge.point1.y);
 		ctx.strokeRect(this.edge.point1.x, this.edge.point1.y,
 			this.edge.point2.x - this.edge.point1.x,
 			this.edge.point2.y - this.edge.point1.y);

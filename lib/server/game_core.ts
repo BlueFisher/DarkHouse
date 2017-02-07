@@ -50,8 +50,8 @@ export class gameCore extends events.EventEmitter {
 
 		this._edge = new edge(new point(edgeX, edgeY), new point(edgeX + width, edgeY + height));
 
-		this._barricades.push(new barricade(new point(400, 80), new point(420, 400)));
-		this._barricades.push(new barricade(new point(80, 400), new point(400, 420)));
+		this._barricades.push(new barricade(new point(240, 100), new point(260, 400)));
+		this._barricades.push(new barricade(new point(100, 390), new point(400, 400)));
 
 		this._initializeMainLoop();
 	}
@@ -92,7 +92,8 @@ export class gameCore extends events.EventEmitter {
 						isSightEnd: false,
 						isEnd: false
 					};
-					if (--cache.sightTimeCount <= 0) {
+
+					if (cache.sightTimeCount <= 0) {
 						duringShootingPROT.isSightEnd = true;
 					} else {
 						duringShootingPROT.playerIdsInSight = this._playerManager
@@ -102,7 +103,6 @@ export class gameCore extends events.EventEmitter {
 					if (cache.collisionPoint) {
 						duringShootingPROT.shootedPlayerId = cache.shootedPlayer ? cache.shootedPlayer.id : undefined;
 						duringShootingPROT.isEnd = true;
-						this._shootingCaches.splice(i, 1);
 					}
 
 					duringShootingPROTs.push(duringShootingPROT);
@@ -120,7 +120,7 @@ export class gameCore extends events.EventEmitter {
 					runningCache = 1;
 					this._runningCache.set(runningPlayer, runningCache);
 				}
-
+				// TODO
 				if (runningCache >= 1 && runningCache <= 5) {
 					runningPROTs.push({
 						position: runningPlayer.position,
@@ -140,7 +140,20 @@ export class gameCore extends events.EventEmitter {
 		}
 
 		let handleShootingCache = () => {
-			for (let cache of this._shootingCaches.filter(p => !p.collisionPoint)) {
+			for (let i = this._shootingCaches.length - 1; i >= 0; i--) {
+				let cache = this._shootingCaches[i];
+				if (cache.sightTimeCount <= 0) {
+					if (cache.collisionPoint) {
+						this._shootingCaches.splice(i, 1);
+						continue;
+					}
+				} else {
+					cache.sightTimeCount--;
+					if (cache.collisionPoint) {
+						continue;
+					}
+				}
+
 				let oldPos = cache.bulletPosition,
 					newPos = new point(oldPos.x + cache.gun.bulletFlyStep * Math.cos(cache.angle),
 						oldPos.y + cache.gun.bulletFlyStep * Math.sin(cache.angle));

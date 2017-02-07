@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 10);
+/******/ 	return __webpack_require__(__webpack_require__.s = 11);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -245,8 +245,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var $ = __webpack_require__(8);
-var vue = __webpack_require__(9);
+var $ = __webpack_require__(9);
+var vue = __webpack_require__(10);
 var vueData = __webpack_require__(0);
 
 var domManager = function () {
@@ -358,8 +358,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var fromClientPROT = __webpack_require__(1);
-var toClientPROT = __webpack_require__(6);
-var render_1 = __webpack_require__(7);
+var toClientPROT = __webpack_require__(7);
+var render_1 = __webpack_require__(8);
 var vueData = __webpack_require__(0);
 
 var gameCore = function () {
@@ -528,7 +528,27 @@ module.exports = window.toastr;
 "use strict";
 
 
-var serverConfig = __webpack_require__(11);
+exports.sessionAge = 7 * 24 * 60 * 60 * 1000;
+exports.httpPort = 80;
+exports.useCDN = true;
+var tickrate = 60;
+exports.mainInterval = 1000 / tickrate;
+exports.webSockets = [{
+    ip: 'localhost',
+    port: 8080
+}, {
+    ip: 'localhost',
+    port: 8888
+}];
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var serverConfig = __webpack_require__(5);
 var player;
 (function (player) {
     player.movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
@@ -581,7 +601,7 @@ var stage;
 })(stage = exports.stage || (exports.stage = {}));
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -805,7 +825,7 @@ var gameOver = function (_baseProtocol4) {
 exports.gameOver = gameOver;
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -821,7 +841,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var config = __webpack_require__(5);
+var config = __webpack_require__(6);
 
 var render = function () {
     function render(protocol) {
@@ -1079,7 +1099,9 @@ var resourcesManager = function () {
         key: "drawEdge",
         value: function drawEdge(ctx) {
             ctx.beginPath();
-            ctx.strokeStyle = '#fff';
+            ctx.strokeStyle = '#111';
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.edge.point1.x, this.edge.point1.y, this.edge.point2.x - this.edge.point1.x, this.edge.point2.y - this.edge.point1.y);
             ctx.strokeRect(this.edge.point1.x, this.edge.point1.y, this.edge.point2.x - this.edge.point1.x, this.edge.point2.y - this.edge.point1.y);
         }
     }, {
@@ -1337,19 +1359,19 @@ var shootingInAimEffect = function (_resource3) {
 }(resource);
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 module.exports = window.$;
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports) {
 
 module.exports = window.Vue;
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1427,26 +1449,6 @@ var main = function () {
 }();
 
 new main();
-
-/***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-exports.sessionAge = 7 * 24 * 60 * 60 * 1000;
-exports.httpPort = 80;
-exports.useCDN = true;
-var tickrate = 60;
-exports.mainInterval = 1000 / tickrate;
-exports.webSockets = [{
-    ip: 'localhost',
-    port: 8080
-}, {
-    ip: 'localhost',
-    port: 8888
-}];
 
 /***/ })
 /******/ ]);
