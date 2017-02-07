@@ -12,6 +12,11 @@ export class point {
 	static getNewInstance(oldPoint: point) {
 		return new point(oldPoint.x, oldPoint.y);
 	}
+
+	static getFixedPoint(oldPoint: point) {
+		return new point(parseFloat(oldPoint.x.toFixed(2)),
+			parseFloat(oldPoint.y.toFixed(2)));
+	}
 }
 
 export function didTwoCirclesCollied(dot1: point, radius1: number, dot2: point, radius2: number) {

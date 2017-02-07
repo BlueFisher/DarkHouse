@@ -41,10 +41,10 @@ export interface runningPROT {
 
 export interface shootPROT {
 	id: number,
-	position: point,
+	position: point, // 射击地点
 	angle: number,
 	playerIdsInSight: number[],
-	shootingPlayerId: number,
+	shootingPlayerId: number, // 射击的玩家id
 	bulletPosition: point,
 }
 export interface duringShootingPROT {
@@ -95,6 +95,19 @@ export class initialize extends baseProtocol {
 		this.barricades = barricades;
 		this.propHps = propHps;
 		this.propGuns = propGuns;
+
+		edge.point1 = point.getFixedPoint(edge.point1);
+		edge.point2 = point.getFixedPoint(edge.point2);
+		barricades.forEach(p => {
+			p.point1 = point.getFixedPoint(p.point1);
+			p.point2 = point.getFixedPoint(p.point2);
+		});
+		propHps.forEach(p => {
+			p.position = point.getFixedPoint(p.position);
+		});
+		propGuns.forEach(p => {
+			p.position = point.getFixedPoint(p.position);
+		});
 	}
 	currPlayerId: number;
 	players: playerBasicPROT[];
@@ -114,15 +127,15 @@ export class mainPROT extends baseProtocol {
 	formatPlayerPROT(currPlayerId: number, format: (playerId: number) => playerPROT | null) {
 		let arr = [currPlayerId];
 		arr = arr.concat(this.playerIdsInSight);
-		for (let shootPROT of this.shootPROTs) {
-			arr = arr.concat(shootPROT.playerIdsInSight);
-		}
-		for (let duringShootingPROT of this.duringShootingPROTs) {
-			arr = arr.concat(duringShootingPROT.playerIdsInSight);
-		}
-		for (let runningPROT of this.runningPROTs) {
-			arr = arr.concat(runningPROT.playerIdsInSight);
-		}
+		this.shootPROTs.forEach(p => {
+			arr = arr.concat(p.playerIdsInSight);
+		});
+		this.duringShootingPROTs.forEach(p => {
+			arr = arr.concat(p.playerIdsInSight);
+		});
+		this.runningPROTs.forEach(p => {
+			arr = arr.concat(p.playerIdsInSight);
+		});
 
 		let json = {};
 		for (let i of arr) {
@@ -133,6 +146,29 @@ export class mainPROT extends baseProtocol {
 					this.playerPROTs.push(playerPROT);
 			}
 		}
+	}
+	fixNumbers() {
+		this.playerPROTs.forEach(p => {
+			p.angle = parseFloat(p.angle.toFixed(2));
+			p.position = point.getFixedPoint(p.position);
+		});
+		this.shootPROTs.forEach(p => {
+			p.angle = parseFloat(p.angle.toFixed(2));
+			p.bulletPosition = point.getFixedPoint(p.bulletPosition);
+			p.position = point.getFixedPoint(p.position);
+		});
+		this.duringShootingPROTs.forEach(p => {
+			p.bulletPosition = point.getFixedPoint(p.bulletPosition);
+		});
+		this.runningPROTs.forEach(p => {
+			p.position = point.getFixedPoint(p.position);
+		});
+		this.newPropGunPROTs.forEach(p => {
+			p.position = point.getFixedPoint(p.position);
+		});
+		this.newPropHpPROTs.forEach(p => {
+			p.position = point.getFixedPoint(p.position);
+		});
 	}
 
 	playerPROTs: playerPROT[] = [];

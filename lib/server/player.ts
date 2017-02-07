@@ -60,10 +60,7 @@ export class player {
 	getPlayerPROT(): toClientPROT.playerPROT {
 		return {
 			id: this.id,
-			position: {
-				x: parseFloat(this.position.x.toFixed(2)),
-				y: parseFloat(this.position.y.toFixed(2))
-			},
+			position: this.position,
 			angle: this._angle,
 			hp: this._hp,
 			bullet: this._gun.getBullet(),

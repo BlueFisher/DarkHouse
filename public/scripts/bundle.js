@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 11);
+/******/ 	return __webpack_require__(__webpack_require__.s = 12);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -245,8 +245,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var $ = __webpack_require__(9);
-var vue = __webpack_require__(10);
+var $ = __webpack_require__(10);
+var vue = __webpack_require__(11);
 var vueData = __webpack_require__(0);
 
 var domManager = function () {
@@ -358,8 +358,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var fromClientPROT = __webpack_require__(1);
-var toClientPROT = __webpack_require__(7);
-var render_1 = __webpack_require__(8);
+var toClientPROT = __webpack_require__(8);
+var render_1 = __webpack_require__(9);
 var vueData = __webpack_require__(0);
 
 var gameCore = function () {
@@ -609,12 +609,182 @@ var stage;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var EPS = 0.1;
+
+var point = function () {
+    function point(x, y) {
+        _classCallCheck(this, point);
+
+        this.x = x;
+        this.y = y;
+    }
+
+    _createClass(point, null, [{
+        key: "getNewInstance",
+        value: function getNewInstance(oldPoint) {
+            return new point(oldPoint.x, oldPoint.y);
+        }
+    }, {
+        key: "getFixedPoint",
+        value: function getFixedPoint(oldPoint) {
+            return new point(parseFloat(oldPoint.x.toFixed(2)), parseFloat(oldPoint.y.toFixed(2)));
+        }
+    }]);
+
+    return point;
+}();
+
+exports.point = point;
+function didTwoCirclesCollied(dot1, radius1, dot2, radius2) {
+    return getTwoPointsDistance(dot1, dot2) <= radius1 + radius2;
+}
+exports.didTwoCirclesCollied = didTwoCirclesCollied;
+// /**判断点是否在射线的象限范围内 */
+// function _didDotInRayQuadrant(rayDot: point, angle: number, dot: point) {
+// 	if ((dot.y - rayDot.y) / Math.sin(angle) < 0 ||
+// 		(dot.x - rayDot.x) / Math.cos(angle) < 0)
+// 		return false;
+// 	return true;
+// }
+// /**
+//  * 获取射线与圆相交的点
+//  */
+// export function getRayCircleCollidedPoint(rayDot: point, angle: number, circlePoint: point, radius: number): point | null {
+// 	let k = Math.tan(angle);
+// 	let b = rayDot.y - k * rayDot.x;
+// 	let d = Math.abs(k * circlePoint.x - circlePoint.y + b) / Math.sqrt(k ** 2 + 1);
+// 	if (d > radius)
+// 		return null;
+// 	let footX = (circlePoint.x + k * circlePoint.y - k * b) / (k ** 2 + 1);
+// 	let footY = (k ** 2 * circlePoint.y + k * circlePoint.x + b) / (k ** 2 + 1);
+// 	if (!_didDotInRayQuadrant(rayDot, angle, new point(footX, footY)))
+// 		return null;
+// 	let td = Math.sqrt(radius ** 2 - d ** 2);
+// 	return new point(footX + Math.cos(angle + Math.PI) * td, footY + Math.sin(angle + Math.PI) * td);
+// }
+// /**
+//  * 获取射线与线段相交的点
+//  */
+// export function getRayLineCollidedPoint(rayDot: point, angle: number, vertex1: point, vertex2: point): point | null {
+// 	let line1A = -Math.tan(angle);
+// 	let line1B = 1;
+// 	let line1C = -rayDot.y - line1A * rayDot.x;
+// 	let line2A = vertex2.y - vertex1.y;
+// 	let line2B = -(vertex2.x - vertex1.x);
+// 	let line2C = -line2B * vertex1.y - line2A * vertex1.x;
+// 	let tmp = line1A * line2B - line2A * line1B;
+// 	if (tmp == 0) {
+// 		if (line1A / line2A == line1C / line2C)
+// 			return vertex1;
+// 		else {
+// 			return null;
+// 		}
+// 	} else {
+// 		let x = Math.round((line2C * line1B - line2B * line1C) / tmp);
+// 		let y = Math.round((line2A * line1C - line2C * line1A) / tmp);
+// 		if (x >= Math.min(vertex1.x, vertex2.x) && x <= Math.max(vertex1.x, vertex2.x) &&
+// 			y >= Math.min(vertex1.y, vertex2.y) && y <= Math.max(vertex1.y, vertex2.y)) {
+// 			let collidedPoint = new point(x, y);
+// 			if (_didDotInRayQuadrant(rayDot, angle, collidedPoint))
+// 				return collidedPoint;
+// 			else
+// 				return null;
+// 		}
+// 		else
+// 			return null;
+// 	}
+// }
+function didDotInCircle(dot, circlePoint, radius) {
+    var canOnCircle = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
+    if (canOnCircle) return getTwoPointsDistance(dot, circlePoint) <= radius;else return getTwoPointsDistance(dot, circlePoint) < radius;
+}
+exports.didDotInCircle = didDotInCircle;
+function didDotOnLine(dot, vertex1, vertex2) {
+    var strict = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
+    if (strict) {
+        return dot.x >= Math.min(vertex1.x, vertex2.x) && dot.x <= Math.max(vertex1.x, vertex2.x) && dot.y >= Math.min(vertex1.y, vertex2.y) && dot.y <= Math.max(vertex1.y, vertex2.y);
+    } else {
+        return dot.x - Math.min(vertex1.x, vertex2.x) >= -EPS && dot.x - Math.max(vertex1.x, vertex2.x) <= EPS && dot.y - Math.min(vertex1.y, vertex2.y) >= -EPS && dot.y - Math.max(vertex1.y, vertex2.y) <= EPS;
+    }
+}
+exports.didDotOnLine = didDotOnLine;
+function getTwoPointsDistance(point1, point2) {
+    return Math.sqrt(Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2));
+}
+exports.getTwoPointsDistance = getTwoPointsDistance;
+function getTwoLinesCrossPoint(a, b, c, d) {
+    // 三角形abc 面积的2倍  
+    var area_abc = (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
+    // 三角形abd 面积的2倍  
+    var area_abd = (a.x - d.x) * (b.y - d.y) - (a.y - d.y) * (b.x - d.x);
+    // 面积符号相同则两点在线段同侧,不相交 (对点在线段上的情况,本例当作不相交处理);  
+    if (area_abc * area_abd >= 0) {
+        return null;
+    }
+    // 三角形cda 面积的2倍  
+    var area_cda = (c.x - a.x) * (d.y - a.y) - (c.y - a.y) * (d.x - a.x);
+    // 三角形cdb 面积的2倍  
+    // 注意: 这里有一个小优化.不需要再用公式计算面积,而是通过已知的三个面积加减得出.  
+    var area_cdb = area_cda + area_abc - area_abd;
+    if (area_cda * area_cdb >= 0) {
+        return null;
+    }
+    //计算交点坐标  
+    var t = area_cda / (area_abd - area_abc);
+    var dx = t * (b.x - a.x),
+        dy = t * (b.y - a.y);
+    return new point(a.x + dx, a.y + dy);
+}
+exports.getTwoLinesCrossPoint = getTwoLinesCrossPoint;
+function getLineCircleCrossPoints(point1, point2, circlePoint, radius) {
+    var lineA = point2.y - point1.y;
+    var lineB = -(point2.x - point1.x);
+    var lineC = -lineB * point1.y - lineA * point1.x;
+    var d = Math.abs(lineA * circlePoint.x + lineB * circlePoint.y + lineC) / Math.sqrt(Math.pow(lineA, 2) + Math.pow(lineB, 2));
+    if (d > radius) {
+        return [];
+    }
+    var footX = (Math.pow(lineB, 2) * circlePoint.x - lineA * lineB * circlePoint.y - lineA * lineC) / (Math.pow(lineA, 2) + Math.pow(lineB, 2));
+    var footY = (Math.pow(lineA, 2) * circlePoint.y - lineA * lineB * circlePoint.x - lineB * lineC) / (Math.pow(lineA, 2) + Math.pow(lineB, 2));
+    var angle = void 0;
+    if (lineB == 0) {
+        angle = Math.PI / 2;
+    } else {
+        angle = Math.atan(-lineA / lineB);
+    }
+    var p1 = new point(footX + Math.cos(angle) * radius, footY + Math.sin(angle) * radius),
+        p2 = new point(footX - Math.cos(angle) * radius, footY - Math.sin(angle) * radius);
+    var res = [];
+    if (didDotOnLine(p1, point1, point2)) {
+        res.push(p1);
+    }
+    if (didDotOnLine(p2, point1, point2)) {
+        res.push(p2);
+    }
+    return res;
+}
+exports.getLineCircleCrossPoints = getLineCircleCrossPoints;
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var utils_1 = __webpack_require__(7);
 var type;
 (function (type) {
     type[type["pong"] = 0] = "pong";
@@ -660,6 +830,18 @@ var initialize = function (_baseProtocol2) {
         _this2.barricades = barricades;
         _this2.propHps = propHps;
         _this2.propGuns = propGuns;
+        edge.point1 = utils_1.point.getFixedPoint(edge.point1);
+        edge.point2 = utils_1.point.getFixedPoint(edge.point2);
+        barricades.forEach(function (p) {
+            p.point1 = utils_1.point.getFixedPoint(p.point1);
+            p.point2 = utils_1.point.getFixedPoint(p.point2);
+        });
+        propHps.forEach(function (p) {
+            p.position = utils_1.point.getFixedPoint(p.position);
+        });
+        propGuns.forEach(function (p) {
+            p.position = utils_1.point.getFixedPoint(p.position);
+        });
         return _this2;
     }
 
@@ -695,15 +877,29 @@ var mainPROT = function (_baseProtocol3) {
         value: function formatPlayerPROT(currPlayerId, format) {
             var arr = [currPlayerId];
             arr = arr.concat(this.playerIdsInSight);
+            this.shootPROTs.forEach(function (p) {
+                arr = arr.concat(p.playerIdsInSight);
+            });
+            this.duringShootingPROTs.forEach(function (p) {
+                arr = arr.concat(p.playerIdsInSight);
+            });
+            this.runningPROTs.forEach(function (p) {
+                arr = arr.concat(p.playerIdsInSight);
+            });
+            var json = {};
             var _iteratorNormalCompletion = true;
             var _didIteratorError = false;
             var _iteratorError = undefined;
 
             try {
-                for (var _iterator = this.shootPROTs[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var shootPROT = _step.value;
+                for (var _iterator = arr[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var i = _step.value;
 
-                    arr = arr.concat(shootPROT.playerIdsInSight);
+                    if (!json[i]) {
+                        json[i] = 1;
+                        var playerPROT = format(i);
+                        if (playerPROT) this.playerPROTs.push(playerPROT);
+                    }
                 }
             } catch (err) {
                 _didIteratorError = true;
@@ -719,86 +915,31 @@ var mainPROT = function (_baseProtocol3) {
                     }
                 }
             }
-
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
-
-            try {
-                for (var _iterator2 = this.duringShootingPROTs[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    var duringShootingPROT = _step2.value;
-
-                    arr = arr.concat(duringShootingPROT.playerIdsInSight);
-                }
-            } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                        _iterator2.return();
-                    }
-                } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
-                    }
-                }
-            }
-
-            var _iteratorNormalCompletion3 = true;
-            var _didIteratorError3 = false;
-            var _iteratorError3 = undefined;
-
-            try {
-                for (var _iterator3 = this.runningPROTs[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                    var runningPROT = _step3.value;
-
-                    arr = arr.concat(runningPROT.playerIdsInSight);
-                }
-            } catch (err) {
-                _didIteratorError3 = true;
-                _iteratorError3 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                        _iterator3.return();
-                    }
-                } finally {
-                    if (_didIteratorError3) {
-                        throw _iteratorError3;
-                    }
-                }
-            }
-
-            var json = {};
-            var _iteratorNormalCompletion4 = true;
-            var _didIteratorError4 = false;
-            var _iteratorError4 = undefined;
-
-            try {
-                for (var _iterator4 = arr[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                    var i = _step4.value;
-
-                    if (!json[i]) {
-                        json[i] = 1;
-                        var playerPROT = format(i);
-                        if (playerPROT) this.playerPROTs.push(playerPROT);
-                    }
-                }
-            } catch (err) {
-                _didIteratorError4 = true;
-                _iteratorError4 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                        _iterator4.return();
-                    }
-                } finally {
-                    if (_didIteratorError4) {
-                        throw _iteratorError4;
-                    }
-                }
-            }
+        }
+    }, {
+        key: "fixNumbers",
+        value: function fixNumbers() {
+            this.playerPROTs.forEach(function (p) {
+                p.angle = parseFloat(p.angle.toFixed(2));
+                p.position = utils_1.point.getFixedPoint(p.position);
+            });
+            this.shootPROTs.forEach(function (p) {
+                p.angle = parseFloat(p.angle.toFixed(2));
+                p.bulletPosition = utils_1.point.getFixedPoint(p.bulletPosition);
+                p.position = utils_1.point.getFixedPoint(p.position);
+            });
+            this.duringShootingPROTs.forEach(function (p) {
+                p.bulletPosition = utils_1.point.getFixedPoint(p.bulletPosition);
+            });
+            this.runningPROTs.forEach(function (p) {
+                p.position = utils_1.point.getFixedPoint(p.position);
+            });
+            this.newPropGunPROTs.forEach(function (p) {
+                p.position = utils_1.point.getFixedPoint(p.position);
+            });
+            this.newPropHpPROTs.forEach(function (p) {
+                p.position = utils_1.point.getFixedPoint(p.position);
+            });
         }
     }]);
 
@@ -825,7 +966,7 @@ var gameOver = function (_baseProtocol4) {
 exports.gameOver = gameOver;
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1359,19 +1500,19 @@ var shootingInAimEffect = function (_resource3) {
 }(resource);
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports) {
 
 module.exports = window.$;
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports) {
 
 module.exports = window.Vue;
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1397,7 +1538,7 @@ var main = function () {
         var dm = new dom_manager_1.domManager(this._connectWebSocketServer.bind(this));
         this._gameCore = new game_core_1.gameCore(this._send.bind(this), dm);
         setInterval(function () {
-            // console.log(`${this._dataLengthPerSec / 1024} KB/s`);
+            console.log(_this._dataLengthPerSec / 1024 + " KB/s");
             _this._dataLengthPerSec = 0;
         }, 1000);
     }

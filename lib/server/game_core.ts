@@ -260,6 +260,7 @@ export class gameCore extends events.EventEmitter {
 					else
 						return null;
 				});
+				mainPROT.fixNumbers();
 
 				sendingMap.set(player.id, mainPROT);
 			}
