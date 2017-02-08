@@ -215,7 +215,7 @@ export class gameCore extends events.EventEmitter {
 
 				if (firstshootedPlayer) {
 					cache.shootedPlayer = firstshootedPlayer;
-					this._playerShooted(firstshootedPlayer);
+					this._playerShooted(cache.shootedPlayer, cache.shootingPlayer, cache.gun);
 				}
 
 				if (minPoint) {
@@ -415,22 +415,22 @@ export class gameCore extends events.EventEmitter {
 		}
 	}
 
-	private _playerShooted(player: player) {
-		player.records.shootingInAimTimes++;
-		player.records.shootedTimes++;
+	private _playerShooted(shootedPlayer: player, shootingPlayer: player, gun: gun) {
+		shootingPlayer.records.shootingInAimTimes++;
+		shootedPlayer.records.shootedTimes++;
 
-		let hp = player.getHp();
+		let hp = shootedPlayer.getHp();
 		if (hp - 1 == 0) {
-			player.records.killTimes++;
-			this.emit(gameCore.events.gameOver, player.id,
-				new toClientPROT.gameOver(player.records));
-			this._playerManager.removePlayer(player);
+			shootingPlayer.records.killTimes++;
+			this.emit(gameCore.events.gameOver, shootedPlayer.id,
+				new toClientPROT.gameOver(shootedPlayer.records));
+			this._playerManager.removePlayer(shootedPlayer);
 
-			if (player.getGun().getBullet() > 0) {
-				this._propManager.addPropGun(player.position, player.getGun());
+			if (shootedPlayer.getGun().getBullet() > 0) {
+				this._propManager.addPropGun(shootedPlayer.position, shootedPlayer.getGun());
 			}
 		} else {
-			player.setHp(hp - 1);
+			shootedPlayer.setHp(hp - 1);
 		}
 	}
 

@@ -177,11 +177,11 @@ export class playerManager {
 
 	getRankList(): toClientPROT.rankPROT[] {
 		return this.players.sort((a, b) => {
-			return a.records.killTimes > b.records.killTimes ? -1 : 1;
+			return a.records.shootingInAimTimes > b.records.shootingInAimTimes ? -1 : 1;
 		}).map(p => {
 			return {
 				id: p.id,
-				killTimes: p.records.killTimes
+				killTimes: p.records.shootingInAimTimes
 			}
 		}).slice(0, 10);
 	}
