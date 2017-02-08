@@ -534,11 +534,8 @@ exports.useCDN = true;
 var tickrate = 60;
 exports.mainInterval = 1000 / tickrate;
 exports.webSockets = [{
-    ip: 'localhost',
-    port: 8080
-}, {
-    ip: 'localhost',
-    port: 8888
+        ip: 'localhost',
+        port: 8080
 }];
 
 /***/ }),
@@ -553,10 +550,12 @@ var player;
 (function (player) {
     player.movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
     player.runingStep = 0.2 * serverConfig.mainInterval; // 每循环跑步前进距离
-    player.maxHp = 3;
+    player.maxHp = 6;
     player.radius = 20;
     player.sightRadius = 100;
     player.runningSightRadius = 80;
+    player.runningSightRemainsTime = 1; // 玩家跑步视野出现持续时间 (ms)
+    player.runningSightDisapperTime = 2; // 玩家跑步视野消失持续时间 (ms)
     player.shootingSightRadius = 130;
 })(player = exports.player || (exports.player = {}));
 var hp;
@@ -1402,7 +1401,7 @@ var shootingCache = function (_resource) {
                 // 绘制子弹
                 ctx.beginPath();
                 ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 4;
                 ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._angle), this._bulletPosition.y - 10 * Math.sin(this._angle));
                 ctx.lineTo(this._bulletPosition.x + 10 * Math.cos(this._angle), this._bulletPosition.y + 10 * Math.sin(this._angle));
                 ctx.stroke();
@@ -1413,7 +1412,7 @@ var shootingCache = function (_resource) {
             } else {
                 ctx.strokeStyle = 'rgba(255,255,255,.25)';
             }
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 4;
             ctx.moveTo(this._shootingPosition.x, this._shootingPosition.y);
             ctx.lineTo(this._bulletPosition.x, this._bulletPosition.y);
             ctx.stroke();

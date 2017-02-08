@@ -112,6 +112,9 @@ export class gameCore extends events.EventEmitter {
 		}
 
 		// 生成奔跑协议
+		let runningSightRemainsStep = config.player.runningSightRemainsTime * serverConfig.mainInterval,
+			runningSightDisapperStep = runningSightRemainsStep + config.player.runningSightDisapperTime * serverConfig.mainInterval;
+
 		let generateRunningPROTs = (connectedPlayers: player[]) => {
 			let runningPROTs: toClientPROT.runningPROT[] = [];
 			for (let runningPlayer of connectedPlayers.filter(p => p.canMove && p.isRunning)) {
@@ -120,8 +123,8 @@ export class gameCore extends events.EventEmitter {
 					runningCache = 1;
 					this._runningCache.set(runningPlayer, runningCache);
 				}
-				// TODO
-				if (runningCache >= 1 && runningCache <= 5) {
+
+				if (runningCache >= 1 && runningCache <= runningSightRemainsStep) {
 					runningPROTs.push({
 						position: runningPlayer.position,
 						playerIdsInSight: this._playerManager
@@ -130,7 +133,7 @@ export class gameCore extends events.EventEmitter {
 					});
 				}
 
-				if (runningCache == 10) {
+				if (runningCache >= runningSightDisapperStep) {
 					this._runningCache.set(runningPlayer, 1);
 				} else {
 					this._runningCache.set(runningPlayer, runningCache + 1);
@@ -355,8 +358,11 @@ export class gameCore extends events.EventEmitter {
 
 	startRunning(playerId: number, active: boolean) {
 		let player = this._playerManager.findPlayerById(playerId);
-		if (player)
+		if (player) {
 			player.isRunning = active;
+			if (!active)
+				this._runningCache.set(player, 1);
+		}
 	}
 
 	stopMoving(playerId: number, active: boolean) {

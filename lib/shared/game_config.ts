@@ -4,10 +4,12 @@ export namespace player {
 	export let movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
 	export let runingStep = 0.2 * serverConfig.mainInterval;  // 每循环跑步前进距离
 
-	export let maxHp = 3;
+	export let maxHp = 6;
 	export let radius = 20;
 	export let sightRadius = 100;
 	export let runningSightRadius = 80;
+	export let runningSightRemainsTime = 1; // 玩家跑步视野出现持续时间 (ms)
+	export let runningSightDisapperTime = 2; // 玩家跑步视野消失持续时间 (ms)
 	export let shootingSightRadius = 130;
 }
 

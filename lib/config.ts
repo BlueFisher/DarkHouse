@@ -7,7 +7,4 @@ export let mainInterval = 1000 / tickrate;
 export let webSockets = [{
 	ip: 'localhost',
 	port: 8080
-}, {
-	ip: 'localhost',
-	port: 8888
 }];

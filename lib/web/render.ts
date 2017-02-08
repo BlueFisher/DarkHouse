@@ -339,7 +339,7 @@ class shootingCache extends resource {
 			// 绘制子弹
 			ctx.beginPath();
 			ctx.strokeStyle = '#fff';
-			ctx.lineWidth = 2;
+			ctx.lineWidth = 4;
 			ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._angle), this._bulletPosition.y - 10 * Math.sin(this._angle));
 			ctx.lineTo(this._bulletPosition.x + 10 * Math.cos(this._angle), this._bulletPosition.y + 10 * Math.sin(this._angle));
 			ctx.stroke();
@@ -352,7 +352,7 @@ class shootingCache extends resource {
 			ctx.strokeStyle = 'rgba(255,255,255,.25)';
 		}
 
-		ctx.lineWidth = 2;
+		ctx.lineWidth = 4;
 		ctx.moveTo(this._shootingPosition.x, this._shootingPosition.y);
 		ctx.lineTo(this._bulletPosition.x, this._bulletPosition.y);
 		ctx.stroke();
