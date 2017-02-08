@@ -1,5 +1,3 @@
-const EPS = 0.1;
-
 export class point {
 	x: number;
 	y: number;
@@ -23,74 +21,6 @@ export function didTwoCirclesCollied(dot1: point, radius1: number, dot2: point, 
 	return getTwoPointsDistance(dot1, dot2) <= radius1 + radius2;
 }
 
-
-// /**判断点是否在射线的象限范围内 */
-// function _didDotInRayQuadrant(rayDot: point, angle: number, dot: point) {
-// 	if ((dot.y - rayDot.y) / Math.sin(angle) < 0 ||
-// 		(dot.x - rayDot.x) / Math.cos(angle) < 0)
-// 		return false;
-
-// 	return true;
-// }
-
-// /**
-//  * 获取射线与圆相交的点
-//  */
-// export function getRayCircleCollidedPoint(rayDot: point, angle: number, circlePoint: point, radius: number): point | null {
-// 	let k = Math.tan(angle);
-// 	let b = rayDot.y - k * rayDot.x;
-
-// 	let d = Math.abs(k * circlePoint.x - circlePoint.y + b) / Math.sqrt(k ** 2 + 1);
-// 	if (d > radius)
-// 		return null;
-
-// 	let footX = (circlePoint.x + k * circlePoint.y - k * b) / (k ** 2 + 1);
-// 	let footY = (k ** 2 * circlePoint.y + k * circlePoint.x + b) / (k ** 2 + 1);
-
-// 	if (!_didDotInRayQuadrant(rayDot, angle, new point(footX, footY)))
-// 		return null;
-
-// 	let td = Math.sqrt(radius ** 2 - d ** 2);
-// 	return new point(footX + Math.cos(angle + Math.PI) * td, footY + Math.sin(angle + Math.PI) * td);
-// }
-
-// /**
-//  * 获取射线与线段相交的点
-//  */
-// export function getRayLineCollidedPoint(rayDot: point, angle: number, vertex1: point, vertex2: point): point | null {
-// 	let line1A = -Math.tan(angle);
-// 	let line1B = 1;
-// 	let line1C = -rayDot.y - line1A * rayDot.x;
-
-// 	let line2A = vertex2.y - vertex1.y;
-// 	let line2B = -(vertex2.x - vertex1.x);
-// 	let line2C = -line2B * vertex1.y - line2A * vertex1.x;
-
-// 	let tmp = line1A * line2B - line2A * line1B;
-// 	if (tmp == 0) {
-// 		if (line1A / line2A == line1C / line2C)
-// 			return vertex1;
-// 		else {
-// 			return null;
-// 		}
-// 	} else {
-// 		let x = Math.round((line2C * line1B - line2B * line1C) / tmp);
-// 		let y = Math.round((line2A * line1C - line2C * line1A) / tmp);
-
-// 		if (x >= Math.min(vertex1.x, vertex2.x) && x <= Math.max(vertex1.x, vertex2.x) &&
-// 			y >= Math.min(vertex1.y, vertex2.y) && y <= Math.max(vertex1.y, vertex2.y)) {
-
-// 			let collidedPoint = new point(x, y);
-// 			if (_didDotInRayQuadrant(rayDot, angle, collidedPoint))
-// 				return collidedPoint;
-// 			else
-// 				return null;
-// 		}
-// 		else
-// 			return null;
-// 	}
-// }
-
 export function didDotInCircle(dot: point, circlePoint: point, radius: number, canOnCircle = false) {
 	if (canOnCircle)
 		return getTwoPointsDistance(dot, circlePoint) <= radius;
@@ -98,18 +28,11 @@ export function didDotInCircle(dot: point, circlePoint: point, radius: number, c
 		return getTwoPointsDistance(dot, circlePoint) < radius;
 }
 
-export function didDotOnLine(dot: point, vertex1: point, vertex2: point, strict = false) {
-	if (strict) {
-		return dot.x >= Math.min(vertex1.x, vertex2.x) &&
-			dot.x <= Math.max(vertex1.x, vertex2.x) &&
-			dot.y >= Math.min(vertex1.y, vertex2.y) &&
-			dot.y <= Math.max(vertex1.y, vertex2.y);
-	} else {
-		return dot.x - Math.min(vertex1.x, vertex2.x) >= -EPS &&
-			dot.x - Math.max(vertex1.x, vertex2.x) <= EPS &&
-			dot.y - Math.min(vertex1.y, vertex2.y) >= -EPS &&
-			dot.y - Math.max(vertex1.y, vertex2.y) <= EPS;
-	}
+export function didDotOnLine(dot: point, vertex1: point, vertex2: point) {
+	return dot.x >= Math.min(vertex1.x, vertex2.x) &&
+		dot.x <= Math.max(vertex1.x, vertex2.x) &&
+		dot.y >= Math.min(vertex1.y, vertex2.y) &&
+		dot.y <= Math.max(vertex1.y, vertex2.y);
 }
 
 export function getTwoPointsDistance(point1: point, point2: point) {
@@ -147,27 +70,39 @@ export function getTwoLinesCrossPoint(a: point, b: point, c: point, d: point): p
 }
 
 export function getLineCircleCrossPoints(point1: point, point2: point, circlePoint: point, radius: number) {
+	// 直线一般式
 	let lineA = point2.y - point1.y;
 	let lineB = -(point2.x - point1.x);
 	let lineC = -lineB * point1.y - lineA * point1.x;
 
+	// 求圆心到直线的距离，如果大于半径则一定没有交点
 	let d = Math.abs(lineA * circlePoint.x + lineB * circlePoint.y + lineC) / Math.sqrt(lineA ** 2 + lineB ** 2);
 	if (d > radius) {
 		return [];
 	}
 
-	let footX = (lineB ** 2 * circlePoint.x - lineA * lineB * circlePoint.y - lineA * lineC) / (lineA ** 2 + lineB ** 2);
-	let footY = (lineA ** 2 * circlePoint.y - lineA * lineB * circlePoint.x - lineB * lineC) / (lineA ** 2 + lineB ** 2);
+	let r = radius;
+	let a = circlePoint.x,
+		b = circlePoint.y;
 
-	let angle: number;
+	let p1: point, p2: point;
 	if (lineB == 0) {
-		angle = Math.PI / 2;
+		let c = -lineC / lineA;
+		let tmp = Math.sqrt(r ** 2 - (c - a) ** 2)
+		p1 = new point(c, b + tmp);
+		p2 = new point(c, b - tmp);
 	} else {
-		angle = Math.atan(-lineA / lineB);
-	}
+		let k = -lineA / lineB;
+		let c = -lineC / lineB;
+		let tmpA = 1 + k ** 2;
+		let tmpB = 2 * ((c - b) * k - a);
+		let tmpSqr = Math.sqrt(tmpB ** 2 - 4 * tmpA * (a ** 2 - r ** 2 + (c - b) ** 2));
 
-	let p1 = new point(footX + Math.cos(angle) * radius, footY + Math.sin(angle) * radius),
-		p2 = new point(footX - Math.cos(angle) * radius, footY - Math.sin(angle) * radius);
+		let x1 = (-tmpB + tmpSqr) / (2 * tmpA),
+			x2 = (-tmpB - tmpSqr) / (2 * tmpA);
+		p1 = new point(x1, k * x1 + c);
+		p2 = new point(x2, k * x2 + c);
+	}
 
 	let res: point[] = [];
 	if (didDotOnLine(p1, point1, point2)) {
