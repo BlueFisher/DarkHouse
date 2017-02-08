@@ -12,15 +12,22 @@ export namespace player {
 	export let runningSightDisapperTime = 400; // 玩家跑步视野消失持续时间 (ms)
 }
 
-export namespace hp {
-	export let radius = 10;
-	// 血包触发的半径
-	export let activeRadius = 5;
-	// 血包存在最大数量
-	export let maxNumber = 5;
-	// 血包出现时间间隔
-	export let appearInterval = 10000;
+export namespace prop {
+	export let radius = 10; // 道具显示的半径
+
+	export namespace hp {
+		export let activeRadius = 5; // 血包触发的半径
+		export let maxNumber = 5; // 血包存在最大数量
+		export let appearInterval = 10000; // 血包出现时间间隔
+	}
+
+	export namespace weapon {
+		export let activeRadius = 5;
+		export let maxNumber = 2;
+		export let appearInterval = 15000;
+	}
 }
+
 
 export namespace weapon {
 	export enum attackType {
@@ -55,7 +62,7 @@ export namespace weapon {
 			attackSightRadius: 130,
 			attackSightRemainsTime: 70,
 			bullet: 15,
-			bulletFlyStep: 3 * serverConfig.mainInterval,
+			bulletFlyStep: 5 * serverConfig.mainInterval,
 			maxBullet: 30
 		});
 		defaultSettings.set(type.rifle, {
@@ -89,6 +96,10 @@ export namespace weapon {
 }
 
 export namespace stage {
-	export let width = 500;
+	export let width = 1000;
 	export let height = 500;
+
+	export let barricades = [
+		[{ x: 300, y: 300 }, { x: 700, y: 400 }]
+	]
 }

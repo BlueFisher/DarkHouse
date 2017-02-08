@@ -2,7 +2,7 @@ import * as events from 'events';
 
 import { player, playerManager } from './player';
 import { edge, barricade } from './barricade';
-import { propManager, propHp, propGun } from './prop';
+import { propManager, propHp, propWeapon } from './prop';
 import * as gameServer from './game_server';
 import { weapon, gun, melee } from './weapon';
 
@@ -52,8 +52,9 @@ export class gameCore extends events.EventEmitter {
 
 		this._edge = new edge(new point(edgeX, edgeY), new point(edgeX + width, edgeY + height));
 
-		this._barricades.push(new barricade(new point(240, 100), new point(260, 400)));
-		this._barricades.push(new barricade(new point(100, 390), new point(400, 400)));
+		config.stage.barricades.forEach(p => {
+			this._barricades.push(new barricade(new point(p[0].x,p[0].y), new point(p[1].x,p[1].y)));
+		});
 
 		this._initializeMainLoop();
 	}
@@ -258,8 +259,8 @@ export class gameCore extends events.EventEmitter {
 
 				mainPROT.newPropHpPROTs = propPROTs.newPropHps;
 				mainPROT.removedPropHpIds = propPROTs.removedPropHpIds;
-				mainPROT.newPropGunPROTs = propPROTs.newPropGuns;
-				mainPROT.removedPropGunIds = propPROTs.removedPropGunIds;
+				mainPROT.newPropWeaponPROTs = propPROTs.newPropGuns;
+				mainPROT.removedPropWeaponIds = propPROTs.removedPropGunIds;
 
 				mainPROT.rankList = this._playerManager.getRankList();
 
@@ -284,29 +285,51 @@ export class gameCore extends events.EventEmitter {
 
 		// 生命值道具计时器循环
 		setInterval(() => {
-			if (this._propManager.propHps.length < config.hp.maxNumber)
+			if (this._propManager.propHps.length < config.prop.hp.maxNumber)
 				this._addNewPropHp();
-		}, config.hp.appearInterval);
+		}, config.prop.hp.appearInterval);
+
+		setInterval(() => {
+			if (this._propManager.propWeapons.length < config.prop.weapon.maxNumber)
+				this._addNewPropWeapon();
+		}, config.prop.weapon.appearInterval);
 	}
 
-	private _addNewPropHp() {
+	private _generateEmptyPosition(radius: number) {
 		let newPosition: point | undefined;
+
 		while (!newPosition) {
 			newPosition = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
-			if (this._edge.didCircleCollided(newPosition, config.player.radius)) {
+			if (this._edge.didCircleCollided(newPosition, radius)) {
 				newPosition = undefined;
 				continue;
 			}
-			if (this._playerManager.players.find(p => p.didCircleCollided(newPosition as point, config.player.radius))) {
+			if (this._playerManager.players.find(p => p.didCircleCollided(newPosition as point, radius))) {
 				newPosition = undefined;
 				continue;
 			}
-			if (this._barricades.find(p => p.didCircleCollided(newPosition as point, config.player.radius))) {
+			if (this._barricades.find(p => p.didCircleCollided(newPosition as point, radius))) {
 				newPosition = undefined;
 				continue;
 			}
 		}
+
+		return newPosition;
+	}
+
+	private _addNewPropHp() {
+		let newPosition = this._generateEmptyPosition(config.prop.hp.activeRadius);
 		this._propManager.addPropHp(newPosition);
+	}
+
+	private _addNewPropWeapon() {
+		let newPosition = this._generateEmptyPosition(config.prop.weapon.activeRadius);
+
+		let setting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rifle);
+		if (setting) {
+			setting.bullet = parseInt((Math.random() * setting.maxBullet).toFixed(0));
+			this._propManager.addPropWeapon(newPosition, new gun(config.weapon.gun.type.rifle, setting));
+		}
 	}
 
 	/**获取玩家的初始化协议 */
@@ -318,7 +341,7 @@ export class gameCore extends events.EventEmitter {
 			this._edge.getEdgePROT(),
 			this._barricades.map(p => p.getBarricadePROT()),
 			this._propManager.propHps.map(p => p.getPropHpPROT()),
-			this._propManager.propGuns.map(p => p.getPropGunPROT())
+			this._propManager.propWeapons.map(p => p.getPropGunPROT())
 		);
 	}
 
@@ -444,7 +467,7 @@ export class gameCore extends events.EventEmitter {
 			this._playerManager.removePlayer(attacktedPlayer);
 
 			if (attacktedPlayer.getGun().getBullet() > 0) {
-				this._propManager.addPropGun(attacktedPlayer.position, attacktedPlayer.getGun());
+				this._propManager.addPropWeapon(attacktedPlayer.position, attacktedPlayer.getGun());
 			}
 		} else {
 			attacktedPlayer.setHp(hp - 1);

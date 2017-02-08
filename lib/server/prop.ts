@@ -1,6 +1,6 @@
 import { point } from '../shared/utils';
 import { player } from './player';
-import { gun } from './weapon';
+import { weapon, gun, melee } from './weapon';
 import * as config from '../shared/game_config';
 import * as utils from '../shared/utils';
 
@@ -26,38 +26,33 @@ export class propHp extends prop {
 	}
 }
 
-export class propGun extends prop {
-	readonly gun: gun;
+export class propWeapon extends prop {
+	readonly weapon: weapon;
 
-	constructor(position: point, gun: gun) {
+	constructor(position: point, weapon: weapon) {
 		super(position);
 
-		this.gun = gun;
+		this.weapon = weapon;
 	}
 
 	getPropGunPROT(): toClientPROT.propWeaponPROT {
 		return {
 			id: this.id,
 			position: this.position,
-			weapontType: this.gun.weaponType,
-			attackType: this.gun.attackType
+			weapontType: this.weapon.weaponType,
+			attackType: this.weapon.attackType
 		}
 	}
 }
 
 export class propManager {
 	readonly propHps: propHp[] = [];
-	readonly propGuns: propGun[] = [];
+	readonly propWeapons: propWeapon[] = [];
 
 	private _newPropHpsCache: propHp[] = [];
 	private _removedPropHpIdsCache: number[] = [];
-	private _newPropGunsCache: propGun[] = [];
+	private _newPropGunsCache: propWeapon[] = [];
 	private _removedPropGunIdsCache: number[] = [];
-
-	constructor() {
-		let a = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rifle) as config.weapon.gun.defaultSetting;
-		this.propGuns.push(new propGun(new point(200, 200), new gun(config.weapon.gun.type.rifle, a)));
-	}
 
 	getAndClearPropPROTs() {
 		let res = {
@@ -78,32 +73,39 @@ export class propManager {
 		this.propHps.push(newPropHp);
 		this._newPropHpsCache.push(newPropHp);
 	}
-	addPropGun(position: point, gun: gun) {
-		let newPropGun = new propGun(position, gun);
-		this.propGuns.push(newPropGun);
-		this._newPropGunsCache.push(newPropGun);
+	addPropWeapon(position: point, gun: gun) {
+		let newPropWeapon = new propWeapon(position, gun);
+		this.propWeapons.push(newPropWeapon);
+		this._newPropGunsCache.push(newPropWeapon);
 	}
 
 	tryCoverProp(player: player, newPos: point) {
 		for (let i = this.propHps.length - 1; i >= 0; i--) {
 			let propHp = this.propHps[i];
-			if (utils.didTwoCirclesCollied(propHp.position, config.hp.activeRadius, newPos, config.player.radius)) {
+			if (utils.didTwoCirclesCollied(propHp.position, config.prop.hp.activeRadius, newPos, config.player.radius)) {
 				player.setHp(player.getHp() + 1);
 				this.propHps.splice(i, 1);
 				this._removedPropHpIdsCache.push(propHp.id);
 			}
 		}
-		for (let i = this.propGuns.length - 1; i >= 0; i--) {
-			let propGun = this.propGuns[i];
-			if (utils.didTwoCirclesCollied(propGun.position, config.hp.activeRadius, newPos, config.player.radius)) {
+		for (let i = this.propWeapons.length - 1; i >= 0; i--) {
+			let propWeapon = this.propWeapons[i];
+			if (utils.didTwoCirclesCollied(propWeapon.position, config.prop.hp.activeRadius, newPos, config.player.radius)) {
 				// 如果道具枪与玩家现有枪的类型
-				if (player.getGun().weaponType == propGun.gun.weaponType) {
-					player.getGun().addBuilet(propGun.gun.getBullet());
-				} else {
-					player.setGun(propGun.gun);
+				if (propWeapon.weapon.attackType == config.weapon.attackType.gun) {
+					if (player.getGun().weaponType == propWeapon.weapon.weaponType) {
+						player.getGun().addBullet((propWeapon.weapon as gun).getBullet());
+					} else {
+						player.setGun(propWeapon.weapon as gun);
+					}
+				} else if (propWeapon.weapon.attackType == config.weapon.attackType.melee) {
+					if (player.getMelee().weaponType != propWeapon.weapon.weaponType) {
+						player.setMelee(propWeapon.weapon as melee);
+					}
 				}
-				this.propGuns.splice(i, 1);
-				this._removedPropGunIdsCache.push(propGun.id);
+
+				this.propWeapons.splice(i, 1);
+				this._removedPropGunIdsCache.push(propWeapon.id);
 			}
 		}
 	}

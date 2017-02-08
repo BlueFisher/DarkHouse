@@ -45,7 +45,7 @@ export class gun extends weapon {
 		return false;
 	}
 
-	addBuilet(n: number) {
+	addBullet(n: number) {
 		this._bullet += n;
 		if (this._bullet > this._maxBullet)
 			this._bullet = this._maxBullet;

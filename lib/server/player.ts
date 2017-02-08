@@ -122,9 +122,9 @@ export class player {
 		}
 	}
 
+	// 是否可以继续射击
 	private _canContinueShooting = false;
 	private _shootingFinishedCallback: () => void;
-
 	startShooting(active: boolean, shootingFinishedCallback: () => void) {
 		this._canContinueShooting = active;
 		this._shootingFinishedCallback = shootingFinishedCallback;
@@ -139,6 +139,7 @@ export class player {
 		}
 	}
 
+	// 是否可以继续近战攻击
 	private _canContinueCombat = false;
 	private _combatFinishedCallback: () => void;
 	startCombat(active: boolean, combatFinishedCallback: () => void) {

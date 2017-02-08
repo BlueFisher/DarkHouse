@@ -31,7 +31,7 @@ export interface propHpPROT extends propPROT {
 
 }
 export interface propWeaponPROT extends propPROT {
-	weapontType: config.weapon.gun.type | config.weapon.melee.type,
+	weapontType: config.weapon.weaponType,
 	attackType: config.weapon.attackType
 }
 
@@ -43,7 +43,7 @@ export interface runningPROT {
 export interface attackPROT {
 	id: number,
 	attackType: config.weapon.attackType,
-	weaponType: config.weapon.gun.type | config.weapon.melee.type,
+	weaponType: config.weapon.weaponType,
 	position: point, // 攻击地点
 	angle: number,
 	playerIdsInSight: number[],
@@ -89,7 +89,7 @@ export class initialize extends baseProtocol {
 	constructor(currPlayerId: number, players: playerBasicPROT[],
 		edge: edgePROT,
 		barricades: barricadePROT[],
-		propHps: propHpPROT[], propGuns: propWeaponPROT[]) {
+		propHps: propHpPROT[], propWeapons: propWeaponPROT[]) {
 		super(type.init);
 
 		this.currPlayerId = currPlayerId;
@@ -97,7 +97,7 @@ export class initialize extends baseProtocol {
 		this.edge = edge;
 		this.barricades = barricades;
 		this.propHps = propHps;
-		this.propGuns = propGuns;
+		this.propWeapons = propWeapons;
 
 		edge.point1 = point.getFixedPoint(edge.point1);
 		edge.point2 = point.getFixedPoint(edge.point2);
@@ -108,7 +108,7 @@ export class initialize extends baseProtocol {
 		propHps.forEach(p => {
 			p.position = point.getFixedPoint(p.position);
 		});
-		propGuns.forEach(p => {
+		propWeapons.forEach(p => {
 			p.position = point.getFixedPoint(p.position);
 		});
 	}
@@ -117,7 +117,7 @@ export class initialize extends baseProtocol {
 	edge: edgePROT;
 	barricades: barricadePROT[];
 	propHps: propHpPROT[];
-	propGuns: propWeaponPROT[];
+	propWeapons: propWeaponPROT[];
 }
 
 export class mainPROT extends baseProtocol {
@@ -166,7 +166,7 @@ export class mainPROT extends baseProtocol {
 		this.runningPROTs.forEach(p => {
 			p.position = point.getFixedPoint(p.position);
 		});
-		this.newPropGunPROTs.forEach(p => {
+		this.newPropWeaponPROTs.forEach(p => {
 			p.position = point.getFixedPoint(p.position);
 		});
 		this.newPropHpPROTs.forEach(p => {
@@ -185,8 +185,8 @@ export class mainPROT extends baseProtocol {
 
 	rankList: rankPROT[] = [];
 
-	newPropGunPROTs: propWeaponPROT[] = [];
-	removedPropGunIds: number[] = [];
+	newPropWeaponPROTs: propWeaponPROT[] = [];
+	removedPropWeaponIds: number[] = [];
 	newPropHpPROTs: propHpPROT[] = [];
 	removedPropHpIds: number[] = [];
 }

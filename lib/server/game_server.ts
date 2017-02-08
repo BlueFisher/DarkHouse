@@ -212,7 +212,7 @@ export class gameServer {
 	}
 
 	private _initializeGameCore() {
-		this._gameCore = new gameCore(config.stage.height, config.stage.width);
+		this._gameCore = new gameCore(config.stage.width, config.stage.height);
 		this._gameCore.on(gameCore.events.sendToPlayers, (map: Map<number, toClientPROT.baseProtocol>) => {
 			map.forEach((v, k) => {
 				let spMap = this._socketPlayerColl.find(p => p.playerId == k);

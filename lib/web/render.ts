@@ -15,7 +15,7 @@ export class render {
 		this._resourceManager.edge = protocol.edge;
 		this._resourceManager.barricades = protocol.barricades;
 		this._resourceManager.propHps = protocol.propHps;
-		this._resourceManager.propGuns = protocol.propGuns;
+		this._resourceManager.propWeapons = protocol.propWeapons;
 	}
 
 	getPlayerBPROT(id: number) {
@@ -40,18 +40,18 @@ export class render {
 		protocol.newPropHpPROTs.forEach(p => {
 			this._resourceManager.propHps.push(p);
 		});
-		protocol.newPropGunPROTs.forEach(p => {
-			this._resourceManager.propGuns.push(p);
+		protocol.newPropWeaponPROTs.forEach(p => {
+			this._resourceManager.propWeapons.push(p);
 		});
 		protocol.removedPropHpIds.forEach(p => {
 			let i = this._resourceManager.propHps.findIndex(pp => pp.id == p);
 			if (i != -1)
 				this._resourceManager.propHps.splice(i, 1);
 		});
-		protocol.removedPropGunIds.forEach(p => {
-			let i = this._resourceManager.propGuns.findIndex(pp => pp.id == p);
+		protocol.removedPropWeaponIds.forEach(p => {
+			let i = this._resourceManager.propWeapons.findIndex(pp => pp.id == p);
 			if (i != -1)
-				this._resourceManager.propGuns.splice(i, 1);
+				this._resourceManager.propWeapons.splice(i, 1);
 		});
 	}
 
@@ -82,19 +82,7 @@ export class render {
 				barricade.point2.x - barricade.point1.x, barricade.point2.y - barricade.point1.y);
 		}
 
-		// 绘制道具
-		ctx.fillStyle = '#f00';
-		for (let propHp of this._resourceManager.propHps) {
-			ctx.beginPath();
-			ctx.arc(propHp.position.x, propHp.position.y, config.hp.radius, 0, Math.PI * 2);
-			ctx.fill();
-		}
-		ctx.fillStyle = '#0f0';
-		for (let propHp of this._resourceManager.propGuns) {
-			ctx.beginPath();
-			ctx.arc(propHp.position.x, propHp.position.y, config.hp.radius, 0, Math.PI * 2);
-			ctx.fill();
-		}
+		this._resourceManager.drawProp(ctx);
 
 		// 绘制可见区域
 		ctx.save();
@@ -166,7 +154,7 @@ class resourcesManager {
 	edge: toClientPROT.edgePROT;
 	barricades: toClientPROT.barricadePROT[] = [];
 	propHps: toClientPROT.propHpPROT[] = [];
-	propGuns: toClientPROT.propWeaponPROT[] = [];
+	propWeapons: toClientPROT.propWeaponPROT[] = [];
 
 	shooingInAimEffect: attackInAimEffect;
 	attackedEffects: attackedEffect[] = [];
@@ -193,8 +181,8 @@ class resourcesManager {
 			this.edge.point2.y - this.edge.point1.y);
 	}
 
-	drawPlayer(ctx: CanvasRenderingContext2D,
-		playerIds: number[], fillStyle: string, strokeStyle: string) {
+	drawPlayer(ctx: CanvasRenderingContext2D, playerIds: number[],
+		fillStyle: string, strokeStyle: string) {
 
 		ctx.save();
 		ctx.fillStyle = fillStyle;
@@ -254,6 +242,47 @@ class resourcesManager {
 			if (playerBasic) {
 				ctx.fillText(playerBasic.name, player.position.x, player.position.y + config.player.radius + 15);
 			}
+		}
+
+		ctx.restore();
+	}
+
+	drawProp(ctx: CanvasRenderingContext2D) {
+		ctx.save();
+
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.font = '2px 微软雅黑';
+
+		for (let propHp of this.propHps) {
+			ctx.fillStyle = '#0f0';
+			ctx.beginPath();
+			ctx.arc(propHp.position.x, propHp.position.y, config.prop.radius, 0, Math.PI * 2);
+			ctx.fill();
+			ctx.fillStyle = '#fff';
+			ctx.fillText('血包', propHp.position.x, propHp.position.y);
+		}
+
+		for (let propWeapon of this.propWeapons) {
+			ctx.fillStyle = '#f00';
+			ctx.beginPath();
+			ctx.arc(propWeapon.position.x, propWeapon.position.y, config.prop.radius, 0, Math.PI * 2);
+			ctx.fill();
+
+			let weaponName = '';
+			if (propWeapon.attackType == config.weapon.attackType.gun) {
+				if (propWeapon.weapontType == config.weapon.gun.type.pistol) {
+					weaponName = '手枪';
+				} else if (propWeapon.weapontType == config.weapon.gun.type.rifle) {
+					weaponName = '步枪';
+				}
+			} else if (propWeapon.attackType == config.weapon.attackType.melee) {
+				if (propWeapon.weapontType == config.weapon.melee.type.fist) {
+					weaponName = '拳头';
+				}
+			}
+			ctx.fillStyle = '#fff';
+			ctx.fillText(weaponName, propWeapon.position.x, propWeapon.position.y);
 		}
 
 		ctx.restore();
@@ -336,7 +365,12 @@ class attackCache extends resource {
 		if (this._fadeOutTime >= 15) {
 			// 绘制子弹
 			ctx.beginPath();
-			ctx.strokeStyle = '#fff';
+			if (this._attackPROT.attackType == config.weapon.attackType.gun) {
+				ctx.strokeStyle = '#fff';
+			} else if (this._attackPROT.attackType == config.weapon.attackType.melee) {
+				ctx.strokeStyle = '#00f';
+			}
+
 			ctx.lineWidth = 4;
 			ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._attackPROT.angle),
 				this._bulletPosition.y - 10 * Math.sin(this._attackPROT.angle));
