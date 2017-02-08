@@ -4,7 +4,8 @@ export enum type {
 	startRunning,
 	stopMoving,
 	rotate,
-	startShooting
+	startShooting,
+	startCombat
 }
 
 export class baseProtocol {
@@ -54,6 +55,13 @@ export class rotate extends baseProtocol {
 export class startShoot extends baseProtocol {
 	constructor(active: boolean) {
 		super(type.startShooting);
+		this.active = active;
+	}
+	active: boolean;
+}
+export class startCombat extends baseProtocol {
+	constructor(active: boolean) {
+		super(type.startCombat);
 		this.active = active;
 	}
 	active: boolean;

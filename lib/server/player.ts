@@ -1,7 +1,7 @@
 import * as utils from '../shared/utils';
 import * as config from '../shared/game_config';
 import * as toClientPROT from '../shared/ws_prot_to_client';
-import { gun } from './gun';
+import { gun, melee } from './weapon';
 
 const point = utils.point;
 type point = utils.point;
@@ -14,12 +14,13 @@ export class player {
 	private _angle = 0;
 	private _hp = config.player.maxHp;
 	private _gun: gun;
+	private _melee: melee;
 
 	position: point;
 	records: toClientPROT.records = {
-		shootingTimes: 0,
-		shootingInAimTimes: 0,
-		shootedTimes: 0,
+		attackTimes: 0,
+		attackInAimTimes: 0,
+		attactedTimes: 0,
 		killTimes: 0
 	};
 	canMove = true;
@@ -29,9 +30,14 @@ export class player {
 	constructor(name: string, position: point) {
 		this.name = name;
 		this.position = position;
-		let gunSetting = config.gun.defaultSettings.get(config.gun.type.pistol);
+
+		let gunSetting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.pistol);
 		if (gunSetting)
-			this._gun = new gun(config.gun.type.pistol, gunSetting);
+			this._gun = new gun(config.weapon.gun.type.pistol, gunSetting);
+
+		let meleeSetting = config.weapon.melee.defaultSettings.get(config.weapon.melee.type.fist);
+		if (meleeSetting)
+			this._melee = new melee(config.weapon.melee.type.fist, meleeSetting);
 	}
 
 	setDirectionAngle(angle: number) {
@@ -55,6 +61,12 @@ export class player {
 	}
 	setGun(gun: gun) {
 		this._gun = gun;
+	}
+	getMelee() {
+		return this._melee;
+	}
+	setMelee(melee: melee) {
+		this._melee = melee;
 	}
 
 	getPlayerPROT(): toClientPROT.playerPROT {
@@ -119,7 +131,6 @@ export class player {
 		if (active)
 			this._shoot();
 	}
-
 	private _shoot() {
 		if (this._canContinueShooting) {
 			if (this._gun.shoot(this._shoot.bind(this))) {
@@ -128,8 +139,25 @@ export class player {
 		}
 	}
 
+	private _canContinueCombat = false;
+	private _combatFinishedCallback: () => void;
+	startCombat(active: boolean, combatFinishedCallback: () => void) {
+		this._canContinueCombat = active;
+		this._combatFinishedCallback = combatFinishedCallback;
+		if (active)
+			this._combat();
+	}
+	private _combat() {
+		if (this._canContinueCombat) {
+			if (this._melee.combat(this._combat.bind(this))) {
+				this._combatFinishedCallback();
+			}
+		}
+	}
+
 	beKilled() {
 		this._canContinueShooting = false;
+		this._canContinueCombat = false;
 	}
 }
 
@@ -177,11 +205,11 @@ export class playerManager {
 
 	getRankList(): toClientPROT.rankPROT[] {
 		return this.players.sort((a, b) => {
-			return a.records.shootingInAimTimes > b.records.shootingInAimTimes ? -1 : 1;
+			return a.records.attackInAimTimes > b.records.attackInAimTimes ? -1 : 1;
 		}).map(p => {
 			return {
 				id: p.id,
-				killTimes: p.records.shootingInAimTimes
+				killTimes: p.records.attackInAimTimes
 			}
 		}).slice(0, 10);
 	}

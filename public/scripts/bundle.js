@@ -93,9 +93,9 @@ exports.gameInitModal = {
     showAccount: false
 };
 var records = {
-    shootingTimes: 0,
-    shootingInAimTimes: 0,
-    shootedTimes: 0,
+    attackTimes: 0,
+    attackInAimTimes: 0,
+    attactedTimes: 0,
     killTimes: 0
 };
 exports.gameOverModal = {
@@ -124,6 +124,7 @@ var type;
     type[type["stopMoving"] = 3] = "stopMoving";
     type[type["rotate"] = 4] = "rotate";
     type[type["startShooting"] = 5] = "startShooting";
+    type[type["startCombat"] = 6] = "startCombat";
 })(type = exports.type || (exports.type = {}));
 
 var baseProtocol = function baseProtocol(type) {
@@ -233,6 +234,23 @@ var startShoot = function (_baseProtocol6) {
 }(baseProtocol);
 
 exports.startShoot = startShoot;
+
+var startCombat = function (_baseProtocol7) {
+    _inherits(startCombat, _baseProtocol7);
+
+    function startCombat(active) {
+        _classCallCheck(this, startCombat);
+
+        var _this7 = _possibleConstructorReturn(this, (startCombat.__proto__ || Object.getPrototypeOf(startCombat)).call(this, type.startCombat));
+
+        _this7.active = active;
+        return _this7;
+    }
+
+    return startCombat;
+}(baseProtocol);
+
+exports.startCombat = startCombat;
 
 /***/ }),
 /* 2 */
@@ -452,6 +470,9 @@ var gameCore = function () {
                 if (e.keyCode == 87) {
                     _this3._send(new fromClientPROT.startRunning(true));
                 }
+                if (e.keyCode == 70) {
+                    _this3._send(new fromClientPROT.startCombat(true));
+                }
             });
             this._canvas.addEventListener('keyup', function (e) {
                 if (e.keyCode == 32) {
@@ -459,6 +480,9 @@ var gameCore = function () {
                 }
                 if (e.keyCode == 87) {
                     _this3._send(new fromClientPROT.startRunning(false));
+                }
+                if (e.keyCode == 70) {
+                    _this3._send(new fromClientPROT.startCombat(false));
                 }
             });
             this._canvas.addEventListener('blur', function (e) {
@@ -554,9 +578,8 @@ var player;
     player.radius = 20;
     player.sightRadius = 100;
     player.runningSightRadius = 80;
-    player.runningSightRemainsTime = 1; // 玩家跑步视野出现持续时间 (ms)
-    player.runningSightDisapperTime = 2; // 玩家跑步视野消失持续时间 (ms)
-    player.shootingSightRadius = 130;
+    player.runningSightRemainsTime = 200; // 玩家跑步视野出现持续时间 (ms)
+    player.runningSightDisapperTime = 400; // 玩家跑步视野消失持续时间 (ms)
 })(player = exports.player || (exports.player = {}));
 var hp;
 (function (hp) {
@@ -568,31 +591,56 @@ var hp;
     // 血包出现时间间隔
     hp.appearInterval = 10000;
 })(hp = exports.hp || (exports.hp = {}));
-var gun;
-(function (gun) {
-    var type;
-    (function (type) {
-        type[type["pistol"] = 0] = "pistol";
-        type[type["rifle"] = 1] = "rifle";
-    })(type = gun.type || (gun.type = {}));
-    gun.defaultSettings = new Map();
-    gun.defaultSettings.set(type.pistol, {
-        shootingInterval: 500,
-        shootingSightRadius: 130,
-        shootingSightRemainsTime: 70,
-        bullet: 15,
-        bulletFlyStep: 3 * serverConfig.mainInterval,
-        maxBullet: 30
-    });
-    gun.defaultSettings.set(type.rifle, {
-        shootingInterval: 200,
-        shootingSightRadius: 200,
-        shootingSightRemainsTime: 60,
-        bullet: 30,
-        bulletFlyStep: 0.8 * serverConfig.mainInterval,
-        maxBullet: 60
-    });
-})(gun = exports.gun || (exports.gun = {}));
+var weapon;
+(function (weapon) {
+    var attackType;
+    (function (attackType) {
+        attackType[attackType["gun"] = 0] = "gun";
+        attackType[attackType["melee"] = 1] = "melee";
+    })(attackType = weapon.attackType || (weapon.attackType = {}));
+    var gun;
+    (function (gun) {
+        var type;
+        (function (type) {
+            type[type["pistol"] = 0] = "pistol";
+            type[type["rifle"] = 1] = "rifle";
+        })(type = gun.type || (gun.type = {}));
+        gun.defaultSettings = new Map();
+        gun.defaultSettings.set(type.pistol, {
+            attackType: attackType.gun,
+            attackInterval: 500,
+            attackSightRadius: 130,
+            attackSightRemainsTime: 70,
+            bullet: 15,
+            bulletFlyStep: 3 * serverConfig.mainInterval,
+            maxBullet: 30
+        });
+        gun.defaultSettings.set(type.rifle, {
+            attackType: attackType.gun,
+            attackInterval: 200,
+            attackSightRadius: 200,
+            attackSightRemainsTime: 60,
+            bullet: 30,
+            bulletFlyStep: 0.8 * serverConfig.mainInterval,
+            maxBullet: 60
+        });
+    })(gun = weapon.gun || (weapon.gun = {}));
+    var melee;
+    (function (melee) {
+        var type;
+        (function (type) {
+            type[type["fist"] = 0] = "fist";
+        })(type = melee.type || (melee.type = {}));
+        melee.defaultSettings = new Map();
+        melee.defaultSettings.set(type.fist, {
+            attackType: attackType.melee,
+            attackInterval: 1000,
+            attackSightRadius: 50,
+            attackSightRemainsTime: 60,
+            bulletFlyStep: 10
+        });
+    })(melee = weapon.melee || (weapon.melee = {}));
+})(weapon = exports.weapon || (exports.weapon = {}));
 var stage;
 (function (stage) {
     stage.width = 500;
@@ -789,8 +837,7 @@ var type;
     type[type["pong"] = 0] = "pong";
     type[type["init"] = 1] = "init";
     type[type["main"] = 2] = "main";
-    type[type["shoot"] = 3] = "shoot";
-    type[type["gameOver"] = 4] = "gameOver";
+    type[type["gameOver"] = 3] = "gameOver";
 })(type = exports.type || (exports.type = {}));
 
 var baseProtocol = function baseProtocol(type) {
@@ -859,8 +906,8 @@ var mainPROT = function (_baseProtocol3) {
 
         _this3.playerPROTs = [];
         _this3.newPlayerBPROTs = [];
-        _this3.shootPROTs = [];
-        _this3.duringShootingPROTs = [];
+        _this3.attackPROTs = [];
+        _this3.duringAttackPROTs = [];
         _this3.runningPROTs = [];
         _this3.rankList = [];
         _this3.newPropGunPROTs = [];
@@ -876,10 +923,10 @@ var mainPROT = function (_baseProtocol3) {
         value: function formatPlayerPROT(currPlayerId, format) {
             var arr = [currPlayerId];
             arr = arr.concat(this.playerIdsInSight);
-            this.shootPROTs.forEach(function (p) {
+            this.attackPROTs.forEach(function (p) {
                 arr = arr.concat(p.playerIdsInSight);
             });
-            this.duringShootingPROTs.forEach(function (p) {
+            this.duringAttackPROTs.forEach(function (p) {
                 arr = arr.concat(p.playerIdsInSight);
             });
             this.runningPROTs.forEach(function (p) {
@@ -922,12 +969,12 @@ var mainPROT = function (_baseProtocol3) {
                 p.angle = parseFloat(p.angle.toFixed(2));
                 p.position = utils_1.point.getFixedPoint(p.position);
             });
-            this.shootPROTs.forEach(function (p) {
+            this.attackPROTs.forEach(function (p) {
                 p.angle = parseFloat(p.angle.toFixed(2));
                 p.bulletPosition = utils_1.point.getFixedPoint(p.bulletPosition);
                 p.position = utils_1.point.getFixedPoint(p.position);
             });
-            this.duringShootingPROTs.forEach(function (p) {
+            this.duringAttackPROTs.forEach(function (p) {
                 p.bulletPosition = utils_1.point.getFixedPoint(p.bulletPosition);
             });
             this.runningPROTs.forEach(function (p) {
@@ -1007,14 +1054,14 @@ var render = function () {
             var _this = this;
 
             this._resourceManager.mainPROTCache = protocol;
-            protocol.shootPROTs.forEach(function (p) {
-                _this._resourceManager.shootingCaches.push(new shootingCache(p));
+            protocol.attackPROTs.forEach(function (p) {
+                _this._resourceManager.attackCaches.push(new attackCache(p));
             });
-            protocol.duringShootingPROTs.forEach(function (p) {
-                var cache = _this._resourceManager.shootingCaches.find(function (pp) {
+            protocol.duringAttackPROTs.forEach(function (p) {
+                var cache = _this._resourceManager.attackCaches.find(function (pp) {
                     return pp.id == p.id;
                 });
-                if (cache) cache.onDuringShootingPROT(p, _this._resourceManager);
+                if (cache) cache.onDuringAttackPROT(p, _this._resourceManager);
             });
             protocol.newPlayerBPROTs.forEach(function (p) {
                 _this._resourceManager.playerBasicPROTs.push(p);
@@ -1178,7 +1225,7 @@ var render = function () {
             // 绘制本玩家
             this._resourceManager.drawPlayer(ctx, [this._resourceManager.currentPlayerId], '#333', '#f00');
             // 绘制射击
-            this._resourceManager.shootingCaches.forEach(function (cache) {
+            this._resourceManager.attackCaches.forEach(function (cache) {
                 cache.draw(ctx, _this2._resourceManager);
             });
             // 绘制奔跑
@@ -1198,7 +1245,7 @@ var render = function () {
             });
             ctx.restore();
             if (this._resourceManager.shooingInAimEffect) this._resourceManager.shooingInAimEffect.draw(ctx);
-            this._resourceManager.shootedEffects.forEach(function (p) {
+            this._resourceManager.attackedEffects.forEach(function (p) {
                 return p.draw(ctx);
             });
         }
@@ -1217,8 +1264,8 @@ var resourcesManager = function () {
         this.barricades = [];
         this.propHps = [];
         this.propGuns = [];
-        this.shootedEffects = [];
-        this.shootingCaches = [];
+        this.attackedEffects = [];
+        this.attackCaches = [];
     }
 
     _createClass(resourcesManager, [{
@@ -1339,41 +1386,39 @@ var resource = function () {
     return resource;
 }();
 
-var shootingCache = function (_resource) {
-    _inherits(shootingCache, _resource);
+var attackCache = function (_resource) {
+    _inherits(attackCache, _resource);
 
-    function shootingCache(p) {
-        _classCallCheck(this, shootingCache);
+    function attackCache(p) {
+        _classCallCheck(this, attackCache);
 
-        var _this3 = _possibleConstructorReturn(this, (shootingCache.__proto__ || Object.getPrototypeOf(shootingCache)).call(this));
+        var _this3 = _possibleConstructorReturn(this, (attackCache.__proto__ || Object.getPrototypeOf(attackCache)).call(this));
 
         _this3._isSightEnd = false;
         _this3._isEnd = false;
         _this3._fadeOutTime = 20;
         _this3.id = p.id;
-        _this3._shootingPosition = p.position;
-        _this3._angle = p.angle;
-        _this3._playerIdsInSight = p.playerIdsInSight;
-        _this3._shootingPlayerId = p.shootingPlayerId;
         _this3._bulletPosition = p.bulletPosition;
+        _this3._attackPROT = p;
         return _this3;
     }
 
-    _createClass(shootingCache, [{
-        key: "onDuringShootingPROT",
-        value: function onDuringShootingPROT(p, manager) {
+    _createClass(attackCache, [{
+        key: "onDuringAttackPROT",
+        value: function onDuringAttackPROT(p, manager) {
             this._isSightEnd = p.isSightEnd;
             if (p.isEnd) {
-                if (this._shootingPlayerId == manager.currentPlayerId && p.shootedPlayerId) {
-                    manager.shooingInAimEffect = new shootingInAimEffect('击中');
+                if (this._attackPROT.attackPlayerId == manager.currentPlayerId && p.attackedPlayerId) {
+                    manager.shooingInAimEffect = new attackInAimEffect('击中');
                 }
-                if (p.shootedPlayerId == manager.currentPlayerId) {
-                    manager.shootedEffects.push(new shootedEffect(this._angle + Math.PI));
+                if (p.attackedPlayerId == manager.currentPlayerId) {
+                    manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));
                 }
                 this._isEnd = true;
             }
             this._bulletPosition = p.bulletPosition;
-            this._playerIdsInSight = p.playerIdsInSight;
+            this._attackPROT.playerIdsInSight = p.playerIdsInSight;
+            this._attackedPlayerId = p.attackedPlayerId;
         }
     }, {
         key: "draw",
@@ -1385,25 +1430,25 @@ var shootingCache = function (_resource) {
                 ctx.save();
                 // 绘制射击可见区域中所有玩家
                 ctx.beginPath();
-                ctx.arc(this._shootingPosition.x, this._shootingPosition.y, config.player.shootingSightRadius - 1, 0, Math.PI * 2);
+                ctx.arc(this._attackPROT.position.x, this._attackPROT.position.y, this._attackPROT.sightRadius - 1, 0, Math.PI * 2);
                 ctx.clip();
-                manager.drawPlayer(ctx, this._playerIdsInSight, '#fff', '#f00');
+                manager.drawPlayer(ctx, this._attackPROT.playerIdsInSight, '#fff', '#f00');
                 ctx.restore();
                 // 绘制射击可见区域
                 ctx.beginPath();
                 ctx.fillStyle = 'rgba(255,255,0,0.25)';
                 ctx.strokeStyle = 'rgba(255,255,0,0.25)';
                 ctx.lineWidth = 3;
-                ctx.arc(this._shootingPosition.x, this._shootingPosition.y, config.player.shootingSightRadius, 0, Math.PI * 2);
+                ctx.arc(this._attackPROT.position.x, this._attackPROT.position.y, this._attackPROT.sightRadius, 0, Math.PI * 2);
                 ctx.fill();
             }
-            if (!this._isEnd) {
+            if (this._fadeOutTime >= 15) {
                 // 绘制子弹
                 ctx.beginPath();
                 ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 4;
-                ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._angle), this._bulletPosition.y - 10 * Math.sin(this._angle));
-                ctx.lineTo(this._bulletPosition.x + 10 * Math.cos(this._angle), this._bulletPosition.y + 10 * Math.sin(this._angle));
+                ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._attackPROT.angle), this._bulletPosition.y - 10 * Math.sin(this._attackPROT.angle));
+                ctx.lineTo(this._bulletPosition.x + 10 * Math.cos(this._attackPROT.angle), this._bulletPosition.y + 10 * Math.sin(this._attackPROT.angle));
                 ctx.stroke();
             }
             ctx.beginPath();
@@ -1413,7 +1458,7 @@ var shootingCache = function (_resource) {
                 ctx.strokeStyle = 'rgba(255,255,255,.25)';
             }
             ctx.lineWidth = 4;
-            ctx.moveTo(this._shootingPosition.x, this._shootingPosition.y);
+            ctx.moveTo(this._attackPROT.position.x, this._attackPROT.position.y);
             ctx.lineTo(this._bulletPosition.x, this._bulletPosition.y);
             ctx.stroke();
         }
@@ -1422,31 +1467,31 @@ var shootingCache = function (_resource) {
         value: function dispose(manager) {
             var _this4 = this;
 
-            _get(shootingCache.prototype.__proto__ || Object.getPrototypeOf(shootingCache.prototype), "dispose", this).call(this, manager);
-            var i = manager.shootingCaches.findIndex(function (pp) {
+            _get(attackCache.prototype.__proto__ || Object.getPrototypeOf(attackCache.prototype), "dispose", this).call(this, manager);
+            var i = manager.attackCaches.findIndex(function (pp) {
                 return pp == _this4;
             });
-            if (i != -1) manager.shootingCaches.splice(i, 1);
+            if (i != -1) manager.attackCaches.splice(i, 1);
         }
     }]);
 
-    return shootingCache;
+    return attackCache;
 }(resource);
 
-var shootedEffect = function (_resource2) {
-    _inherits(shootedEffect, _resource2);
+var attackedEffect = function (_resource2) {
+    _inherits(attackedEffect, _resource2);
 
-    function shootedEffect(angle) {
-        _classCallCheck(this, shootedEffect);
+    function attackedEffect(angle) {
+        _classCallCheck(this, attackedEffect);
 
-        var _this5 = _possibleConstructorReturn(this, (shootedEffect.__proto__ || Object.getPrototypeOf(shootedEffect)).call(this));
+        var _this5 = _possibleConstructorReturn(this, (attackedEffect.__proto__ || Object.getPrototypeOf(attackedEffect)).call(this));
 
         _this5._timeout = 10;
         _this5._angle = angle;
         return _this5;
     }
 
-    _createClass(shootedEffect, [{
+    _createClass(attackedEffect, [{
         key: "draw",
         value: function draw(ctx) {
             if (this._isDisposed) return;
@@ -1463,23 +1508,23 @@ var shootedEffect = function (_resource2) {
         }
     }]);
 
-    return shootedEffect;
+    return attackedEffect;
 }(resource);
 
-var shootingInAimEffect = function (_resource3) {
-    _inherits(shootingInAimEffect, _resource3);
+var attackInAimEffect = function (_resource3) {
+    _inherits(attackInAimEffect, _resource3);
 
-    function shootingInAimEffect(text) {
-        _classCallCheck(this, shootingInAimEffect);
+    function attackInAimEffect(text) {
+        _classCallCheck(this, attackInAimEffect);
 
-        var _this6 = _possibleConstructorReturn(this, (shootingInAimEffect.__proto__ || Object.getPrototypeOf(shootingInAimEffect)).call(this));
+        var _this6 = _possibleConstructorReturn(this, (attackInAimEffect.__proto__ || Object.getPrototypeOf(attackInAimEffect)).call(this));
 
         _this6._fontsize = 20;
         _this6._text = text;
         return _this6;
     }
 
-    _createClass(shootingInAimEffect, [{
+    _createClass(attackInAimEffect, [{
         key: "draw",
         value: function draw(ctx) {
             if (this._isDisposed) return;
@@ -1495,7 +1540,7 @@ var shootingInAimEffect = function (_resource3) {
         }
     }]);
 
-    return shootingInAimEffect;
+    return attackInAimEffect;
 }(resource);
 
 /***/ }),
@@ -1537,7 +1582,7 @@ var main = function () {
         var dm = new dom_manager_1.domManager(this._connectWebSocketServer.bind(this));
         this._gameCore = new game_core_1.gameCore(this._send.bind(this), dm);
         setInterval(function () {
-            console.log(_this._dataLengthPerSec / 1024 + " KB/s");
+            // console.log(`${this._dataLengthPerSec / 1024} KB/s`);
             _this._dataLengthPerSec = 0;
         }, 1000);
     }

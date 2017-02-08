@@ -29,9 +29,9 @@ export let gameInitModal = {
 }
 
 let records: toClientPROT.records = {
-	shootingTimes: 0,
-	shootingInAimTimes: 0,
-	shootedTimes: 0,
+	attackTimes: 0,
+	attackInAimTimes: 0,
+	attactedTimes: 0,
 	killTimes: 0
 };
 export let gameOverModal = {

@@ -4,7 +4,7 @@ import { player, playerManager } from './player';
 import { edge, barricade } from './barricade';
 import { propManager, propHp, propGun } from './prop';
 import * as gameServer from './game_server';
-import { gun } from './gun';
+import { weapon, gun, melee } from './weapon';
 
 import * as config from '../shared/game_config';
 import * as serverConfig from '../config';
@@ -28,18 +28,20 @@ export class gameCore extends events.EventEmitter {
 	private _barricades: barricade[] = [];
 	private _propManager: propManager;
 
-	private _shootingCacheId = 0;
-	private _shootingCaches: {
+	private _attackCacheId = 0;
+	private _attackCaches: {
 		id: number,
-		gun: gun,
-		shootingPosition: point,
-		shootingPlayer: player,
+		weapon: weapon,
+		attackPosition: point,
+		attackPlayer: player,
 		angle: number,
 		bulletPosition: point,
 		collisionPoint?: point,
-		shootedPlayer?: player,
-		sightTimeCount: number
+		attacktedPlayer?: player,
+		sightTimeCount: number,
+		isEnd: boolean
 	}[] = [];
+
 	private _runningCache: Map<player, number> = new Map();
 
 	constructor(width: number, height: number, edgeX = 0, edgeY = 0, ) {
@@ -64,56 +66,57 @@ export class gameCore extends events.EventEmitter {
 			return newPlayersBasicPROTs;
 		}
 
-		// 生成射击协议
-		let generateShootPROTs: () => [toClientPROT.shootPROT[], toClientPROT.duringShootingPROT[]] = () => {
-			let shootPROTs: toClientPROT.shootPROT[] = [];
-			let duringShootingPROTs: toClientPROT.duringShootingPROT[] = [];
+		// 生成攻击协议
+		let generateAttackPROTs: () => [toClientPROT.attackPROT[], toClientPROT.duringAttackPROT[]] = () => {
+			let attackPROTs: toClientPROT.attackPROT[] = [];
+			let duringAttackPROTs: toClientPROT.duringAttackPROT[] = [];
 
-			for (let i = this._shootingCaches.length - 1; i >= 0; i--) {
-				let cache = this._shootingCaches[i];
+			for (let i = this._attackCaches.length - 1; i >= 0; i--) {
+				let cache = this._attackCaches[i];
+
 				// 如果是初次加入到射击缓存中
-				if (cache.sightTimeCount == cache.shootingPlayer.getGun().shootingSightTimeOut) {
-					shootPROTs.push({
+				if (cache.sightTimeCount == cache.weapon.attackSightTimeOut) {
+					attackPROTs.push({
 						id: cache.id,
-						position: cache.shootingPosition,
+						attackType: cache.weapon.attackType,
+						weaponType: cache.weapon.weaponType,
+						position: cache.attackPosition,
 						angle: cache.angle,
 						playerIdsInSight: this._playerManager
-							.getPlayersInRadius(cache.shootingPosition, cache.shootingPlayer.getGun().shootingSightRadius)
+							.getPlayersInRadius(cache.attackPosition, cache.weapon.attackSightRadius)
 							.map(p => p.id),
-						shootingPlayerId: cache.shootingPlayer.id,
-						bulletPosition: cache.bulletPosition
+						attackPlayerId: cache.attackPlayer.id,
+						bulletPosition: cache.bulletPosition,
+						sightRadius: cache.weapon.attackSightRadius
 					});
 					cache.sightTimeCount--;
 				} else {
-					let duringShootingPROT: toClientPROT.duringShootingPROT = {
+					let duringAttackPROT: toClientPROT.duringAttackPROT = {
 						id: cache.id,
 						bulletPosition: cache.bulletPosition,
 						playerIdsInSight: [],
+						attackedPlayerId: cache.attacktedPlayer ? cache.attacktedPlayer.id : undefined,
 						isSightEnd: false,
-						isEnd: false
+						isEnd: cache.isEnd
 					};
 
 					if (cache.sightTimeCount <= 0) {
-						duringShootingPROT.isSightEnd = true;
+						duringAttackPROT.isSightEnd = true;
 					} else {
-						duringShootingPROT.playerIdsInSight = this._playerManager
-							.getPlayersInRadius(cache.shootingPosition, cache.shootingPlayer.getGun().shootingSightRadius)
+						duringAttackPROT.playerIdsInSight = this._playerManager
+							.getPlayersInRadius(cache.attackPosition, cache.weapon.attackSightRadius)
 							.map(p => p.id);
 					}
-					if (cache.collisionPoint) {
-						duringShootingPROT.shootedPlayerId = cache.shootedPlayer ? cache.shootedPlayer.id : undefined;
-						duringShootingPROT.isEnd = true;
-					}
 
-					duringShootingPROTs.push(duringShootingPROT);
+					duringAttackPROTs.push(duringAttackPROT);
 				}
 			}
-			return [shootPROTs, duringShootingPROTs];
+			return [attackPROTs, duringAttackPROTs];
 		}
 
 		// 生成奔跑协议
-		let runningSightRemainsStep = config.player.runningSightRemainsTime * serverConfig.mainInterval,
-			runningSightDisapperStep = runningSightRemainsStep + config.player.runningSightDisapperTime * serverConfig.mainInterval;
+		let runningSightRemainsStep = config.player.runningSightRemainsTime / serverConfig.mainInterval,
+			runningSightDisapperStep = runningSightRemainsStep + config.player.runningSightDisapperTime / serverConfig.mainInterval;
 
 		let generateRunningPROTs = (connectedPlayers: player[]) => {
 			let runningPROTs: toClientPROT.runningPROT[] = [];
@@ -142,27 +145,27 @@ export class gameCore extends events.EventEmitter {
 			return runningPROTs;
 		}
 
-		let handleShootingCache = () => {
-			for (let i = this._shootingCaches.length - 1; i >= 0; i--) {
-				let cache = this._shootingCaches[i];
+		let handleattackCache = () => {
+			for (let i = this._attackCaches.length - 1; i >= 0; i--) {
+				let cache = this._attackCaches[i];
 				if (cache.sightTimeCount <= 0) {
-					if (cache.collisionPoint) {
-						this._shootingCaches.splice(i, 1);
+					if (cache.isEnd) {
+						this._attackCaches.splice(i, 1);
 						continue;
 					}
 				} else {
 					cache.sightTimeCount--;
-					if (cache.collisionPoint) {
+					if (cache.isEnd) {
 						continue;
 					}
 				}
 
 				let oldPos = cache.bulletPosition,
-					newPos = new point(oldPos.x + cache.gun.bulletFlyStep * Math.cos(cache.angle),
-						oldPos.y + cache.gun.bulletFlyStep * Math.sin(cache.angle));
+					newPos = new point(oldPos.x + cache.weapon.bulletFlyStep * Math.cos(cache.angle),
+						oldPos.y + cache.weapon.bulletFlyStep * Math.sin(cache.angle));
 
 				let collidedPlayers = this._playerManager.players.map(p => {
-					if (p == cache.shootingPlayer)
+					if (p == cache.attackPlayer)
 						return null;
 
 					let collidedPoint = p.getLineCollidedPoint(oldPos, newPos);
@@ -178,16 +181,16 @@ export class gameCore extends events.EventEmitter {
 
 				let minDistance = Infinity;
 				let minPoint: point | null = null;
-				let firstshootedPlayer: player | null = null;
+				let firstattackedPlayer: player | null = null;
 
 				for (let collidedPlayer of collidedPlayers) {
 					if (!collidedPlayer)
 						continue;
-					let d = utils.getTwoPointsDistance(collidedPlayer.point, cache.shootingPosition);
+					let d = utils.getTwoPointsDistance(collidedPlayer.point, cache.attackPosition);
 					if (d < minDistance) {
 						minDistance = d;
 						minPoint = collidedPlayer.point;
-						firstshootedPlayer = collidedPlayer.player;
+						firstattackedPlayer = collidedPlayer.player;
 					}
 				}
 
@@ -197,11 +200,11 @@ export class gameCore extends events.EventEmitter {
 
 				for (let barricadePoint of collidedBarricadePoints) {
 					if (barricadePoint) {
-						let d = utils.getTwoPointsDistance(barricadePoint, cache.shootingPosition);
+						let d = utils.getTwoPointsDistance(barricadePoint, cache.attackPosition);
 						if (d < minDistance) {
 							minDistance = d;
 							minPoint = barricadePoint;
-							firstshootedPlayer = null;
+							firstattackedPlayer = null;
 						}
 					}
 				}
@@ -213,15 +216,19 @@ export class gameCore extends events.EventEmitter {
 					}
 				}
 
-				if (firstshootedPlayer) {
-					cache.shootedPlayer = firstshootedPlayer;
-					this._playerShooted(cache.shootedPlayer, cache.shootingPlayer, cache.gun);
+				if (firstattackedPlayer) {
+					cache.attacktedPlayer = firstattackedPlayer;
+					this._playerAttacked(cache.attacktedPlayer, cache.attackPlayer, cache.weapon);
 				}
 
 				if (minPoint) {
 					cache.bulletPosition = cache.collisionPoint = minPoint;
+					cache.isEnd = true;
 				} else {
 					cache.bulletPosition = newPos;
+					if (cache.weapon instanceof melee) {
+						cache.isEnd = true;
+					}
 				}
 			}
 		}
@@ -236,7 +243,7 @@ export class gameCore extends events.EventEmitter {
 		setInterval(() => {
 			let sendingMap = new Map<number, toClientPROT.mainPROT>();
 			let newPlayersBasicPROTs = generateNewPlayersBasicPROTs();
-			let [shootPROTs, duringShootingPROTs] = generateShootPROTs();
+			let [attackPROTs, duringAttackPROTs] = generateAttackPROTs();
 			let connectedPlayers = this._playerManager.players.filter(p => p.connected);
 			let runningPROTs = generateRunningPROTs(connectedPlayers);
 			let propPROTs = this._propManager.getAndClearPropPROTs();
@@ -244,8 +251,8 @@ export class gameCore extends events.EventEmitter {
 			for (let player of connectedPlayers) {
 				let mainPROT = new toClientPROT.mainPROT(
 					this._playerManager.getPlayersInPlayerSight(player, config.player.sightRadius).map(p => p.id));
-				mainPROT.shootPROTs = shootPROTs;
-				mainPROT.duringShootingPROTs = duringShootingPROTs;
+				mainPROT.attackPROTs = attackPROTs;
+				mainPROT.duringAttackPROTs = duringAttackPROTs;
 				mainPROT.runningPROTs = runningPROTs;
 				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
 
@@ -270,7 +277,7 @@ export class gameCore extends events.EventEmitter {
 
 			this.emit(gameCore.events.sendToPlayers, sendingMap);
 
-			handleShootingCache();
+			handleattackCache();
 			handlePlayerMoving();
 
 		}, serverConfig.mainInterval);
@@ -341,7 +348,7 @@ export class gameCore extends events.EventEmitter {
 			}
 		}
 
-		let newPlayer = this._playerManager.addNewPlayer(name, newPoisition);
+		let newPlayer = this._playerManager.addNewPlayer(name.slice(0, 20), newPoisition);
 		return newPlayer.id;
 	}
 
@@ -410,45 +417,56 @@ export class gameCore extends events.EventEmitter {
 		if (player) {
 			player.startShooting(active, () => {
 				if (player)
-					this._playerShoot(player);
+					this._playerAttack(player, player.getGun());
 			});
 		}
 	}
 
-	private _playerShooted(shootedPlayer: player, shootingPlayer: player, gun: gun) {
-		shootingPlayer.records.shootingInAimTimes++;
-		shootedPlayer.records.shootedTimes++;
-
-		let hp = shootedPlayer.getHp();
-		if (hp - 1 == 0) {
-			shootingPlayer.records.killTimes++;
-			this.emit(gameCore.events.gameOver, shootedPlayer.id,
-				new toClientPROT.gameOver(shootedPlayer.records));
-			this._playerManager.removePlayer(shootedPlayer);
-
-			if (shootedPlayer.getGun().getBullet() > 0) {
-				this._propManager.addPropGun(shootedPlayer.position, shootedPlayer.getGun());
-			}
-		} else {
-			shootedPlayer.setHp(hp - 1);
+	startCombat(playerId: number, active: boolean) {
+		let player = this._playerManager.findPlayerById(playerId);
+		if (player) {
+			player.startCombat(active, () => {
+				if (player)
+					this._playerAttack(player, player.getMelee());
+			});
 		}
 	}
 
-	private _playerShoot(player: player) {
-		player.records.shootingTimes++;
+	private _playerAttacked(attacktedPlayer: player, attackPlayer: player, weapon: weapon) {
+		attackPlayer.records.attackInAimTimes++;
+		attacktedPlayer.records.attactedTimes++;
+
+		let hp = attacktedPlayer.getHp();
+		if (hp - 1 == 0) {
+			attackPlayer.records.killTimes++;
+			this.emit(gameCore.events.gameOver, attacktedPlayer.id,
+				new toClientPROT.gameOver(attacktedPlayer.records));
+			this._playerManager.removePlayer(attacktedPlayer);
+
+			if (attacktedPlayer.getGun().getBullet() > 0) {
+				this._propManager.addPropGun(attacktedPlayer.position, attacktedPlayer.getGun());
+			}
+		} else {
+			attacktedPlayer.setHp(hp - 1);
+		}
+	}
+
+	private _playerAttack(player: player, weapon: weapon) {
+		player.records.attackTimes++;
 
 		let position = player.position;
 		let angle = player.getDirectionAngle();
 
-		this._shootingCaches.push({
-			id: ++this._shootingCacheId,
-			gun: player.getGun(),
+		this._attackCaches.push({
+			id: ++this._attackCacheId,
+			weapon: weapon,
 			bulletPosition: new point(position.x + config.player.radius * Math.cos(angle),
 				position.y + config.player.radius * Math.sin(angle)),
-			shootingPosition: point.getNewInstance(position),
-			shootingPlayer: player,
+			attackPosition: point.getNewInstance(position),
+			attackPlayer: player,
 			angle: angle,
-			sightTimeCount: player.getGun().shootingSightTimeOut
+			sightTimeCount: weapon.attackSightTimeOut,
+			isEnd: false
 		});
 	}
 }

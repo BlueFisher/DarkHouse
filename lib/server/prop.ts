@@ -1,6 +1,6 @@
 import { point } from '../shared/utils';
 import { player } from './player';
-import { gun } from './gun';
+import { gun } from './weapon';
 import * as config from '../shared/game_config';
 import * as utils from '../shared/utils';
 
@@ -35,11 +35,12 @@ export class propGun extends prop {
 		this.gun = gun;
 	}
 
-	getPropGunPROT(): toClientPROT.propGunPROT {
+	getPropGunPROT(): toClientPROT.propWeaponPROT {
 		return {
 			id: this.id,
 			position: this.position,
-			type: this.gun.type
+			weapontType: this.gun.weaponType,
+			attackType: this.gun.attackType
 		}
 	}
 }
@@ -54,8 +55,8 @@ export class propManager {
 	private _removedPropGunIdsCache: number[] = [];
 
 	constructor() {
-		let a = config.gun.defaultSettings.get(config.gun.type.rifle) as config.gun.defaultSetting;
-		this.propGuns.push(new propGun(new point(200, 200), new gun(config.gun.type.rifle, a)));
+		let a = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rifle) as config.weapon.gun.defaultSetting;
+		this.propGuns.push(new propGun(new point(200, 200), new gun(config.weapon.gun.type.rifle, a)));
 	}
 
 	getAndClearPropPROTs() {
@@ -96,7 +97,7 @@ export class propManager {
 			let propGun = this.propGuns[i];
 			if (utils.didTwoCirclesCollied(propGun.position, config.hp.activeRadius, newPos, config.player.radius)) {
 				// 如果道具枪与玩家现有枪的类型
-				if (player.getGun().type == propGun.gun.type) {
+				if (player.getGun().weaponType == propGun.gun.weaponType) {
 					player.getGun().addBuilet(propGun.gun.getBullet());
 				} else {
 					player.setGun(propGun.gun);

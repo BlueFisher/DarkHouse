@@ -24,13 +24,13 @@ export class render {
 
 	onMainProtocol(protocol: toClientPROT.mainPROT) {
 		this._resourceManager.mainPROTCache = protocol;
-		protocol.shootPROTs.forEach(p => {
-			this._resourceManager.shootingCaches.push(new shootingCache(p));
+		protocol.attackPROTs.forEach(p => {
+			this._resourceManager.attackCaches.push(new attackCache(p));
 		});
-		protocol.duringShootingPROTs.forEach(p => {
-			let cache = this._resourceManager.shootingCaches.find(pp => pp.id == p.id);
+		protocol.duringAttackPROTs.forEach(p => {
+			let cache = this._resourceManager.attackCaches.find(pp => pp.id == p.id);
 			if (cache)
-				cache.onDuringShootingPROT(p, this._resourceManager);
+				cache.onDuringAttackPROT(p, this._resourceManager);
 		});
 
 		protocol.newPlayerBPROTs.forEach(p => {
@@ -127,7 +127,7 @@ export class render {
 		this._resourceManager.drawPlayer(ctx, [this._resourceManager.currentPlayerId], '#333', '#f00');
 
 		// 绘制射击
-		this._resourceManager.shootingCaches.forEach(cache => {
+		this._resourceManager.attackCaches.forEach(cache => {
 			cache.draw(ctx, this._resourceManager);
 		});
 
@@ -156,7 +156,7 @@ export class render {
 		if (this._resourceManager.shooingInAimEffect)
 			this._resourceManager.shooingInAimEffect.draw(ctx);
 
-		this._resourceManager.shootedEffects.forEach(p => p.draw(ctx));
+		this._resourceManager.attackedEffects.forEach(p => p.draw(ctx));
 	}
 }
 
@@ -166,11 +166,11 @@ class resourcesManager {
 	edge: toClientPROT.edgePROT;
 	barricades: toClientPROT.barricadePROT[] = [];
 	propHps: toClientPROT.propHpPROT[] = [];
-	propGuns: toClientPROT.propGunPROT[] = [];
+	propGuns: toClientPROT.propWeaponPROT[] = [];
 
-	shooingInAimEffect: shootingInAimEffect;
-	shootedEffects: shootedEffect[] = [];
-	shootingCaches: shootingCache[] = [];
+	shooingInAimEffect: attackInAimEffect;
+	attackedEffects: attackedEffect[] = [];
+	attackCaches: attackCache[] = [];
 
 	mainPROTCache: toClientPROT.mainPROT;
 
@@ -268,46 +268,42 @@ class resource {
 	}
 }
 
-class shootingCache extends resource {
+class attackCache extends resource {
 	readonly id: number;
-	private _shootingPosition: point;
-	private _angle: number;
-	private _shootingPlayerId: number;
-
-	private _playerIdsInSight: number[];
 	private _bulletPosition: point;
-	private _shootedPlayerId?: number;
+	private _attackPROT: toClientPROT.attackPROT;
+
+	private _attackedPlayerId?: number;
 	private _isSightEnd: boolean = false;
 	private _isEnd: boolean = false;
 
 	private _fadeOutTime = 20;
 
-	constructor(p: toClientPROT.shootPROT) {
+	constructor(p: toClientPROT.attackPROT) {
 		super();
 
 		this.id = p.id;
-		this._shootingPosition = p.position;
-		this._angle = p.angle;
-		this._playerIdsInSight = p.playerIdsInSight;
-		this._shootingPlayerId = p.shootingPlayerId;
 		this._bulletPosition = p.bulletPosition;
+		this._attackPROT = p;
 	}
 
-	onDuringShootingPROT(p: toClientPROT.duringShootingPROT, manager: resourcesManager) {
+	onDuringAttackPROT(p: toClientPROT.duringAttackPROT, manager: resourcesManager) {
 		this._isSightEnd = p.isSightEnd;
 
 		if (p.isEnd) {
-			if (this._shootingPlayerId == manager.currentPlayerId && p.shootedPlayerId) {
-				manager.shooingInAimEffect = new shootingInAimEffect('击中');
+			if (this._attackPROT.attackPlayerId == manager.currentPlayerId && p.attackedPlayerId) {
+				manager.shooingInAimEffect = new attackInAimEffect('击中');
 			}
-			if (p.shootedPlayerId == manager.currentPlayerId) {
-				manager.shootedEffects.push(new shootedEffect(this._angle + Math.PI));
+			if (p.attackedPlayerId == manager.currentPlayerId) {
+				manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));
 			}
 			this._isEnd = true;
 		}
 
 		this._bulletPosition = p.bulletPosition;
-		this._playerIdsInSight = p.playerIdsInSight;
+
+		this._attackPROT.playerIdsInSight = p.playerIdsInSight;
+		this._attackedPlayerId = p.attackedPlayerId;
 	}
 
 	draw(ctx: CanvasRenderingContext2D, manager: resourcesManager) {
@@ -319,10 +315,11 @@ class shootingCache extends resource {
 
 			// 绘制射击可见区域中所有玩家
 			ctx.beginPath();
-			ctx.arc(this._shootingPosition.x, this._shootingPosition.y, config.player.shootingSightRadius - 1, 0, Math.PI * 2);
+			ctx.arc(this._attackPROT.position.x, this._attackPROT.position.y,
+				this._attackPROT.sightRadius - 1, 0, Math.PI * 2);
 			ctx.clip();
 
-			manager.drawPlayer(ctx, this._playerIdsInSight, '#fff', '#f00');
+			manager.drawPlayer(ctx, this._attackPROT.playerIdsInSight, '#fff', '#f00');
 
 			ctx.restore();
 
@@ -331,17 +328,20 @@ class shootingCache extends resource {
 			ctx.fillStyle = 'rgba(255,255,0,0.25)';
 			ctx.strokeStyle = 'rgba(255,255,0,0.25)';
 			ctx.lineWidth = 3;
-			ctx.arc(this._shootingPosition.x, this._shootingPosition.y, config.player.shootingSightRadius, 0, Math.PI * 2);
+			ctx.arc(this._attackPROT.position.x, this._attackPROT.position.y,
+				this._attackPROT.sightRadius, 0, Math.PI * 2);
 			ctx.fill();
 		}
 
-		if (!this._isEnd) {
+		if (this._fadeOutTime >= 15) {
 			// 绘制子弹
 			ctx.beginPath();
 			ctx.strokeStyle = '#fff';
 			ctx.lineWidth = 4;
-			ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._angle), this._bulletPosition.y - 10 * Math.sin(this._angle));
-			ctx.lineTo(this._bulletPosition.x + 10 * Math.cos(this._angle), this._bulletPosition.y + 10 * Math.sin(this._angle));
+			ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._attackPROT.angle),
+				this._bulletPosition.y - 10 * Math.sin(this._attackPROT.angle));
+			ctx.lineTo(this._bulletPosition.x + 10 * Math.cos(this._attackPROT.angle),
+				this._bulletPosition.y + 10 * Math.sin(this._attackPROT.angle));
 			ctx.stroke();
 		}
 
@@ -353,7 +353,7 @@ class shootingCache extends resource {
 		}
 
 		ctx.lineWidth = 4;
-		ctx.moveTo(this._shootingPosition.x, this._shootingPosition.y);
+		ctx.moveTo(this._attackPROT.position.x, this._attackPROT.position.y);
 		ctx.lineTo(this._bulletPosition.x, this._bulletPosition.y);
 		ctx.stroke();
 	}
@@ -361,13 +361,13 @@ class shootingCache extends resource {
 	dispose(manager: resourcesManager) {
 		super.dispose(manager);
 
-		let i = manager.shootingCaches.findIndex(pp => pp == this);
+		let i = manager.attackCaches.findIndex(pp => pp == this);
 		if (i != -1)
-			manager.shootingCaches.splice(i, 1);
+			manager.attackCaches.splice(i, 1);
 	}
 }
 
-class shootedEffect extends resource {
+class attackedEffect extends resource {
 	private _angle: number;
 	private _timeout = 10;
 
@@ -396,7 +396,7 @@ class shootedEffect extends resource {
 	}
 }
 
-class shootingInAimEffect extends resource {
+class attackInAimEffect extends resource {
 	private _fontsize = 20;
 	private _text: string;
 

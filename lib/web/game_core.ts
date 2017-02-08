@@ -95,6 +95,9 @@ export class gameCore {
 			if (e.keyCode == 87) {
 				this._send(new fromClientPROT.startRunning(true));
 			}
+			if (e.keyCode == 70) {
+				this._send(new fromClientPROT.startCombat(true));
+			}
 		});
 
 		this._canvas.addEventListener('keyup', e => {
@@ -103,6 +106,9 @@ export class gameCore {
 			}
 			if (e.keyCode == 87) {
 				this._send(new fromClientPROT.startRunning(false));
+			}
+			if (e.keyCode == 70) {
+				this._send(new fromClientPROT.startCombat(false));
 			}
 		});
 

@@ -125,6 +125,9 @@ export class gameServer {
 				case fromClientPROT.type.startShooting:
 					this._onShoot(protocol as fromClientPROT.startShoot, socket);
 					break;
+				case fromClientPROT.type.startCombat:
+					this._onCombat(protocol as fromClientPROT.startCombat, socket);
+					break;
 			}
 		});
 
@@ -193,6 +196,12 @@ export class gameServer {
 		let pair = this._socketPlayerColl.find(p => p.socket == socket);
 		if (pair && pair.playerId) {
 			this._gameCore.startShooting(pair.playerId, protocol.active);
+		}
+	}
+	private _onCombat(protocol: fromClientPROT.startCombat, socket: websocket) {
+		let pair = this._socketPlayerColl.find(p => p.socket == socket);
+		if (pair && pair.playerId) {
+			this._gameCore.startCombat(pair.playerId, protocol.active);
 		}
 	}
 

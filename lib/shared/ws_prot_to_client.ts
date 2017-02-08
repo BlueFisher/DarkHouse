@@ -30,8 +30,9 @@ export interface propPROT {
 export interface propHpPROT extends propPROT {
 
 }
-export interface propGunPROT extends propPROT {
-	type: config.gun.type
+export interface propWeaponPROT extends propPROT {
+	weapontType: config.weapon.gun.type | config.weapon.melee.type,
+	attackType: config.weapon.attackType
 }
 
 export interface runningPROT {
@@ -39,19 +40,22 @@ export interface runningPROT {
 	playerIdsInSight: number[],
 }
 
-export interface shootPROT {
+export interface attackPROT {
 	id: number,
-	position: point, // 射击地点
+	attackType: config.weapon.attackType,
+	weaponType: config.weapon.gun.type | config.weapon.melee.type,
+	position: point, // 攻击地点
 	angle: number,
 	playerIdsInSight: number[],
-	shootingPlayerId: number, // 射击的玩家id
+	attackPlayerId: number, // 攻击的玩家id
 	bulletPosition: point,
+	sightRadius: number
 }
-export interface duringShootingPROT {
+export interface duringAttackPROT {
 	id: number,
 	bulletPosition: point,
 	playerIdsInSight: number[],
-	shootedPlayerId?: number,
+	attackedPlayerId?: number,
 	isSightEnd: boolean,
 	isEnd: boolean
 }
@@ -65,7 +69,6 @@ export enum type {
 	pong,
 	init,
 	main,
-	shoot,
 	gameOver
 }
 
@@ -86,7 +89,7 @@ export class initialize extends baseProtocol {
 	constructor(currPlayerId: number, players: playerBasicPROT[],
 		edge: edgePROT,
 		barricades: barricadePROT[],
-		propHps: propHpPROT[], propGuns: propGunPROT[]) {
+		propHps: propHpPROT[], propGuns: propWeaponPROT[]) {
 		super(type.init);
 
 		this.currPlayerId = currPlayerId;
@@ -114,7 +117,7 @@ export class initialize extends baseProtocol {
 	edge: edgePROT;
 	barricades: barricadePROT[];
 	propHps: propHpPROT[];
-	propGuns: propGunPROT[];
+	propGuns: propWeaponPROT[];
 }
 
 export class mainPROT extends baseProtocol {
@@ -127,10 +130,10 @@ export class mainPROT extends baseProtocol {
 	formatPlayerPROT(currPlayerId: number, format: (playerId: number) => playerPROT | null) {
 		let arr = [currPlayerId];
 		arr = arr.concat(this.playerIdsInSight);
-		this.shootPROTs.forEach(p => {
+		this.attackPROTs.forEach(p => {
 			arr = arr.concat(p.playerIdsInSight);
 		});
-		this.duringShootingPROTs.forEach(p => {
+		this.duringAttackPROTs.forEach(p => {
 			arr = arr.concat(p.playerIdsInSight);
 		});
 		this.runningPROTs.forEach(p => {
@@ -152,12 +155,12 @@ export class mainPROT extends baseProtocol {
 			p.angle = parseFloat(p.angle.toFixed(2));
 			p.position = point.getFixedPoint(p.position);
 		});
-		this.shootPROTs.forEach(p => {
+		this.attackPROTs.forEach(p => {
 			p.angle = parseFloat(p.angle.toFixed(2));
 			p.bulletPosition = point.getFixedPoint(p.bulletPosition);
 			p.position = point.getFixedPoint(p.position);
 		});
-		this.duringShootingPROTs.forEach(p => {
+		this.duringAttackPROTs.forEach(p => {
 			p.bulletPosition = point.getFixedPoint(p.bulletPosition);
 		});
 		this.runningPROTs.forEach(p => {
@@ -176,22 +179,22 @@ export class mainPROT extends baseProtocol {
 
 	playerIdsInSight: number[];
 
-	shootPROTs: shootPROT[] = [];
-	duringShootingPROTs: duringShootingPROT[] = [];
+	attackPROTs: attackPROT[] = [];
+	duringAttackPROTs: duringAttackPROT[] = [];
 	runningPROTs: runningPROT[] = [];
 
 	rankList: rankPROT[] = [];
 
-	newPropGunPROTs: propGunPROT[] = [];
+	newPropGunPROTs: propWeaponPROT[] = [];
 	removedPropGunIds: number[] = [];
 	newPropHpPROTs: propHpPROT[] = [];
 	removedPropHpIds: number[] = [];
 }
 
 export interface records {
-	shootingTimes: number,
-	shootingInAimTimes: number,
-	shootedTimes: number,
+	attackTimes: number,
+	attackInAimTimes: number,
+	attactedTimes: number,
 	killTimes: number
 }
 export class gameOver extends baseProtocol {
