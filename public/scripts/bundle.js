@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 12);
+/******/ 	return __webpack_require__(__webpack_require__.s = 13);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -263,8 +263,127 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var $ = __webpack_require__(10);
-var vue = __webpack_require__(11);
+var point = function () {
+    function point(x, y) {
+        _classCallCheck(this, point);
+
+        this.x = x;
+        this.y = y;
+    }
+
+    _createClass(point, null, [{
+        key: "getNewInstance",
+        value: function getNewInstance(oldPoint) {
+            return new point(oldPoint.x, oldPoint.y);
+        }
+    }, {
+        key: "getFixedPoint",
+        value: function getFixedPoint(oldPoint) {
+            return new point(parseFloat(oldPoint.x.toFixed(2)), parseFloat(oldPoint.y.toFixed(2)));
+        }
+    }]);
+
+    return point;
+}();
+
+exports.point = point;
+function didTwoCirclesCollied(dot1, radius1, dot2, radius2) {
+    return getTwoPointsDistance(dot1, dot2) <= radius1 + radius2;
+}
+exports.didTwoCirclesCollied = didTwoCirclesCollied;
+function didDotInCircle(dot, circlePoint, radius) {
+    var canOnCircle = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
+    if (canOnCircle) return getTwoPointsDistance(dot, circlePoint) <= radius;else return getTwoPointsDistance(dot, circlePoint) < radius;
+}
+exports.didDotInCircle = didDotInCircle;
+function didDotOnLine(dot, vertex1, vertex2) {
+    return dot.x >= Math.min(vertex1.x, vertex2.x) && dot.x <= Math.max(vertex1.x, vertex2.x) && dot.y >= Math.min(vertex1.y, vertex2.y) && dot.y <= Math.max(vertex1.y, vertex2.y);
+}
+exports.didDotOnLine = didDotOnLine;
+function getTwoPointsDistance(point1, point2) {
+    return Math.sqrt(Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2));
+}
+exports.getTwoPointsDistance = getTwoPointsDistance;
+function getTwoLinesCrossPoint(a, b, c, d) {
+    // 三角形abc 面积的2倍  
+    var area_abc = (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
+    // 三角形abd 面积的2倍  
+    var area_abd = (a.x - d.x) * (b.y - d.y) - (a.y - d.y) * (b.x - d.x);
+    // 面积符号相同则两点在线段同侧,不相交 (对点在线段上的情况,本例当作不相交处理);  
+    if (area_abc * area_abd >= 0) {
+        return null;
+    }
+    // 三角形cda 面积的2倍  
+    var area_cda = (c.x - a.x) * (d.y - a.y) - (c.y - a.y) * (d.x - a.x);
+    // 三角形cdb 面积的2倍  
+    // 注意: 这里有一个小优化.不需要再用公式计算面积,而是通过已知的三个面积加减得出.  
+    var area_cdb = area_cda + area_abc - area_abd;
+    if (area_cda * area_cdb >= 0) {
+        return null;
+    }
+    // 计算交点坐标  
+    var t = area_cda / (area_abd - area_abc);
+    var dx = t * (b.x - a.x),
+        dy = t * (b.y - a.y);
+    return new point(a.x + dx, a.y + dy);
+}
+exports.getTwoLinesCrossPoint = getTwoLinesCrossPoint;
+function getLineCircleCrossPoints(point1, point2, circlePoint, radius) {
+    // 直线一般式
+    var lineA = point2.y - point1.y;
+    var lineB = -(point2.x - point1.x);
+    var lineC = -lineB * point1.y - lineA * point1.x;
+    // 求圆心到直线的距离，如果大于半径则一定没有交点
+    var d = Math.abs(lineA * circlePoint.x + lineB * circlePoint.y + lineC) / Math.sqrt(Math.pow(lineA, 2) + Math.pow(lineB, 2));
+    if (d > radius) {
+        return [];
+    }
+    var r = radius;
+    var a = circlePoint.x,
+        b = circlePoint.y;
+    var p1 = void 0,
+        p2 = void 0;
+    if (lineB == 0) {
+        var c = -lineC / lineA;
+        var tmp = Math.sqrt(Math.pow(r, 2) - Math.pow(c - a, 2));
+        p1 = new point(c, b + tmp);
+        p2 = new point(c, b - tmp);
+    } else {
+        var k = -lineA / lineB;
+        var _c = -lineC / lineB;
+        var tmpA = 1 + Math.pow(k, 2);
+        var tmpB = 2 * ((_c - b) * k - a);
+        var tmpSqr = Math.sqrt(Math.pow(tmpB, 2) - 4 * tmpA * (Math.pow(a, 2) - Math.pow(r, 2) + Math.pow(_c - b, 2)));
+        var x1 = (-tmpB + tmpSqr) / (2 * tmpA),
+            x2 = (-tmpB - tmpSqr) / (2 * tmpA);
+        p1 = new point(x1, k * x1 + _c);
+        p2 = new point(x2, k * x2 + _c);
+    }
+    var res = [];
+    if (didDotOnLine(p1, point1, point2)) {
+        res.push(p1);
+    }
+    if (didDotOnLine(p2, point1, point2)) {
+        res.push(p2);
+    }
+    return res;
+}
+exports.getLineCircleCrossPoints = getLineCircleCrossPoints;
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var $ = __webpack_require__(11);
+var vue = __webpack_require__(12);
 var vueData = __webpack_require__(0);
 
 var domManager = function () {
@@ -365,7 +484,7 @@ var domManager = function () {
 exports.domManager = domManager;
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -540,13 +659,13 @@ var gameCore = function () {
 exports.gameCore = gameCore;
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports) {
 
 module.exports = window.toastr;
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -563,13 +682,14 @@ exports.webSockets = [{
 }];
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var serverConfig = __webpack_require__(5);
+var serverConfig = __webpack_require__(6);
+var utils_1 = __webpack_require__(2);
 var player;
 (function (player) {
     player.movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
@@ -651,127 +771,8 @@ var stage;
 (function (stage) {
     stage.width = 1000;
     stage.height = 500;
-    stage.barricades = [[{ x: 300, y: 300 }, { x: 700, y: 400 }]];
+    stage.barricades = [[new utils_1.point(360, 50), new utils_1.point(550, 90)], [new utils_1.point(310, 130), new utils_1.point(610, 160)], [new utils_1.point(100, 160), new utils_1.point(160, 410)], [new utils_1.point(790, 160), new utils_1.point(850, 410)], [new utils_1.point(440, 220), new utils_1.point(480, 450)]];
 })(stage = exports.stage || (exports.stage = {}));
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var point = function () {
-    function point(x, y) {
-        _classCallCheck(this, point);
-
-        this.x = x;
-        this.y = y;
-    }
-
-    _createClass(point, null, [{
-        key: "getNewInstance",
-        value: function getNewInstance(oldPoint) {
-            return new point(oldPoint.x, oldPoint.y);
-        }
-    }, {
-        key: "getFixedPoint",
-        value: function getFixedPoint(oldPoint) {
-            return new point(parseFloat(oldPoint.x.toFixed(2)), parseFloat(oldPoint.y.toFixed(2)));
-        }
-    }]);
-
-    return point;
-}();
-
-exports.point = point;
-function didTwoCirclesCollied(dot1, radius1, dot2, radius2) {
-    return getTwoPointsDistance(dot1, dot2) <= radius1 + radius2;
-}
-exports.didTwoCirclesCollied = didTwoCirclesCollied;
-function didDotInCircle(dot, circlePoint, radius) {
-    var canOnCircle = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-
-    if (canOnCircle) return getTwoPointsDistance(dot, circlePoint) <= radius;else return getTwoPointsDistance(dot, circlePoint) < radius;
-}
-exports.didDotInCircle = didDotInCircle;
-function didDotOnLine(dot, vertex1, vertex2) {
-    return dot.x >= Math.min(vertex1.x, vertex2.x) && dot.x <= Math.max(vertex1.x, vertex2.x) && dot.y >= Math.min(vertex1.y, vertex2.y) && dot.y <= Math.max(vertex1.y, vertex2.y);
-}
-exports.didDotOnLine = didDotOnLine;
-function getTwoPointsDistance(point1, point2) {
-    return Math.sqrt(Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2));
-}
-exports.getTwoPointsDistance = getTwoPointsDistance;
-function getTwoLinesCrossPoint(a, b, c, d) {
-    // 三角形abc 面积的2倍  
-    var area_abc = (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
-    // 三角形abd 面积的2倍  
-    var area_abd = (a.x - d.x) * (b.y - d.y) - (a.y - d.y) * (b.x - d.x);
-    // 面积符号相同则两点在线段同侧,不相交 (对点在线段上的情况,本例当作不相交处理);  
-    if (area_abc * area_abd >= 0) {
-        return null;
-    }
-    // 三角形cda 面积的2倍  
-    var area_cda = (c.x - a.x) * (d.y - a.y) - (c.y - a.y) * (d.x - a.x);
-    // 三角形cdb 面积的2倍  
-    // 注意: 这里有一个小优化.不需要再用公式计算面积,而是通过已知的三个面积加减得出.  
-    var area_cdb = area_cda + area_abc - area_abd;
-    if (area_cda * area_cdb >= 0) {
-        return null;
-    }
-    //计算交点坐标  
-    var t = area_cda / (area_abd - area_abc);
-    var dx = t * (b.x - a.x),
-        dy = t * (b.y - a.y);
-    return new point(a.x + dx, a.y + dy);
-}
-exports.getTwoLinesCrossPoint = getTwoLinesCrossPoint;
-function getLineCircleCrossPoints(point1, point2, circlePoint, radius) {
-    // 直线一般式
-    var lineA = point2.y - point1.y;
-    var lineB = -(point2.x - point1.x);
-    var lineC = -lineB * point1.y - lineA * point1.x;
-    // 求圆心到直线的距离，如果大于半径则一定没有交点
-    var d = Math.abs(lineA * circlePoint.x + lineB * circlePoint.y + lineC) / Math.sqrt(Math.pow(lineA, 2) + Math.pow(lineB, 2));
-    if (d > radius) {
-        return [];
-    }
-    var r = radius;
-    var a = circlePoint.x,
-        b = circlePoint.y;
-    var p1 = void 0,
-        p2 = void 0;
-    if (lineB == 0) {
-        var c = -lineC / lineA;
-        var tmp = Math.sqrt(Math.pow(r, 2) - Math.pow(c - a, 2));
-        p1 = new point(c, b + tmp);
-        p2 = new point(c, b - tmp);
-    } else {
-        var k = -lineA / lineB;
-        var _c = -lineC / lineB;
-        var tmpA = 1 + Math.pow(k, 2);
-        var tmpB = 2 * ((_c - b) * k - a);
-        var tmpSqr = Math.sqrt(Math.pow(tmpB, 2) - 4 * tmpA * (Math.pow(a, 2) - Math.pow(r, 2) + Math.pow(_c - b, 2)));
-        var x1 = (-tmpB + tmpSqr) / (2 * tmpA),
-            x2 = (-tmpB - tmpSqr) / (2 * tmpA);
-        p1 = new point(x1, k * x1 + _c);
-        p2 = new point(x2, k * x2 + _c);
-    }
-    var res = [];
-    if (didDotOnLine(p1, point1, point2)) {
-        res.push(p1);
-    }
-    if (didDotOnLine(p2, point1, point2)) {
-        res.push(p2);
-    }
-    return res;
-}
-exports.getLineCircleCrossPoints = getLineCircleCrossPoints;
 
 /***/ }),
 /* 8 */
@@ -788,7 +789,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var utils_1 = __webpack_require__(7);
+var utils_1 = __webpack_require__(2);
 var type;
 (function (type) {
     type[type["pong"] = 0] = "pong";
@@ -977,175 +978,50 @@ exports.gameOver = gameOver;
 "use strict";
 
 
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var config = __webpack_require__(6);
+var resources_1 = __webpack_require__(10);
 
 var render = function () {
     function render(protocol) {
         _classCallCheck(this, render);
 
-        this._resourceManager = new resourcesManager();
-        this._resourceManager.currentPlayerId = protocol.currPlayerId;
-        this._resourceManager.playerBasicPROTs = protocol.players;
-        this._resourceManager.edge = protocol.edge;
-        this._resourceManager.barricades = protocol.barricades;
-        this._resourceManager.propHps = protocol.propHps;
-        this._resourceManager.propWeapons = protocol.propWeapons;
+        this._resourceManager = new resources_1.resourcesManager(protocol);
     }
 
     _createClass(render, [{
         key: "getPlayerBPROT",
-        value: function getPlayerBPROT(id) {
-            return this._resourceManager.getPlayerBPROT(id);
+        value: function getPlayerBPROT(playerId) {
+            return this._resourceManager.getPlayerBPROT(playerId);
         }
     }, {
         key: "onMainProtocol",
         value: function onMainProtocol(protocol) {
-            var _this = this;
-
-            this._resourceManager.mainPROTCache = protocol;
-            protocol.attackPROTs.forEach(function (p) {
-                _this._resourceManager.attackCaches.push(new attackCache(p));
-            });
-            protocol.duringAttackPROTs.forEach(function (p) {
-                var cache = _this._resourceManager.attackCaches.find(function (pp) {
-                    return pp.id == p.id;
-                });
-                if (cache) cache.onDuringAttackPROT(p, _this._resourceManager);
-            });
-            protocol.newPlayerBPROTs.forEach(function (p) {
-                _this._resourceManager.playerBasicPROTs.push(p);
-            });
-            protocol.newPropHpPROTs.forEach(function (p) {
-                _this._resourceManager.propHps.push(p);
-            });
-            protocol.newPropWeaponPROTs.forEach(function (p) {
-                _this._resourceManager.propWeapons.push(p);
-            });
-            protocol.removedPropHpIds.forEach(function (p) {
-                var i = _this._resourceManager.propHps.findIndex(function (pp) {
-                    return pp.id == p;
-                });
-                if (i != -1) _this._resourceManager.propHps.splice(i, 1);
-            });
-            protocol.removedPropWeaponIds.forEach(function (p) {
-                var i = _this._resourceManager.propWeapons.findIndex(function (pp) {
-                    return pp.id == p;
-                });
-                if (i != -1) _this._resourceManager.propWeapons.splice(i, 1);
-            });
+            this._resourceManager.onMainProtocol(protocol);
         }
     }, {
         key: "draw",
         value: function draw(ctx) {
-            var _this2 = this;
+            var _this = this;
 
-            if (!this._resourceManager.mainPROTCache) return;
             var canvas = ctx.canvas;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             var currPlayer = this._resourceManager.getPlayerPROT(this._resourceManager.currentPlayerId);
             if (!currPlayer) return;
             ctx.save();
-            if (currPlayer) ctx.setTransform(1.5, 0, 0, 1.5, canvas.width / 2 - currPlayer.position.x * 1.5, canvas.height / 2 - currPlayer.position.y * 1.5);
+            ctx.setTransform(1.5, 0, 0, 1.5, canvas.width / 2 - currPlayer.position.x * 1.5, canvas.height / 2 - currPlayer.position.y * 1.5);
             this._resourceManager.drawEdge(ctx);
-            // 绘制障碍物
-            ctx.fillStyle = '#111';
-            var _iteratorNormalCompletion = true;
-            var _didIteratorError = false;
-            var _iteratorError = undefined;
-
-            try {
-                for (var _iterator = this._resourceManager.barricades[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                    var barricade = _step.value;
-
-                    ctx.fillRect(barricade.point1.x, barricade.point1.y, barricade.point2.x - barricade.point1.x, barricade.point2.y - barricade.point1.y);
-                }
-            } catch (err) {
-                _didIteratorError = true;
-                _iteratorError = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion && _iterator.return) {
-                        _iterator.return();
-                    }
-                } finally {
-                    if (_didIteratorError) {
-                        throw _iteratorError;
-                    }
-                }
-            }
-
+            this._resourceManager.drawBarricade(ctx);
             this._resourceManager.drawProp(ctx);
-            // 绘制可见区域
-            ctx.save();
-            // 绘制可见区域中所有玩家
-            ctx.beginPath();
-            if (currPlayer) ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius - 1, 0, Math.PI * 2);
-            ctx.clip();
-            this._resourceManager.drawPlayer(ctx, this._resourceManager.mainPROTCache.playerIdsInSight, '#fff', '#f00');
-            // 绘制可见区域中所有障碍物
-            ctx.fillStyle = '#fff';
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
-
-            try {
-                for (var _iterator2 = this._resourceManager.barricades[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                    var _barricade = _step2.value;
-
-                    ctx.fillRect(_barricade.point1.x, _barricade.point1.y, _barricade.point2.x - _barricade.point1.x, _barricade.point2.y - _barricade.point1.y);
-                }
-            } catch (err) {
-                _didIteratorError2 = true;
-                _iteratorError2 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                        _iterator2.return();
-                    }
-                } finally {
-                    if (_didIteratorError2) {
-                        throw _iteratorError2;
-                    }
-                }
-            }
-
-            ctx.restore();
-            // 绘制可见区域光线
-            ctx.beginPath();
-            ctx.fillStyle = 'rgba(255,255,255,0.25)';
-            if (currPlayer) ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius, 0, Math.PI * 2);
-            ctx.fill();
-            // 绘制本玩家
+            this._resourceManager.drawVisableArea(ctx, currPlayer);
             this._resourceManager.drawPlayer(ctx, [this._resourceManager.currentPlayerId], '#333', '#f00');
             // 绘制射击
             this._resourceManager.attackCaches.forEach(function (cache) {
-                cache.draw(ctx, _this2._resourceManager);
+                cache.draw(ctx, _this._resourceManager);
             });
-            // 绘制奔跑
-            this._resourceManager.mainPROTCache.runningPROTs.forEach(function (runningPROT) {
-                ctx.save();
-                // 绘制奔跑范围视野中所有的玩家
-                ctx.beginPath();
-                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
-                ctx.clip();
-                _this2._resourceManager.drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
-                ctx.restore();
-                // 绘制奔跑视野
-                ctx.beginPath();
-                ctx.fillStyle = 'rgba(255,255,255,0.75)';
-                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius, 0, Math.PI * 2);
-                ctx.fill();
-            });
+            this._resourceManager.drawRunning(ctx);
             ctx.restore();
             if (this._resourceManager.shooingInAimEffect) this._resourceManager.shooingInAimEffect.draw(ctx);
             this._resourceManager.attackedEffects.forEach(function (p) {
@@ -1159,8 +1035,25 @@ var render = function () {
 
 exports.render = render;
 
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var config = __webpack_require__(7);
+
 var resourcesManager = function () {
-    function resourcesManager() {
+    function resourcesManager(protocol) {
         _classCallCheck(this, resourcesManager);
 
         this.playerBasicPROTs = [];
@@ -1169,12 +1062,50 @@ var resourcesManager = function () {
         this.propWeapons = [];
         this.attackedEffects = [];
         this.attackCaches = [];
+        this.bloodSplashs = [];
+        this.currentPlayerId = protocol.currPlayerId;
+        this.playerBasicPROTs = protocol.players;
+        this.edge = protocol.edge;
+        this.barricades = protocol.barricades;
+        this.propHps = protocol.propHps;
+        this.propWeapons = protocol.propWeapons;
     }
 
     _createClass(resourcesManager, [{
+        key: "onMainProtocol",
+        value: function onMainProtocol(protocol) {
+            var _this = this;
+
+            this.mainPROTCache = protocol;
+            this.attackCaches = this.attackCaches.concat(protocol.attackPROTs.map(function (p) {
+                return new attackCache(p);
+            }));
+            protocol.duringAttackPROTs.forEach(function (p) {
+                var cache = _this.attackCaches.find(function (pp) {
+                    return pp.id == p.id;
+                });
+                if (cache) cache.onDuringAttackPROT(p, _this);
+            });
+            this.playerBasicPROTs = this.playerBasicPROTs.concat(protocol.newPlayerBPROTs);
+            this.propHps = this.propHps.concat(protocol.newPropHpPROTs);
+            this.propWeapons = this.propWeapons.concat(protocol.newPropWeaponPROTs);
+            protocol.removedPropHpIds.forEach(function (p) {
+                var i = _this.propHps.findIndex(function (pp) {
+                    return pp.id == p;
+                });
+                if (i != -1) _this.propHps.splice(i, 1);
+            });
+            protocol.removedPropWeaponIds.forEach(function (p) {
+                var i = _this.propWeapons.findIndex(function (pp) {
+                    return pp.id == p;
+                });
+                if (i != -1) _this.propWeapons.splice(i, 1);
+            });
+        }
+    }, {
         key: "getPlayerPROT",
         value: function getPlayerPROT(playerId) {
-            return this.mainPROTCache.playerPROTs.find(function (p) {
+            if (this.mainPROTCache) return this.mainPROTCache.playerPROTs.find(function (p) {
                 return p.id == playerId;
             });
         }
@@ -1186,170 +1117,287 @@ var resourcesManager = function () {
             });
         }
     }, {
-        key: "drawEdge",
-        value: function drawEdge(ctx) {
-            ctx.beginPath();
-            ctx.strokeStyle = '#111';
-            ctx.fillStyle = '#000';
-            ctx.fillRect(this.edge.point1.x, this.edge.point1.y, this.edge.point2.x - this.edge.point1.x, this.edge.point2.y - this.edge.point1.y);
-            ctx.strokeRect(this.edge.point1.x, this.edge.point1.y, this.edge.point2.x - this.edge.point1.x, this.edge.point2.y - this.edge.point1.y);
+        key: "_draw",
+        value: function _draw(ctx, drawHandler) {
+            ctx.save();
+            drawHandler();
+            ctx.restore();
         }
     }, {
-        key: "drawPlayer",
-        value: function drawPlayer(ctx, playerIds, fillStyle, strokeStyle) {
-            ctx.save();
-            ctx.fillStyle = fillStyle;
-            ctx.strokeStyle = strokeStyle;
-            ctx.textAlign = 'center';
-            var _iteratorNormalCompletion3 = true;
-            var _didIteratorError3 = false;
-            var _iteratorError3 = undefined;
+        key: "drawEdge",
+        value: function drawEdge(ctx) {
+            var _this2 = this;
 
-            try {
-                for (var _iterator3 = playerIds[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                    var playerId = _step3.value;
+            this._draw(ctx, function () {
+                ctx.beginPath();
+                ctx.strokeStyle = '#111';
+                ctx.fillStyle = '#000';
+                ctx.fillRect(_this2.edge.point1.x, _this2.edge.point1.y, _this2.edge.point2.x - _this2.edge.point1.x, _this2.edge.point2.y - _this2.edge.point1.y);
+                ctx.strokeRect(_this2.edge.point1.x, _this2.edge.point1.y, _this2.edge.point2.x - _this2.edge.point1.x, _this2.edge.point2.y - _this2.edge.point1.y);
+            });
+        }
+    }, {
+        key: "drawBarricade",
+        value: function drawBarricade(ctx) {
+            var _this3 = this;
 
-                    var player = this.getPlayerPROT(playerId);
-                    if (!player) continue;
-                    ctx.beginPath();
-                    ctx.arc(player.position.x, player.position.y, config.player.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.moveTo(player.position.x, player.position.y);
-                    ctx.lineTo(config.player.radius * Math.cos(player.angle) + player.position.x, config.player.radius * Math.sin(player.angle) + player.position.y);
-                    ctx.stroke();
-                    ctx.strokeStyle = 'rgba(0,255,0,.5)';
-                    ctx.lineWidth = 3;
-                    var gap = Math.PI / 25;
-                    var perimeter = Math.PI * 2 - config.player.maxHp * gap;
-                    for (var i = 0; i < player.hp; i++) {
-                        ctx.beginPath();
-                        ctx.arc(player.position.x, player.position.y, config.player.radius - 1.5, i * perimeter / config.player.maxHp + i * gap - Math.PI / 2, (i + 1) * perimeter / config.player.maxHp + i * gap - Math.PI / 2);
-                        ctx.stroke();
-                    }
-                    ctx.strokeStyle = 'rgba(0,0,0,.5)';
-                    ctx.lineWidth = 3;
-                    gap = Math.PI / 50;
-                    perimeter = Math.PI * 2 - player.maxBullet * gap;
-                    for (var _i = 0; _i < player.maxBullet; _i++) {
-                        ctx.beginPath();
-                        ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i * perimeter / player.maxBullet + _i * gap - Math.PI / 2, (_i + 1) * perimeter / player.maxBullet + _i * gap - Math.PI / 2);
-                        ctx.stroke();
-                    }
-                    ctx.strokeStyle = 'rgba(255,255,255,.5)';
-                    ctx.lineWidth = 3;
-                    for (var _i2 = 0; _i2 < player.bullet; _i2++) {
-                        ctx.beginPath();
-                        ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i2 * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2, (_i2 + 1) * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2);
-                        ctx.stroke();
-                    }
-                    var playerBasic = this.getPlayerBPROT(player.id);
-                    if (playerBasic) {
-                        ctx.fillText(playerBasic.name, player.position.x, player.position.y + config.player.radius + 15);
-                    }
-                }
-            } catch (err) {
-                _didIteratorError3 = true;
-                _iteratorError3 = err;
-            } finally {
+            this._draw(ctx, function () {
+                ctx.fillStyle = '#111';
+                var _iteratorNormalCompletion = true;
+                var _didIteratorError = false;
+                var _iteratorError = undefined;
+
                 try {
-                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                        _iterator3.return();
+                    for (var _iterator = _this3.barricades[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                        var barricade = _step.value;
+
+                        ctx.fillRect(barricade.point1.x, barricade.point1.y, barricade.point2.x - barricade.point1.x, barricade.point2.y - barricade.point1.y);
                     }
+                } catch (err) {
+                    _didIteratorError = true;
+                    _iteratorError = err;
                 } finally {
-                    if (_didIteratorError3) {
-                        throw _iteratorError3;
+                    try {
+                        if (!_iteratorNormalCompletion && _iterator.return) {
+                            _iterator.return();
+                        }
+                    } finally {
+                        if (_didIteratorError) {
+                            throw _iteratorError;
+                        }
                     }
                 }
-            }
+            });
+        }
+    }, {
+        key: "drawVisableArea",
+        value: function drawVisableArea(ctx, currPlayer) {
+            var _this4 = this;
 
-            ctx.restore();
+            this._draw(ctx, function () {
+                ctx.save();
+                // 绘制可见区域中所有玩家
+                ctx.beginPath();
+                ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius - 1, 0, Math.PI * 2);
+                ctx.clip();
+                _this4.drawPlayer(ctx, _this4.mainPROTCache.playerIdsInSight, '#fff', '#f00');
+                // 绘制可见区域中所有障碍物
+                ctx.fillStyle = '#fff';
+                var _iteratorNormalCompletion2 = true;
+                var _didIteratorError2 = false;
+                var _iteratorError2 = undefined;
+
+                try {
+                    for (var _iterator2 = _this4.barricades[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                        var barricade = _step2.value;
+
+                        ctx.fillRect(barricade.point1.x, barricade.point1.y, barricade.point2.x - barricade.point1.x, barricade.point2.y - barricade.point1.y);
+                    }
+                } catch (err) {
+                    _didIteratorError2 = true;
+                    _iteratorError2 = err;
+                } finally {
+                    try {
+                        if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                            _iterator2.return();
+                        }
+                    } finally {
+                        if (_didIteratorError2) {
+                            throw _iteratorError2;
+                        }
+                    }
+                }
+
+                ctx.restore();
+                // 绘制可见区域光线
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(255,255,255,0.25)';
+                ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius, 0, Math.PI * 2);
+                ctx.fill();
+            });
         }
     }, {
         key: "drawProp",
         value: function drawProp(ctx) {
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = '2px 微软雅黑';
-            var _iteratorNormalCompletion4 = true;
-            var _didIteratorError4 = false;
-            var _iteratorError4 = undefined;
+            var _this5 = this;
 
-            try {
-                for (var _iterator4 = this.propHps[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                    var propHp = _step4.value;
+            this._draw(ctx, function () {
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '2px 微软雅黑';
+                var _iteratorNormalCompletion3 = true;
+                var _didIteratorError3 = false;
+                var _iteratorError3 = undefined;
 
-                    ctx.fillStyle = '#0f0';
-                    ctx.beginPath();
-                    ctx.arc(propHp.position.x, propHp.position.y, config.prop.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#fff';
-                    ctx.fillText('血包', propHp.position.x, propHp.position.y);
-                }
-            } catch (err) {
-                _didIteratorError4 = true;
-                _iteratorError4 = err;
-            } finally {
                 try {
-                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                        _iterator4.return();
+                    for (var _iterator3 = _this5.propHps[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                        var propHp = _step3.value;
+
+                        ctx.fillStyle = '#0f0';
+                        ctx.beginPath();
+                        ctx.arc(propHp.position.x, propHp.position.y, config.prop.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText('血包', propHp.position.x, propHp.position.y);
                     }
+                } catch (err) {
+                    _didIteratorError3 = true;
+                    _iteratorError3 = err;
                 } finally {
-                    if (_didIteratorError4) {
-                        throw _iteratorError4;
-                    }
-                }
-            }
-
-            var _iteratorNormalCompletion5 = true;
-            var _didIteratorError5 = false;
-            var _iteratorError5 = undefined;
-
-            try {
-                for (var _iterator5 = this.propWeapons[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                    var propWeapon = _step5.value;
-
-                    ctx.fillStyle = '#f00';
-                    ctx.beginPath();
-                    ctx.arc(propWeapon.position.x, propWeapon.position.y, config.prop.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    var weaponName = '';
-                    if (propWeapon.attackType == config.weapon.attackType.gun) {
-                        if (propWeapon.weapontType == config.weapon.gun.type.pistol) {
-                            weaponName = '手枪';
-                        } else if (propWeapon.weapontType == config.weapon.gun.type.rifle) {
-                            weaponName = '步枪';
+                    try {
+                        if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                            _iterator3.return();
                         }
-                    } else if (propWeapon.attackType == config.weapon.attackType.melee) {
-                        if (propWeapon.weapontType == config.weapon.melee.type.fist) {
-                            weaponName = '拳头';
+                    } finally {
+                        if (_didIteratorError3) {
+                            throw _iteratorError3;
                         }
                     }
-                    ctx.fillStyle = '#fff';
-                    ctx.fillText(weaponName, propWeapon.position.x, propWeapon.position.y);
                 }
-            } catch (err) {
-                _didIteratorError5 = true;
-                _iteratorError5 = err;
-            } finally {
-                try {
-                    if (!_iteratorNormalCompletion5 && _iterator5.return) {
-                        _iterator5.return();
-                    }
-                } finally {
-                    if (_didIteratorError5) {
-                        throw _iteratorError5;
-                    }
-                }
-            }
 
-            ctx.restore();
+                var _iteratorNormalCompletion4 = true;
+                var _didIteratorError4 = false;
+                var _iteratorError4 = undefined;
+
+                try {
+                    for (var _iterator4 = _this5.propWeapons[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                        var propWeapon = _step4.value;
+
+                        ctx.fillStyle = '#f00';
+                        ctx.beginPath();
+                        ctx.arc(propWeapon.position.x, propWeapon.position.y, config.prop.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                        var weaponName = '';
+                        if (propWeapon.attackType == config.weapon.attackType.gun) {
+                            if (propWeapon.weapontType == config.weapon.gun.type.pistol) {
+                                weaponName = '手枪';
+                            } else if (propWeapon.weapontType == config.weapon.gun.type.rifle) {
+                                weaponName = '步枪';
+                            }
+                        } else if (propWeapon.attackType == config.weapon.attackType.melee) {
+                            if (propWeapon.weapontType == config.weapon.melee.type.fist) {
+                                weaponName = '拳头';
+                            }
+                        }
+                        ctx.fillStyle = '#fff';
+                        ctx.fillText(weaponName, propWeapon.position.x, propWeapon.position.y);
+                    }
+                } catch (err) {
+                    _didIteratorError4 = true;
+                    _iteratorError4 = err;
+                } finally {
+                    try {
+                        if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                            _iterator4.return();
+                        }
+                    } finally {
+                        if (_didIteratorError4) {
+                            throw _iteratorError4;
+                        }
+                    }
+                }
+
+                ;
+            });
+        }
+    }, {
+        key: "drawRunning",
+        value: function drawRunning(ctx) {
+            var _this6 = this;
+
+            this.mainPROTCache.runningPROTs.forEach(function (runningPROT) {
+                ctx.save();
+                // 绘制奔跑范围视野中所有的玩家
+                ctx.beginPath();
+                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
+                ctx.clip();
+                _this6.drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
+                ctx.restore();
+                // 绘制奔跑视野
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+    }, {
+        key: "drawPlayer",
+        value: function drawPlayer(ctx, playerIds, fillStyle, strokeStyle) {
+            var _this7 = this;
+
+            this._draw(ctx, function () {
+                ctx.fillStyle = fillStyle;
+                ctx.strokeStyle = strokeStyle;
+                ctx.textAlign = 'center';
+                var _iteratorNormalCompletion5 = true;
+                var _didIteratorError5 = false;
+                var _iteratorError5 = undefined;
+
+                try {
+                    for (var _iterator5 = playerIds[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                        var playerId = _step5.value;
+
+                        var player = _this7.getPlayerPROT(playerId);
+                        if (!player) continue;
+                        ctx.beginPath();
+                        ctx.arc(player.position.x, player.position.y, config.player.radius, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.moveTo(player.position.x, player.position.y);
+                        ctx.lineTo(config.player.radius * Math.cos(player.angle) + player.position.x, config.player.radius * Math.sin(player.angle) + player.position.y);
+                        ctx.stroke();
+                        ctx.strokeStyle = 'rgba(0,255,0,.5)';
+                        ctx.lineWidth = 3;
+                        var gap = Math.PI / 25;
+                        var perimeter = Math.PI * 2 - config.player.maxHp * gap;
+                        for (var i = 0; i < player.hp; i++) {
+                            ctx.beginPath();
+                            ctx.arc(player.position.x, player.position.y, config.player.radius - 1.5, i * perimeter / config.player.maxHp + i * gap - Math.PI / 2, (i + 1) * perimeter / config.player.maxHp + i * gap - Math.PI / 2);
+                            ctx.stroke();
+                        }
+                        ctx.strokeStyle = 'rgba(0,0,0,.5)';
+                        ctx.lineWidth = 3;
+                        gap = Math.PI / 50;
+                        perimeter = Math.PI * 2 - player.maxBullet * gap;
+                        for (var _i = 0; _i < player.maxBullet; _i++) {
+                            ctx.beginPath();
+                            ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i * perimeter / player.maxBullet + _i * gap - Math.PI / 2, (_i + 1) * perimeter / player.maxBullet + _i * gap - Math.PI / 2);
+                            ctx.stroke();
+                        }
+                        ctx.strokeStyle = 'rgba(255,255,255,.5)';
+                        ctx.lineWidth = 3;
+                        for (var _i2 = 0; _i2 < player.bullet; _i2++) {
+                            ctx.beginPath();
+                            ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5, _i2 * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2, (_i2 + 1) * perimeter / player.maxBullet + _i2 * gap - Math.PI / 2);
+                            ctx.stroke();
+                        }
+                        var playerBasic = _this7.getPlayerBPROT(player.id);
+                        if (playerBasic) {
+                            ctx.fillText(playerBasic.name, player.position.x, player.position.y + config.player.radius + 15);
+                        }
+                    }
+                } catch (err) {
+                    _didIteratorError5 = true;
+                    _iteratorError5 = err;
+                } finally {
+                    try {
+                        if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                            _iterator5.return();
+                        }
+                    } finally {
+                        if (_didIteratorError5) {
+                            throw _iteratorError5;
+                        }
+                    }
+                }
+            });
         }
     }]);
 
     return resourcesManager;
 }();
+
+exports.resourcesManager = resourcesManager;
 
 var resource = function () {
     function resource() {
@@ -1359,16 +1407,24 @@ var resource = function () {
     }
 
     _createClass(resource, [{
-        key: "dispose",
-        value: function dispose() {
-            var manager = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-
+        key: "_dispose",
+        value: function _dispose() {
             this._isDisposed = true;
+        }
+    }, {
+        key: "_draw",
+        value: function _draw(ctx, drawHandler) {
+            if (this._isDisposed) return;
+            ctx.save();
+            drawHandler();
+            ctx.restore();
         }
     }]);
 
     return resource;
 }();
+/**攻击缓存 */
+
 
 var attackCache = function (_resource) {
     _inherits(attackCache, _resource);
@@ -1376,15 +1432,15 @@ var attackCache = function (_resource) {
     function attackCache(p) {
         _classCallCheck(this, attackCache);
 
-        var _this3 = _possibleConstructorReturn(this, (attackCache.__proto__ || Object.getPrototypeOf(attackCache)).call(this));
+        var _this8 = _possibleConstructorReturn(this, (attackCache.__proto__ || Object.getPrototypeOf(attackCache)).call(this));
 
-        _this3._isSightEnd = false;
-        _this3._isEnd = false;
-        _this3._fadeOutTime = 20;
-        _this3.id = p.id;
-        _this3._bulletPosition = p.bulletPosition;
-        _this3._attackPROT = p;
-        return _this3;
+        _this8._isSightEnd = false;
+        _this8._isEnd = false;
+        _this8._fadeOutTime = 20;
+        _this8.id = p.id;
+        _this8._bulletPosition = p.bulletPosition;
+        _this8._attackPROT = p;
+        return _this8;
     }
 
     _createClass(attackCache, [{
@@ -1398,6 +1454,9 @@ var attackCache = function (_resource) {
                 if (p.attackedPlayerId == manager.currentPlayerId) {
                     manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));
                 }
+                // if (p.attackedPlayerId) {
+                // 	manager.bloodSplashs.push(new bloodSplash(p.bulletPosition));
+                // }
                 this._isEnd = true;
             }
             this._bulletPosition = p.bulletPosition;
@@ -1407,57 +1466,61 @@ var attackCache = function (_resource) {
     }, {
         key: "draw",
         value: function draw(ctx, manager) {
-            if (this._isEnd && this._fadeOutTime <= 0) {
-                this.dispose(manager);
-            }
-            if (!this._isSightEnd) {
-                ctx.save();
-                // 绘制射击可见区域中所有玩家
+            var _this9 = this;
+
+            this._draw(ctx, function () {
+                if (_this9._isEnd && _this9._fadeOutTime <= 0) {
+                    _this9.dispose(manager);
+                }
+                if (!_this9._isSightEnd) {
+                    ctx.save();
+                    // 绘制射击可见区域中所有玩家
+                    ctx.beginPath();
+                    ctx.arc(_this9._attackPROT.position.x, _this9._attackPROT.position.y, _this9._attackPROT.sightRadius - 1, 0, Math.PI * 2);
+                    ctx.clip();
+                    manager.drawPlayer(ctx, _this9._attackPROT.playerIdsInSight, '#fff', '#f00');
+                    ctx.restore();
+                    // 绘制射击可见区域
+                    ctx.beginPath();
+                    ctx.fillStyle = 'rgba(255,255,0,0.25)';
+                    ctx.strokeStyle = 'rgba(255,255,0,0.25)';
+                    ctx.lineWidth = 3;
+                    ctx.arc(_this9._attackPROT.position.x, _this9._attackPROT.position.y, _this9._attackPROT.sightRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                if (_this9._fadeOutTime >= 15) {
+                    // 绘制子弹
+                    ctx.beginPath();
+                    if (_this9._attackPROT.attackType == config.weapon.attackType.gun) {
+                        ctx.strokeStyle = '#fff';
+                    } else if (_this9._attackPROT.attackType == config.weapon.attackType.melee) {
+                        ctx.strokeStyle = '#00f';
+                    }
+                    ctx.lineWidth = 4;
+                    ctx.moveTo(_this9._bulletPosition.x - 10 * Math.cos(_this9._attackPROT.angle), _this9._bulletPosition.y - 10 * Math.sin(_this9._attackPROT.angle));
+                    ctx.lineTo(_this9._bulletPosition.x + 10 * Math.cos(_this9._attackPROT.angle), _this9._bulletPosition.y + 10 * Math.sin(_this9._attackPROT.angle));
+                    ctx.stroke();
+                }
                 ctx.beginPath();
-                ctx.arc(this._attackPROT.position.x, this._attackPROT.position.y, this._attackPROT.sightRadius - 1, 0, Math.PI * 2);
-                ctx.clip();
-                manager.drawPlayer(ctx, this._attackPROT.playerIdsInSight, '#fff', '#f00');
-                ctx.restore();
-                // 绘制射击可见区域
-                ctx.beginPath();
-                ctx.fillStyle = 'rgba(255,255,0,0.25)';
-                ctx.strokeStyle = 'rgba(255,255,0,0.25)';
-                ctx.lineWidth = 3;
-                ctx.arc(this._attackPROT.position.x, this._attackPROT.position.y, this._attackPROT.sightRadius, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            if (this._fadeOutTime >= 15) {
-                // 绘制子弹
-                ctx.beginPath();
-                if (this._attackPROT.attackType == config.weapon.attackType.gun) {
-                    ctx.strokeStyle = '#fff';
-                } else if (this._attackPROT.attackType == config.weapon.attackType.melee) {
-                    ctx.strokeStyle = '#00f';
+                if (_this9._isEnd) {
+                    ctx.strokeStyle = "rgba(255,255,255," + --_this9._fadeOutTime / 80 + ")";
+                } else {
+                    ctx.strokeStyle = 'rgba(255,255,255,.25)';
                 }
                 ctx.lineWidth = 4;
-                ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._attackPROT.angle), this._bulletPosition.y - 10 * Math.sin(this._attackPROT.angle));
-                ctx.lineTo(this._bulletPosition.x + 10 * Math.cos(this._attackPROT.angle), this._bulletPosition.y + 10 * Math.sin(this._attackPROT.angle));
+                ctx.moveTo(_this9._attackPROT.position.x, _this9._attackPROT.position.y);
+                ctx.lineTo(_this9._bulletPosition.x, _this9._bulletPosition.y);
                 ctx.stroke();
-            }
-            ctx.beginPath();
-            if (this._isEnd) {
-                ctx.strokeStyle = "rgba(255,255,255," + --this._fadeOutTime / 80 + ")";
-            } else {
-                ctx.strokeStyle = 'rgba(255,255,255,.25)';
-            }
-            ctx.lineWidth = 4;
-            ctx.moveTo(this._attackPROT.position.x, this._attackPROT.position.y);
-            ctx.lineTo(this._bulletPosition.x, this._bulletPosition.y);
-            ctx.stroke();
+            });
         }
     }, {
         key: "dispose",
         value: function dispose(manager) {
-            var _this4 = this;
+            var _this10 = this;
 
-            _get(attackCache.prototype.__proto__ || Object.getPrototypeOf(attackCache.prototype), "dispose", this).call(this, manager);
+            this._dispose();
             var i = manager.attackCaches.findIndex(function (pp) {
-                return pp == _this4;
+                return pp == _this10;
             });
             if (i != -1) manager.attackCaches.splice(i, 1);
         }
@@ -1466,64 +1529,118 @@ var attackCache = function (_resource) {
     return attackCache;
 }(resource);
 
-var attackedEffect = function (_resource2) {
-    _inherits(attackedEffect, _resource2);
+var bloodSplash = function (_resource2) {
+    _inherits(bloodSplash, _resource2);
+
+    function bloodSplash(position) {
+        _classCallCheck(this, bloodSplash);
+
+        var _this11 = _possibleConstructorReturn(this, (bloodSplash.__proto__ || Object.getPrototypeOf(bloodSplash)).call(this));
+
+        _this11._timeout = 40;
+        _this11._position = position;
+        return _this11;
+    }
+
+    _createClass(bloodSplash, [{
+        key: "draw",
+        value: function draw(ctx, manager) {
+            var _this12 = this;
+
+            this._draw(ctx, function () {
+                if (_this12._timeout >= 20) {
+                    ctx.fillStyle = '#f00';
+                } else {
+                    ctx.fillStyle = "rgba(255,0,0," + _this12._timeout / 20 + ")";
+                }
+                ctx.beginPath();
+                ctx.arc(_this12._position.x, _this12._position.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            if (--this._timeout <= 0) {
+                this.dispose(manager);
+            }
+        }
+    }, {
+        key: "dispose",
+        value: function dispose(manager) {
+            var _this13 = this;
+
+            this._dispose();
+            var i = manager.bloodSplashs.findIndex(function (p) {
+                return p == _this13;
+            });
+            if (i != -1) manager.bloodSplashs.splice(i);
+        }
+    }]);
+
+    return bloodSplash;
+}(resource);
+/**被击中效果 */
+
+
+var attackedEffect = function (_resource3) {
+    _inherits(attackedEffect, _resource3);
 
     function attackedEffect(angle) {
         _classCallCheck(this, attackedEffect);
 
-        var _this5 = _possibleConstructorReturn(this, (attackedEffect.__proto__ || Object.getPrototypeOf(attackedEffect)).call(this));
+        var _this14 = _possibleConstructorReturn(this, (attackedEffect.__proto__ || Object.getPrototypeOf(attackedEffect)).call(this));
 
-        _this5._timeout = 10;
-        _this5._angle = angle;
-        return _this5;
+        _this14._timeout = 10;
+        _this14._angle = angle;
+        return _this14;
     }
 
     _createClass(attackedEffect, [{
         key: "draw",
         value: function draw(ctx) {
-            if (this._isDisposed) return;
-            ctx.save();
-            ctx.strokeStyle = '#f00';
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.arc(ctx.canvas.width / 2, ctx.canvas.height / 2, 50, this._angle - Math.PI / 32, this._angle + Math.PI / 32);
-            ctx.stroke();
-            ctx.restore();
+            var _this15 = this;
+
+            this._draw(ctx, function () {
+                ctx.strokeStyle = '#f00';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.arc(ctx.canvas.width / 2, ctx.canvas.height / 2, 50, _this15._angle - Math.PI / 32, _this15._angle + Math.PI / 32);
+                ctx.stroke();
+            });
             if (--this._timeout <= 0) {
-                this.dispose();
+                this._dispose();
             }
         }
     }]);
 
     return attackedEffect;
 }(resource);
+/**击中效果 */
 
-var attackInAimEffect = function (_resource3) {
-    _inherits(attackInAimEffect, _resource3);
+
+var attackInAimEffect = function (_resource4) {
+    _inherits(attackInAimEffect, _resource4);
 
     function attackInAimEffect(text) {
         _classCallCheck(this, attackInAimEffect);
 
-        var _this6 = _possibleConstructorReturn(this, (attackInAimEffect.__proto__ || Object.getPrototypeOf(attackInAimEffect)).call(this));
+        var _this16 = _possibleConstructorReturn(this, (attackInAimEffect.__proto__ || Object.getPrototypeOf(attackInAimEffect)).call(this));
 
-        _this6._fontsize = 20;
-        _this6._text = text;
-        return _this6;
+        _this16._fontsize = 20;
+        _this16._text = text;
+        return _this16;
     }
 
     _createClass(attackInAimEffect, [{
         key: "draw",
         value: function draw(ctx) {
-            if (this._isDisposed) return;
-            ctx.save();
-            ctx.font = this._fontsize + "px \u5FAE\u8F6F\u96C5\u9ED1";
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#fff';
-            ctx.fillText(this._text, ctx.canvas.width / 2, 50);
-            ctx.restore();
+            var _this17 = this;
+
+            this._draw(ctx, function () {
+                ctx.font = _this17._fontsize + "px \u5FAE\u8F6F\u96C5\u9ED1";
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#fff';
+                ctx.fillText(_this17._text, ctx.canvas.width / 2, 50);
+            });
             if (++this._fontsize > 50) {
-                this.dispose();
+                this._dispose();
             }
         }
     }]);
@@ -1532,19 +1649,19 @@ var attackInAimEffect = function (_resource3) {
 }(resource);
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports) {
 
 module.exports = window.$;
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports) {
 
 module.exports = window.Vue;
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1554,11 +1671,11 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var toastr = __webpack_require__(4);
+var toastr = __webpack_require__(5);
 var fromClientPROT = __webpack_require__(1);
 var vueData = __webpack_require__(0);
-var dom_manager_1 = __webpack_require__(2);
-var game_core_1 = __webpack_require__(3);
+var dom_manager_1 = __webpack_require__(3);
+var game_core_1 = __webpack_require__(4);
 
 var main = function () {
     function main() {

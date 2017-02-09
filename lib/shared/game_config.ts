@@ -1,4 +1,5 @@
 import * as serverConfig from '../config';
+import { point } from '../shared/utils';
 
 export namespace player {
 	export let movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
@@ -100,6 +101,10 @@ export namespace stage {
 	export let height = 500;
 
 	export let barricades = [
-		[{ x: 300, y: 300 }, { x: 700, y: 400 }]
+		[new point(360, 50), new point(550, 90)],
+		[new point(310, 130), new point(610, 160)],
+		[new point(100, 160), new point(160, 410)],
+		[new point(790, 160), new point(850, 410)],
+		[new point(440, 220), new point(480, 450)],
 	]
 }

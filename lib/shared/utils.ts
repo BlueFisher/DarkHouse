@@ -61,7 +61,7 @@ export function getTwoLinesCrossPoint(a: point, b: point, c: point, d: point): p
 		return null;
 	}
 
-	//计算交点坐标  
+	// 计算交点坐标  
 	var t = area_cda / (area_abd - area_abc);
 	var dx = t * (b.x - a.x),
 		dy = t * (b.y - a.y);
