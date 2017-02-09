@@ -885,6 +885,8 @@ var mainPROT = function (_baseProtocol3) {
             });
             this.duringAttackPROTs.forEach(function (p) {
                 arr = arr.concat(p.playerIdsInSight);
+                // if (p.attackedPlayerId)
+                // 	arr.push(p.attackedPlayerId);
             });
             this.runningPROTs.forEach(function (p) {
                 arr = arr.concat(p.playerIdsInSight);

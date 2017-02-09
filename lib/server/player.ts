@@ -192,10 +192,10 @@ export class playerManager {
 
 	getPlayersInPlayerSight(player: player, radius: number) {
 		return this.players.filter(p => {
-			if (p != player) {
-				return utils.didTwoCirclesCollied(p.position, radius, player.position, config.player.radius);
-			}
-			return false;
+			if (p == player)
+				return false;
+
+			return utils.didTwoCirclesCollied(p.position, radius, player.position, config.player.radius);
 		});
 	}
 	getPlayersInRadius(position: point, radius: number) {
@@ -205,7 +205,7 @@ export class playerManager {
 	}
 
 	getRankList(): toClientPROT.rankPROT[] {
-		return this.players.sort((a, b) => {
+		return this.players.slice(0).sort((a, b) => {
 			return a.records.attackInAimTimes > b.records.attackInAimTimes ? -1 : 1;
 		}).map(p => {
 			return {

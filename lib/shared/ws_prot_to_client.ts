@@ -135,6 +135,8 @@ export class mainPROT extends baseProtocol {
 		});
 		this.duringAttackPROTs.forEach(p => {
 			arr = arr.concat(p.playerIdsInSight);
+			// if (p.attackedPlayerId)
+			// 	arr.push(p.attackedPlayerId);
 		});
 		this.runningPROTs.forEach(p => {
 			arr = arr.concat(p.playerIdsInSight);
