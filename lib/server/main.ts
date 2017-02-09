@@ -52,9 +52,11 @@ class server {
 			extended: true
 		}));
 		app.use(this._sessionParser);
-		app.use(useExpressLogger);
-
+		
 		app.use('/public', express.static('public'));
+
+		// 不记录静态资源
+		app.use(useExpressLogger);
 
 		app.get('/', (req, res) => {
 			(req.session as Express.Session)['test'] = 1;
@@ -66,9 +68,7 @@ class server {
 			this._gameServers.forEach(s => {
 				protocol.push({
 					ip: s.ip,
-					port: s.port,
-					canResumeGame: s.isPlayerOnGame((req.session as Express.Session)['userId'],
-						req.sessionID as string)
+					port: s.port
 				});
 			})
 			res.json(protocol);

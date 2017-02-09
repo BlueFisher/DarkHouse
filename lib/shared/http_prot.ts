@@ -1,18 +1,16 @@
 export class errorResponse {
-	constructor(message:string){
+	constructor(message: string) {
 		this.message = message;
 	}
 	message: string
 }
 export class webSocketResponse {
-	constructor(ip:string,port:number,canResume:boolean){
+	constructor(ip: string, port: number) {
 		this.ip = ip,
-		this.port = port,
-		this.canResumeGame = canResume;
+			this.port = port
 	}
 	ip: string;
 	port: number;
-	canResumeGame: boolean;
 };
 
 export class accountRequest {

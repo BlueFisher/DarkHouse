@@ -22,12 +22,6 @@ export class domManager {
 			data: vueData.gameInitModal,
 			methods: {
 				startGame: () => {
-					vueData.gameInitModal.resumeGame = false;
-					$('#modal-gameinit').modal('hide');
-					gameOn();
-				},
-				resumeGame: () => {
-					vueData.gameInitModal.resumeGame = true;
 					$('#modal-gameinit').modal('hide');
 					gameOn();
 				}

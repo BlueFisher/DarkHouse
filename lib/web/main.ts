@@ -33,7 +33,7 @@ class main {
 				this._ws.close();
 				this._connect(url);
 			} else {
-				this._send(new fromClientPROT.initialize(vueData.indexCommon.name, vueData.gameInitModal.resumeGame));
+				this._send(new fromClientPROT.initialize(vueData.indexCommon.name));
 			}
 		}
 	}
@@ -45,7 +45,7 @@ class main {
 		this._ws.onopen = () => {
 			toastr.clear();
 			toastr.success('服务器连接成功');
-			this._send(new fromClientPROT.initialize(vueData.gameInitModal.common.name, vueData.gameInitModal.resumeGame));
+			this._send(new fromClientPROT.initialize(vueData.gameInitModal.common.name));
 		};
 
 		this._ws.onmessage = (e) => {

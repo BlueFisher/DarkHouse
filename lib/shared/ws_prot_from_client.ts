@@ -22,13 +22,11 @@ export class pingProtocol extends baseProtocol {
 }
 
 export class initialize extends baseProtocol {
-	constructor(name: string, resumeGame: boolean) {
+	constructor(name: string) {
 		super(type.init);
 		this.name = name;
-		this.resumeGame = resumeGame;
 	}
 	name: string;
-	resumeGame: boolean;
 }
 export class startRunning extends baseProtocol {
 	constructor(active: boolean) {

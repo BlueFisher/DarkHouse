@@ -176,6 +176,14 @@ export class playerManager {
 		this._newPlayersCache.push(newPlayer);
 		return newPlayer;
 	}
+
+	removePlayerById(playerId: number) {
+		let i = this.players.findIndex(p => p.id == playerId);
+		if (i != -1) {
+			this.players[i].beKilled();
+			this.players.splice(i, 1);
+		}
+	}
 	removePlayer(player: player) {
 		let i = this.players.findIndex(p => p == player);
 		if (i != -1) {

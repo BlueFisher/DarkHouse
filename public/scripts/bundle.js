@@ -87,7 +87,6 @@ exports.index = {
 };
 exports.gameInitModal = {
     common: exports.indexCommon,
-    resumeGame: true,
     email: '',
     password: '',
     showAccount: false
@@ -152,13 +151,12 @@ exports.pingProtocol = pingProtocol;
 var initialize = function (_baseProtocol2) {
     _inherits(initialize, _baseProtocol2);
 
-    function initialize(name, resumeGame) {
+    function initialize(name) {
         _classCallCheck(this, initialize);
 
         var _this2 = _possibleConstructorReturn(this, (initialize.__proto__ || Object.getPrototypeOf(initialize)).call(this, type.init));
 
         _this2.name = name;
-        _this2.resumeGame = resumeGame;
         return _this2;
     }
 
@@ -406,12 +404,6 @@ var domManager = function () {
                 data: vueData.gameInitModal,
                 methods: {
                     startGame: function startGame() {
-                        vueData.gameInitModal.resumeGame = false;
-                        $('#modal-gameinit').modal('hide');
-                        gameOn();
-                    },
-                    resumeGame: function resumeGame() {
-                        vueData.gameInitModal.resumeGame = true;
                         $('#modal-gameinit').modal('hide');
                         gameOn();
                     }
@@ -1703,7 +1695,7 @@ var main = function () {
                     this._ws.close();
                     this._connect(url);
                 } else {
-                    this._send(new fromClientPROT.initialize(vueData.indexCommon.name, vueData.gameInitModal.resumeGame));
+                    this._send(new fromClientPROT.initialize(vueData.indexCommon.name));
                 }
             }
         }
@@ -1717,7 +1709,7 @@ var main = function () {
             this._ws.onopen = function () {
                 toastr.clear();
                 toastr.success('服务器连接成功');
-                _this2._send(new fromClientPROT.initialize(vueData.gameInitModal.common.name, vueData.gameInitModal.resumeGame));
+                _this2._send(new fromClientPROT.initialize(vueData.gameInitModal.common.name));
             };
             this._ws.onmessage = function (e) {
                 _this2._dataLengthPerSec += e.data.length;

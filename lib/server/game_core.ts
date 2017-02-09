@@ -53,7 +53,7 @@ export class gameCore extends events.EventEmitter {
 		this._edge = new edge(new point(edgeX, edgeY), new point(edgeX + width, edgeY + height));
 
 		config.stage.barricades.forEach(p => {
-			this._barricades.push(new barricade(new point(p[0].x,p[0].y), new point(p[1].x,p[1].y)));
+			this._barricades.push(new barricade(new point(p[0].x, p[0].y), new point(p[1].x, p[1].y)));
 		});
 
 		this._initializeMainLoop();
@@ -345,11 +345,16 @@ export class gameCore extends events.EventEmitter {
 		);
 	}
 
-	/**玩家是否还在游戏中 */
-	isPlayerOnGame(playerId: number): boolean {
-		let player = this._playerManager.players.find(p => p.id == playerId);
-		return player != undefined;
+	// /**玩家是否还在游戏中 */
+	// isPlayerOnGame(playerId: number): boolean {
+	// 	let player = this._playerManager.players.find(p => p.id == playerId);
+	// 	return player != undefined;
+	// }
+
+	removePlayer(playerId: number) {
+		this._playerManager.removePlayerById(playerId);
 	}
+
 	/**添加新玩家 */
 	addNewPlayer(name: string): number {
 		let newPoisition: point | undefined;

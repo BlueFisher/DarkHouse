@@ -22,7 +22,6 @@ export let index = {
 
 export let gameInitModal = {
 	common: indexCommon,
-	resumeGame: true,
 	email: '',
 	password: '',
 	showAccount: false,
