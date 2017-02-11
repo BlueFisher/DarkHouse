@@ -1,7 +1,7 @@
 import * as events from 'events';
 
 import { player, playerManager } from './player';
-import { edge, barricade } from './barricade';
+import { edge, barricade, barricadeManager } from './barricade';
 import { propManager, propHp, propWeapon } from './prop';
 import * as gameServer from './game_server';
 import { weapon, gun, melee } from './weapon';
@@ -25,7 +25,7 @@ export class gameCore extends events.EventEmitter {
 	private _edge: edge;
 
 	private _playerManager: playerManager;
-	private _barricades: barricade[] = [];
+	private _barricadeManager: barricadeManager;
 	private _propManager: propManager;
 
 	private _attackCacheId = 0;
@@ -48,26 +48,16 @@ export class gameCore extends events.EventEmitter {
 		super();
 
 		this._playerManager = new playerManager();
-		this._propManager = new propManager();
+		this._propManager = new propManager(this._generateEmptyPosition.bind(this));
 
 		this._edge = new edge(new point(edgeX, edgeY), new point(edgeX + width, edgeY + height));
-
-		config.stage.barricades.forEach(p => {
-			this._barricades.push(new barricade(new point(p[0].x, p[0].y), new point(p[1].x, p[1].y)));
-		});
+		this._barricadeManager = new barricadeManager();
 
 		this._initializeMainLoop();
 	}
 
 	private _initializeMainLoop() {
-		// 生成新加入玩家的基础协议
-		let generateNewPlayersBasicPROTs = () => {
-			let newPlayersBasicPROTs = this._playerManager.getAndClearNewPlayersCache().
-				map(p => p.getPlayerBasicPROT());
-			return newPlayersBasicPROTs;
-		}
-
-		// 生成攻击协议
+		/**生成攻击协议 */
 		let generateAttackPROTs: () => [toClientPROT.attackPROT[], toClientPROT.duringAttackPROT[]] = () => {
 			let attackPROTs: toClientPROT.attackPROT[] = [];
 			let duringAttackPROTs: toClientPROT.duringAttackPROT[] = [];
@@ -115,10 +105,9 @@ export class gameCore extends events.EventEmitter {
 			return [attackPROTs, duringAttackPROTs];
 		}
 
-		// 生成奔跑协议
 		let runningSightRemainsStep = config.player.runningSightRemainsTime / serverConfig.mainInterval,
 			runningSightDisapperStep = runningSightRemainsStep + config.player.runningSightDisapperTime / serverConfig.mainInterval;
-
+		/**生成奔跑协议 */
 		let generateRunningPROTs = (connectedPlayers: player[]) => {
 			let runningPROTs: toClientPROT.runningPROT[] = [];
 			for (let runningPlayer of connectedPlayers.filter(p => p.canMove && p.isRunning)) {
@@ -145,6 +134,56 @@ export class gameCore extends events.EventEmitter {
 			}
 			return runningPROTs;
 		}
+
+		// 主计时器循环
+		setInterval(() => {
+			let sendingMap = new Map<number, toClientPROT.mainPROT>();
+			let newPlayersBasicPROTs = this._playerManager.generateNewPlayersBasicPROTs();
+			let [attackPROTs, duringAttackPROTs] = generateAttackPROTs();
+			let connectedPlayers = this._playerManager.players.filter(p => p.connected);
+			let runningPROTs = generateRunningPROTs(connectedPlayers);
+			let propPROTs = this._propManager.getAndClearPropPROTs();
+			let playersInSightMap = this._playerManager.generatePlayersInSightMap(connectedPlayers,
+				this._barricadeManager);
+
+
+			for (let player of connectedPlayers) {
+				let playersInSight = playersInSightMap.get(player);
+				playersInSight = playersInSight ? playersInSight : [];
+
+				let mainPROT = new toClientPROT.mainPROT();
+
+				mainPROT.playerIdsInSight = playersInSight.map(p => p.id);
+				mainPROT.attackPROTs = attackPROTs;
+				mainPROT.duringAttackPROTs = duringAttackPROTs;
+				mainPROT.runningPROTs = runningPROTs;
+				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
+
+				mainPROT.newPropHpPROTs = propPROTs.newPropHps;
+				mainPROT.removedPropHpIds = propPROTs.removedPropHpIds;
+				mainPROT.newPropWeaponPROTs = propPROTs.newPropGuns;
+				mainPROT.removedPropWeaponIds = propPROTs.removedPropGunIds;
+
+				mainPROT.rankList = this._playerManager.getRankList();
+
+				mainPROT.formatPlayerPROT(player.id, (playerId) => {
+					let player = this._playerManager.findPlayerById(playerId);
+					if (player)
+						return player.getPlayerPROT();
+					else
+						return null;
+				});
+				mainPROT.fixNumbers();
+
+				sendingMap.set(player.id, mainPROT);
+			}
+
+			this.emit(gameCore.events.sendToPlayers, sendingMap);
+
+			handleattackCache();
+			handlePlayerMoving();
+
+		}, serverConfig.mainInterval);
 
 		let handleattackCache = () => {
 			for (let i = this._attackCaches.length - 1; i >= 0; i--) {
@@ -195,7 +234,7 @@ export class gameCore extends events.EventEmitter {
 					}
 				}
 
-				let collidedBarricadePoints = this._barricades.map(b => {
+				let collidedBarricadePoints = this._barricadeManager.barricades.map(b => {
 					return b.getLineCollidedPoint(oldPos, newPos);
 				});
 
@@ -236,63 +275,19 @@ export class gameCore extends events.EventEmitter {
 
 		let handlePlayerMoving = () => {
 			for (let player of this._playerManager.players) {
-				this._playerMove(player);
+				let newPos = this._playerManager.move(player, (oldPos, newPos) => {
+					this._edge.adjustCircleCollided(newPos, config.player.radius);
+					this._barricadeManager.barricades.forEach(p => {
+						p.adjustCircleCollided(oldPos, newPos, config.player.radius);
+					});
+				});
+
+				if (!newPos)
+					continue;
+
+				this._propManager.tryCoverProp(player, newPos);
 			}
 		}
-
-		// 主计时器循环
-		setInterval(() => {
-			let sendingMap = new Map<number, toClientPROT.mainPROT>();
-			let newPlayersBasicPROTs = generateNewPlayersBasicPROTs();
-			let [attackPROTs, duringAttackPROTs] = generateAttackPROTs();
-			let connectedPlayers = this._playerManager.players.filter(p => p.connected);
-			let runningPROTs = generateRunningPROTs(connectedPlayers);
-			let propPROTs = this._propManager.getAndClearPropPROTs();
-
-			for (let player of connectedPlayers) {
-				let mainPROT = new toClientPROT.mainPROT(
-					this._playerManager.getPlayersInPlayerSight(player, config.player.sightRadius).map(p => p.id));
-				mainPROT.attackPROTs = attackPROTs;
-				mainPROT.duringAttackPROTs = duringAttackPROTs;
-				mainPROT.runningPROTs = runningPROTs;
-				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
-
-				mainPROT.newPropHpPROTs = propPROTs.newPropHps;
-				mainPROT.removedPropHpIds = propPROTs.removedPropHpIds;
-				mainPROT.newPropWeaponPROTs = propPROTs.newPropGuns;
-				mainPROT.removedPropWeaponIds = propPROTs.removedPropGunIds;
-
-				mainPROT.rankList = this._playerManager.getRankList();
-
-				mainPROT.formatPlayerPROT(player.id, (playerId) => {
-					let player = this._playerManager.findPlayerById(playerId);
-					if (player)
-						return player.getPlayerPROT();
-					else
-						return null;
-				});
-				mainPROT.fixNumbers();
-
-				sendingMap.set(player.id, mainPROT);
-			}
-
-			this.emit(gameCore.events.sendToPlayers, sendingMap);
-
-			handleattackCache();
-			handlePlayerMoving();
-
-		}, serverConfig.mainInterval);
-
-		// 生命值道具计时器循环
-		setInterval(() => {
-			if (this._propManager.propHps.length < config.prop.hp.maxNumber)
-				this._addNewPropHp();
-		}, config.prop.hp.appearInterval);
-
-		setInterval(() => {
-			if (this._propManager.propWeapons.length < config.prop.weapon.maxNumber)
-				this._addNewPropWeapon();
-		}, config.prop.weapon.appearInterval);
 	}
 
 	private _generateEmptyPosition(radius: number) {
@@ -308,7 +303,7 @@ export class gameCore extends events.EventEmitter {
 				newPosition = undefined;
 				continue;
 			}
-			if (this._barricades.find(p => p.didCircleCollided(newPosition as point, radius))) {
+			if (this._barricadeManager.barricades.find(p => p.didCircleCollided(newPosition as point, radius))) {
 				newPosition = undefined;
 				continue;
 			}
@@ -317,20 +312,6 @@ export class gameCore extends events.EventEmitter {
 		return newPosition;
 	}
 
-	private _addNewPropHp() {
-		let newPosition = this._generateEmptyPosition(config.prop.hp.activeRadius);
-		this._propManager.addPropHp(newPosition);
-	}
-
-	private _addNewPropWeapon() {
-		let newPosition = this._generateEmptyPosition(config.prop.weapon.activeRadius);
-
-		let setting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rifle);
-		if (setting) {
-			setting.bullet = parseInt((Math.random() * setting.maxBullet).toFixed(0));
-			this._propManager.addPropWeapon(newPosition, new gun(config.weapon.gun.type.rifle, setting));
-		}
-	}
 
 	/**获取玩家的初始化协议 */
 	getInitPROT(currPlayerId: number) {
@@ -339,17 +320,11 @@ export class gameCore extends events.EventEmitter {
 		return new toClientPROT.initialize(currPlayerId,
 			players.map(p => p.getPlayerBasicPROT()),
 			this._edge.getEdgePROT(),
-			this._barricades.map(p => p.getBarricadePROT()),
+			this._barricadeManager.barricades.map(p => p.getBarricadePROT()),
 			this._propManager.propHps.map(p => p.getPropHpPROT()),
 			this._propManager.propWeapons.map(p => p.getPropGunPROT())
 		);
 	}
-
-	// /**玩家是否还在游戏中 */
-	// isPlayerOnGame(playerId: number): boolean {
-	// 	let player = this._playerManager.players.find(p => p.id == playerId);
-	// 	return player != undefined;
-	// }
 
 	removePlayer(playerId: number) {
 		this._playerManager.removePlayerById(playerId);
@@ -370,7 +345,7 @@ export class gameCore extends events.EventEmitter {
 				newPoisition = undefined;
 				continue;
 			}
-			if (this._barricades.find(p => p.didCircleCollided(newPoisition as point, config.player.radius))) {
+			if (this._barricadeManager.barricades.find(p => p.didCircleCollided(newPoisition as point, config.player.radius))) {
 				newPoisition = undefined;
 				continue;
 			}
@@ -378,17 +353,6 @@ export class gameCore extends events.EventEmitter {
 
 		let newPlayer = this._playerManager.addNewPlayer(name.slice(0, 20), newPoisition);
 		return newPlayer.id;
-	}
-
-	playerDisconnected(playerId: number) {
-		let player = this._playerManager.findPlayerById(playerId);
-		if (player)
-			player.connected = false;
-	}
-	playerReconnected(playerId: number) {
-		let player = this._playerManager.findPlayerById(playerId);
-		if (player)
-			player.connected = true;
 	}
 
 	startRunning(playerId: number, active: boolean) {
@@ -413,31 +377,7 @@ export class gameCore extends events.EventEmitter {
 	}
 
 	private _playerMove(player: player) {
-		if (!player.connected || !player.canMove) {
-			return;
-		}
-		let angle = player.getDirectionAngle();
-		let oldPos: point = player.position;
-		let step = player.isRunning ? config.player.runingStep : config.player.movingStep;
-		let x = oldPos.x + Math.cos(angle) * step;
-		let y = oldPos.y + Math.sin(angle) * step;
-		let newPos = new point(x, y);
 
-		this._edge.adjustCircleCollided(newPos, config.player.radius);
-		this._barricades.forEach(p => {
-			p.adjustCircleCollided(oldPos, newPos, config.player.radius);
-		});
-
-		this._playerManager.players.forEach(p => {
-			if (p == player)
-				return;
-
-			p.adjustCircleCollided(newPos, config.player.radius);
-		});
-
-		this._propManager.tryCoverProp(player, newPos);
-
-		player.position = newPos;
 	}
 
 	startShooting(playerId: number, active: boolean) {

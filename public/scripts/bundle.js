@@ -303,14 +303,65 @@ function getTwoPointsDistance(point1, point2) {
     return Math.sqrt(Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2));
 }
 exports.getTwoPointsDistance = getTwoPointsDistance;
-function getTwoLinesCrossPoint(a, b, c, d) {
+// export function getTangentialPointsOfPointToCircle(dot: point, circlePoint: point, r: number): [point, point] {
+// 	if (dot.y - circlePoint.y == 0) {
+// 		return [new point(circlePoint.x, circlePoint.y + r), new point(circlePoint.x, circlePoint.y - r)];
+// 	} else {
+// 		let tmp = (dot.x - circlePoint.x) / (dot.y - circlePoint.x);
+// 		let tmpSqr = Math.sqrt(r ** 2 - (1 + tmp ** 2));
+// 		let x1 = tmpSqr + circlePoint.x;
+// 		let x2 = -tmpSqr + circlePoint.x;
+// 		let y1 = circlePoint.y - tmpSqr * tmp;
+// 		let y2 = circlePoint.y + tmpSqr * tmp;
+// 		return [new point(x1, y1), new point(x2, y2)];
+// 	}
+// }
+function getTangentialPointsOfPointToCircle(dot, circlePoint, r) {
+    if (dot.y - circlePoint.y == 0) {
+        return [new point(circlePoint.x, circlePoint.y + r), new point(circlePoint.x, circlePoint.y - r)];
+    } else {
+        var k = -(circlePoint.x - dot.x) / (circlePoint.y - dot.y);
+        return [new point(circlePoint.x + Math.cos(Math.atan(k)) * r, circlePoint.y + Math.sin(Math.atan(k)) * r), new point(circlePoint.x - Math.cos(Math.atan(k)) * r, circlePoint.y - Math.sin(Math.atan(k)) * r)];
+    }
+}
+exports.getTangentialPointsOfPointToCircle = getTangentialPointsOfPointToCircle;
+// function bbb(dot: point, circlePoint: point, r: number) {
+// 	let x0 = circlePoint.x;
+// 	let y0 = circlePoint.y;
+// 	let a = dot.x;
+// 	let b = dot.y;
+// 	var A = x0 ** 2 + y0 ** 2 - b * y0 - a * x0;
+// 	var delta = 4 * ((y0 - b) ** 2 + (y0 - b) ** 2) * (A ** 2 - (y0 - b) ** 2 * r ** 2);
+// 	var x1 = (2 * (a - x0) * A + Math.sqrt(delta)) / (2 * ((y0 - b) ** 2 + (x0 - a) ** 2))
+// 	var y1 = (A - (x0 - a) * x1) / (y0 - b);
+// 	var x2 = (2 * (a - x0) * A - Math.sqrt(delta)) / (2 * ((y0 - b) ** 2 + (x0 - a) ** 2))
+// 	var y2 = (A - (x0 - a) * x2) / (y0 - b);
+// 	return [new point(x1, y1), new point(x2, y2)];
+// }
+// let dots: point[] = [];
+// let circlePoints: point[] = [];
+// let rs: number[] = [];
+// for (let i = 0; i < 100000; i++) {
+// 	dots.push(new point(Math.random() * 1000, Math.random() * 1000));
+// 	circlePoints.push(new point(Math.random() * 1000, Math.random() * 1000));
+// 	rs.push(Math.random() * 100);
+// }
+// console.time();
+// for (let i = 0; i < 20; i++) {
+// 	let [a, b] = getTangentialPointsOfPointToCircle(dots[i], circlePoints[i], rs[i]);
+// 	let [c, d] = aaa(dots[i], circlePoints[i], rs[i]);
+// 	console.log('---');
+// 	console.log(getTwoPointsDistance(a, circlePoints[i]) - rs[i], getTwoPointsDistance(c, circlePoints[i]) - rs[i])
+// 	console.log(getTwoPointsDistance(a, c), getTwoPointsDistance(b, d));
+// }
+function didTwoLinesCross(a, b, c, d) {
     // 三角形abc 面积的2倍  
     var area_abc = (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
     // 三角形abd 面积的2倍  
     var area_abd = (a.x - d.x) * (b.y - d.y) - (a.y - d.y) * (b.x - d.x);
     // 面积符号相同则两点在线段同侧,不相交 (对点在线段上的情况,本例当作不相交处理);  
     if (area_abc * area_abd >= 0) {
-        return null;
+        return false;
     }
     // 三角形cda 面积的2倍  
     var area_cda = (c.x - a.x) * (d.y - a.y) - (c.y - a.y) * (d.x - a.x);
@@ -318,9 +369,22 @@ function getTwoLinesCrossPoint(a, b, c, d) {
     // 注意: 这里有一个小优化.不需要再用公式计算面积,而是通过已知的三个面积加减得出.  
     var area_cdb = area_cda + area_abc - area_abd;
     if (area_cda * area_cdb >= 0) {
+        return false;
+    }
+    return true;
+}
+exports.didTwoLinesCross = didTwoLinesCross;
+function getTwoLinesCrossPoint(a, b, c, d) {
+    var area_abc = (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
+    var area_abd = (a.x - d.x) * (b.y - d.y) - (a.y - d.y) * (b.x - d.x);
+    if (area_abc * area_abd >= 0) {
         return null;
     }
-    // 计算交点坐标  
+    var area_cda = (c.x - a.x) * (d.y - a.y) - (c.y - a.y) * (d.x - a.x);
+    var area_cdb = area_cda + area_abc - area_abd;
+    if (area_cda * area_cdb >= 0) {
+        return null;
+    }
     var t = area_cda / (area_abd - area_abc);
     var dx = t * (b.x - a.x),
         dy = t * (b.y - a.y);
@@ -368,6 +432,24 @@ function getLineCircleCrossPoints(point1, point2, circlePoint, radius) {
     return res;
 }
 exports.getLineCircleCrossPoints = getLineCircleCrossPoints;
+// 获取p1->p2向量与X轴正方向的逆时针夹角
+function getCounterClockwiseAngleBetweenVectorAndPositiveDirectionOfX(p1, p2) {
+    var x = p2.x - p1.x,
+        y = p2.y - p1.y;
+    var angle = void 0;
+    if (x == 0) {
+        angle = y >= 0 ? Math.PI / 2 : Math.PI * 3 / 2;
+    } else {
+        angle = Math.atan(y / x);
+        if (x > 0) {
+            if (y < 0) angle += Math.PI * 2;
+        } else {
+            angle += Math.PI;
+        }
+    }
+    return angle;
+}
+exports.getCounterClockwiseAngleBetweenVectorAndPositiveDirectionOfX = getCounterClockwiseAngleBetweenVectorAndPositiveDirectionOfX;
 
 /***/ }),
 /* 3 */
@@ -685,7 +767,7 @@ var utils_1 = __webpack_require__(2);
 var player;
 (function (player) {
     player.movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
-    player.runingStep = 0.2 * serverConfig.mainInterval; // 每循环跑步前进距离
+    player.runingStep = 0.136 * serverConfig.mainInterval; // 每循环跑步前进距离
     player.maxHp = 6;
     player.radius = 20;
     player.sightRadius = 100;
@@ -752,7 +834,7 @@ var weapon;
         melee.defaultSettings = new Map();
         melee.defaultSettings.set(type.fist, {
             attackType: attackType.melee,
-            attackInterval: 1000,
+            attackInterval: 600,
             attackSightRadius: 50,
             attackSightRemainsTime: 60,
             bulletFlyStep: 10
@@ -849,7 +931,7 @@ exports.initialize = initialize;
 var mainPROT = function (_baseProtocol3) {
     _inherits(mainPROT, _baseProtocol3);
 
-    function mainPROT(playersInSight) {
+    function mainPROT() {
         _classCallCheck(this, mainPROT);
 
         var _this3 = _possibleConstructorReturn(this, (mainPROT.__proto__ || Object.getPrototypeOf(mainPROT)).call(this, type.main));
@@ -864,7 +946,6 @@ var mainPROT = function (_baseProtocol3) {
         _this3.removedPropWeaponIds = [];
         _this3.newPropHpPROTs = [];
         _this3.removedPropHpIds = [];
-        _this3.playerIdsInSight = playersInSight;
         return _this3;
     }
 

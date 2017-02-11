@@ -2,6 +2,7 @@ import * as utils from '../shared/utils';
 import * as config from '../shared/game_config';
 import * as toClientPROT from '../shared/ws_prot_to_client';
 import { gun, melee } from './weapon';
+import { edge, barricadeManager } from './barricade';
 
 const point = utils.point;
 type point = utils.point;
@@ -192,14 +193,8 @@ export class playerManager {
 		}
 	}
 
-	getAndClearNewPlayersCache() {
-		let res = this._newPlayersCache;
-		this._newPlayersCache = [];
-		return res;
-	}
-
-	getPlayersInPlayerSight(player: player, radius: number) {
-		return this.players.filter(p => {
+	getPlayersInPlayerSight(player: player, radius: number, withinPlayers: player[]) {
+		return withinPlayers.filter(p => {
 			if (p == player)
 				return false;
 
@@ -221,5 +216,70 @@ export class playerManager {
 				killTimes: p.records.attackInAimTimes
 			}
 		}).slice(0, 10);
+	}
+
+	/**生成新加入玩家的基础协议 */
+	generateNewPlayersBasicPROTs() {
+		let newPlayersBasicPROTs = this._newPlayersCache.map(p => p.getPlayerBasicPROT());
+		this._newPlayersCache = [];
+		return newPlayersBasicPROTs;
+	}
+
+	/**生成每个玩家视野中的玩家 */
+	generatePlayersInSightMap(players: player[], barricadeManager: barricadeManager) {
+		let _addInMap = (map: Map<player, player[]>, key: player, playerOrPlayers: player | player[]) => {
+			let v = map.get(key);
+			if (!v) {
+				v = [];
+				map.set(key, v);
+			}
+			if (playerOrPlayers instanceof player) {
+				v.push(playerOrPlayers);
+			} else {
+				map.set(key, v.concat(playerOrPlayers));
+			}
+		}
+
+		let playersInSightMap: Map<player, player[]> = new Map();
+
+		for (let i = 0; i < players.length; i++) {
+			let player = players[i];
+
+			let restPlayersInSight = this.getPlayersInPlayerSight(player,
+				config.player.sightRadius,
+				players.slice(i + 1));
+
+			barricadeManager.removeBlockedPlayers(player, restPlayersInSight);
+
+			_addInMap(playersInSightMap, player, restPlayersInSight);
+			for (let playerInSight of restPlayersInSight) {
+				_addInMap(playersInSightMap, playerInSight, player);
+			}
+		}
+
+		return playersInSightMap;
+	}
+
+	move(player: player, adjustNewPosition: (oldPosition: point, newPosition: point) => void) {
+		if (!player.connected || !player.canMove) {
+			return;
+		}
+		let angle = player.getDirectionAngle();
+		let oldPos: point = player.position;
+		let step = player.isRunning ? config.player.runingStep : config.player.movingStep;
+		let x = oldPos.x + Math.cos(angle) * step;
+		let y = oldPos.y + Math.sin(angle) * step;
+		let newPos = new point(x, y);
+
+		adjustNewPosition(oldPos, newPos);
+
+		this.players.forEach(p => {
+			if (p == player)
+				return;
+
+			p.adjustCircleCollided(newPos, config.player.radius);
+		});
+
+		return player.position = newPos;
 	}
 }

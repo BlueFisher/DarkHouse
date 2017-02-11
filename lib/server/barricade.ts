@@ -1,6 +1,7 @@
 import * as utils from '../shared/utils';
 import * as config from '../shared/game_config';
 import * as toClientPROT from '../shared/ws_prot_to_client';
+import { player } from './player';
 
 const point = utils.point;
 type point = utils.point;
@@ -190,6 +191,61 @@ export class edge {
 				}
 			}
 			return minPoint;
+		}
+	}
+
+
+}
+
+export class barricadeManager {
+	readonly barricades: barricade[] = [];
+
+	constructor() {
+		config.stage.barricades.forEach(p => {
+			this.barricades.push(new barricade(new point(p[0].x, p[0].y), new point(p[1].x, p[1].y)));
+		});
+	}
+
+	didTwoLinesCollided(a: point, b: point, c: point, d: point) {
+		let isCollided = false;
+		for (let barricade of this.barricades) {
+			let vertexes = [barricade.vertex1, new point(barricade.vertex2.x, barricade.vertex1.y),
+			barricade.vertex2, new point(barricade.vertex1.x, barricade.vertex2.y)];
+
+			for (let j = 0; j < 4; j++) {
+				if (utils.didTwoLinesCross(a, b,
+					vertexes[j], vertexes[(j + 1) % 4])) {
+
+					for (let k = 0; k < 4; k++) {
+						if (utils.didTwoLinesCross(c, d,
+							vertexes[k], vertexes[(k + 1) % 4])) {
+
+							isCollided = true;
+							break;
+						}
+					}
+					break;
+				}
+			}
+
+			if (isCollided) {
+				break;
+			}
+		}
+		return isCollided;
+	}
+
+	removeBlockedPlayers(player: player, playersInSight: player[]) {
+		for (let i = playersInSight.length - 1; i >= 0; i--) {
+			let playerInSight = playersInSight[i];
+			let [tangentialPoint1, tangentialPoint2] = utils.getTangentialPointsOfPointToCircle(player.position,
+				playerInSight.position, config.player.radius);
+
+			if (this.didTwoLinesCollided(player.position, tangentialPoint1,
+				player.position, tangentialPoint2)) {
+
+				playersInSight.splice(i, 1);
+			}
 		}
 	}
 }

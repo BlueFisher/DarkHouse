@@ -3,7 +3,7 @@ import { point } from '../shared/utils';
 
 export namespace player {
 	export let movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
-	export let runingStep = 0.2 * serverConfig.mainInterval;  // 每循环跑步前进距离
+	export let runingStep = 0.136 * serverConfig.mainInterval;  // 每循环跑步前进距离
 
 	export let maxHp = 6;
 	export let radius = 20;
@@ -88,7 +88,7 @@ export namespace weapon {
 		export let defaultSettings = new Map<type, defaultSetting>();
 		defaultSettings.set(type.fist, {
 			attackType: attackType.melee,
-			attackInterval: 1000,
+			attackInterval: 600,
 			attackSightRadius: 50,
 			attackSightRemainsTime: 60,
 			bulletFlyStep: 10

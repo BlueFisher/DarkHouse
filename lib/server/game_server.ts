@@ -61,10 +61,14 @@ export class gameServer {
 				let pair = this._socketPlayerColl.find(p => p.sessionId == sessionId);
 				if (pair) {
 					logger.info(`anonymouse user reconnected - ${req.connection.remoteAddress}`);
-					this._closeSocket(pair.socket);
-					pair.socket = socket;
-					if (pair.playerId)
-						this._gameCore.removePlayer(pair.playerId);
+					// this._closeSocket(pair.socket);
+					// pair.socket = socket;
+					// if (pair.playerId)
+					// 	this._gameCore.removePlayer(pair.playerId);
+					this._socketPlayerColl.push({
+						sessionId: sessionId,
+						socket: socket
+					});
 				} else {
 					logger.info(`anonymouse user connected - ${req.connection.remoteAddress}`);
 					this._socketPlayerColl.push({
@@ -113,7 +117,7 @@ export class gameServer {
 			let pair = this._socketPlayerColl.find(p => p.socket == socket);
 			if (pair && pair.playerId) {
 				console.log(`player ${pair.playerId} disconnected`);
-				this._gameCore.playerDisconnected(pair.playerId);
+				this._gameCore.removePlayer(pair.playerId);
 			}
 		}
 	}

@@ -54,6 +54,28 @@ export class propManager {
 	private _newPropGunsCache: propWeapon[] = [];
 	private _removedPropGunIdsCache: number[] = [];
 
+	constructor(generateEmptyPositionFunc: (radius: number) => point) {
+		// 生命值道具计时器循环
+		setInterval(() => {
+			if (this.propHps.length < config.prop.hp.maxNumber) {
+				let newPosition = generateEmptyPositionFunc(config.prop.hp.activeRadius);
+				this.addPropHp(newPosition);
+			}
+		}, config.prop.hp.appearInterval);
+
+		setInterval(() => {
+			if (this.propWeapons.length < config.prop.weapon.maxNumber) {
+				let newPosition = generateEmptyPositionFunc(config.prop.weapon.activeRadius);
+
+				let setting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rifle);
+				if (setting) {
+					setting.bullet = parseInt((Math.random() * setting.maxBullet).toFixed(0));
+					this.addPropWeapon(newPosition, new gun(config.weapon.gun.type.rifle, setting));
+				}
+			}
+		}, config.prop.weapon.appearInterval);
+	}
+
 	getAndClearPropPROTs() {
 		let res = {
 			newPropHps: this._newPropHpsCache.map(p => p.getPropHpPROT()),

@@ -121,10 +121,8 @@ export class initialize extends baseProtocol {
 }
 
 export class mainPROT extends baseProtocol {
-	constructor(playersInSight: number[]) {
+	constructor() {
 		super(type.main);
-
-		this.playerIdsInSight = playersInSight;
 	}
 
 	formatPlayerPROT(currPlayerId: number, format: (playerId: number) => playerPROT | null) {
