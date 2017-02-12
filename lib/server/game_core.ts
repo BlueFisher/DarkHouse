@@ -7,7 +7,7 @@ import * as gameServer from './game_server';
 import { weapon, gun, melee } from './weapon';
 
 import * as config from '../shared/game_config';
-import * as serverConfig from '../config';
+import * as serverConfig from '../../config';
 import * as utils from '../shared/utils';
 
 import * as fromClientPROT from '../shared/ws_prot_from_client';

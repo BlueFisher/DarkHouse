@@ -1,4 +1,4 @@
-import * as serverConfig from '../config';
+import * as serverConfig from '../../config';
 import { point } from '../shared/utils';
 
 export namespace player {

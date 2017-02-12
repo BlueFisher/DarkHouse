@@ -13,9 +13,10 @@ log4js.configure({
 	replaceConsole: true
 });
 
-export let logger = log4js.getLogger('global');
+export let main = log4js.getLogger('main');
+export let game = log4js.getLogger('game');
 
-let expressLogger= log4js.getLogger('express');
+let expressLogger = log4js.getLogger('express');
 export let useExpressLogger = log4js.connectLogger(expressLogger, {
 	level: log4js.levels.WARN,
 	format: ':remote-addr :method :url :status - :response-time ms'

@@ -1,20 +1,16 @@
 import * as websocket from 'ws';
 import * as express from 'express';
-import * as session from 'express-session';
 
-import { logger } from './log';
+import { main as mainLogger, game as gameLogger } from './log';
 import { gameCore } from './game_core';
+import { sessionParser } from './sessionParser';
 
 import * as config from '../shared/game_config';
 import * as fromClientPROT from '../shared/ws_prot_from_client';
 import * as toClientPROT from '../shared/ws_prot_to_client';
 
-export class gameServer {
-	readonly ip: string;
-	readonly port: number;
-
+class gameServer {
 	private _gameCore: gameCore;
-	private _sessionParser: express.RequestHandler;
 	/**用户Socket键值对 */
 	private _socketPlayerColl: {
 		userId?: string,
@@ -28,20 +24,14 @@ export class gameServer {
 	 * 
 	 * @param ip WebSocket IP地址
 	 * @param port WebSocket端口号
-	 * @param sessionParser Session处理器
-	 * @param callback 监听成功回调函数
 	 */
-	constructor(ip: string, port: number, sessionParser: express.RequestHandler, callback?: () => void) {
-		this.ip = ip;
-		this.port = port;
-		this._sessionParser = sessionParser;
-
+	constructor(ip: string, port: number) {
 		this._initializeGameCore();
 
 		let wss = new websocket.Server({
 			port: port
 		}, () => {
-			if (callback) callback();
+			mainLogger.info(`WebSocket Server is listening on ${ip}:${port}`);
 		}).on('connection', socket => {
 			this._onWebSocketConnection(socket);
 		});
@@ -50,7 +40,7 @@ export class gameServer {
 	private _onWebSocketConnection(socket: websocket) {
 		let req = socket.upgradeReq as express.Request;
 
-		this._sessionParser(req, <express.Response>{}, () => {
+		sessionParser(req, <express.Response>{}, () => {
 			// 用户登录的用户id
 			let userId: string = (req.session as Express.Session)['userId'];
 			let sessionId: string = req.sessionID as string;
@@ -60,17 +50,17 @@ export class gameServer {
 			} else {
 				let pair = this._socketPlayerColl.find(p => p.sessionId == sessionId);
 				if (pair) {
-					logger.info(`anonymouse user reconnected - ${req.connection.remoteAddress}`);
-					// this._closeSocket(pair.socket);
-					// pair.socket = socket;
-					// if (pair.playerId)
-					// 	this._gameCore.removePlayer(pair.playerId);
-					this._socketPlayerColl.push({
-						sessionId: sessionId,
-						socket: socket
-					});
+					gameLogger.info(`anonymouse user reconnected - ${req.connection.remoteAddress}`);
+					this._closeSocket(pair.socket);
+					pair.socket = socket;
+					if (pair.playerId)
+						this._gameCore.removePlayer(pair.playerId);
+					// this._socketPlayerColl.push({
+					// 	sessionId: sessionId,
+					// 	socket: socket
+					// });
 				} else {
-					logger.info(`anonymouse user connected - ${req.connection.remoteAddress}`);
+					gameLogger.info(`anonymouse user connected - ${req.connection.remoteAddress}`);
 					this._socketPlayerColl.push({
 						sessionId: sessionId,
 						socket: socket
@@ -133,7 +123,7 @@ export class gameServer {
 		if (pair) {
 			let newPlayerId = this._gameCore.addNewPlayer(protocol.name);
 			pair.playerId = newPlayerId;
-			logger.info(`player [${pair.playerId}]: ${protocol.name} added in game`);
+			gameLogger.info(`player [${pair.playerId}]: ${protocol.name} added in game`);
 
 			this._send(JSON.stringify(this._gameCore.getInitPROT(newPlayerId)), socket);
 		}
@@ -196,3 +186,6 @@ export class gameServer {
 		});
 	}
 }
+
+let args = process.argv.splice(2);
+new gameServer(args[0], parseInt(args[1]));

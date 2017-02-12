@@ -739,30 +739,14 @@ exports.gameCore = gameCore;
 module.exports = window.toastr;
 
 /***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-exports.sessionAge = 7 * 24 * 60 * 60 * 1000;
-exports.httpPort = 80;
-exports.useCDN = true;
-var tickrate = 60;
-exports.mainInterval = 1000 / tickrate;
-exports.webSockets = [{
-        ip: 'localhost',
-        port: 8080
-}];
-
-/***/ }),
+/* 6 */,
 /* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var serverConfig = __webpack_require__(6);
+var serverConfig = __webpack_require__(14);
 var utils_1 = __webpack_require__(2);
 var player;
 (function (player) {
@@ -1812,6 +1796,23 @@ var main = function () {
 }();
 
 new main();
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.sessionAge = 7 * 24 * 60 * 60 * 1000;
+exports.httpPort = 80;
+exports.useCDN = true;
+var tickrate = 60;
+exports.mainInterval = 1000 / tickrate;
+exports.webSockets = [{
+        ip: 'localhost',
+        port: 8080
+}];
 
 /***/ })
 /******/ ]);
