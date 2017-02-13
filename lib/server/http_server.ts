@@ -1,4 +1,5 @@
 import * as express from 'express';
+import * as cp from 'child_process';
 import { sessionParser } from './sessionParser';
 import * as bodyParser from 'body-parser';
 import { main as mainLogger, useExpressLogger } from './log';
@@ -6,15 +7,19 @@ import { main as mainLogger, useExpressLogger } from './log';
 import * as config from '../../config';
 import * as httpPROT from '../shared/http_prot';
 
+export type webSocketServerMap = Map<cp.ChildProcess, { ip: string, port: number }>;
+
 export class httpServer {
+	private _webSocketServerMap: webSocketServerMap;
 	/**
 	 * 主后台服务，管理HTTP服务与游戏服务
 	 *
 	 * @param callback 监听成功回调函数
 	 */
-	constructor(port: number) {
-		let app = express();
+	constructor(port: number, webSocketServerMap: webSocketServerMap) {
+		this._webSocketServerMap = webSocketServerMap;
 
+		let app = express();
 		this._configExpress(app);
 
 		app.listen(port, () => {
@@ -44,12 +49,9 @@ export class httpServer {
 
 		app.get('/websockets', (req, res) => {
 			let protocol: httpPROT.webSocketResponse[] = [];
-			config.webSockets.forEach(s => {
-				protocol.push({
-					ip: s.ip,
-					port: s.port
-				});
-			})
+			this._webSocketServerMap.forEach(p => {
+				protocol.push(p);
+			});
 			res.json(protocol);
 		});
 	}

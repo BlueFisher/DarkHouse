@@ -14,6 +14,6 @@ export let sessionParser = session({
 		maxAge: config.sessionAge
 	},
 	store: new mongoStore({
-		url: 'mongodb://localhost:27017/darkhouse',
+		url: config.mongoUrl,
 	})
 });

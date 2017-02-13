@@ -9,7 +9,7 @@ import * as config from '../shared/game_config';
 import * as fromClientPROT from '../shared/ws_prot_from_client';
 import * as toClientPROT from '../shared/ws_prot_to_client';
 
-class gameServer {
+export class gameServer {
 	private _gameCore: gameCore;
 	/**用户Socket键值对 */
 	private _socketPlayerColl: {
@@ -23,7 +23,7 @@ class gameServer {
 	 * 发送和接收WebSocket信息，提交和处理后台游戏逻辑
 	 * 
 	 * @param ip WebSocket IP地址
-	 * @param port WebSocket端口号
+	 * @param port WebSocket 端口号
 	 */
 	constructor(ip: string, port: number) {
 		this._initializeGameCore();
@@ -32,7 +32,7 @@ class gameServer {
 			port: port
 		}, () => {
 			mainLogger.info(`WebSocket Server is listening on ${ip}:${port}`);
-		}).on('connection', socket => {
+		}).on('connection', socket => { 
 			this._onWebSocketConnection(socket);
 		});
 	}
