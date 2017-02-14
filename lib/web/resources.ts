@@ -271,7 +271,7 @@ class attackCache extends resource {
 	private _bulletPosition: point;
 	private _attackPROT: toClientPROT.attackPROT;
 
-	private _attackedPlayerId?: number;
+	private _attackedPlayerIds: number[] = [];
 	private _isSightEnd: boolean = false;
 	private _isEnd: boolean = false;
 
@@ -285,26 +285,26 @@ class attackCache extends resource {
 		this._attackPROT = p;
 	}
 
-	onDuringAttackPROT(p: toClientPROT.duringAttackPROT, manager: resourcesManager) {
-		this._isSightEnd = p.isSightEnd;
+	onDuringAttackPROT(protocol: toClientPROT.duringAttackPROT, manager: resourcesManager) {
+		this._isSightEnd = protocol.isSightEnd;
 
-		if (p.isEnd) {
-			if (this._attackPROT.attackPlayerId == manager.currentPlayerId && p.attackedPlayerId) {
-				manager.shooingInAimEffect = new attackInAimEffect('击中');
+		if (protocol.isEnd) {
+			if (this._attackPROT.attackPlayerId == manager.currentPlayerId) {
+				if (protocol.attackedPlayerIds.length > 0)
+					manager.shooingInAimEffect = new attackInAimEffect('击中');
+				if (protocol.killedPlayerIds.length > 0)
+					manager.shooingInAimEffect = new attackInAimEffect('击杀');
 			}
-			if (p.attackedPlayerId == manager.currentPlayerId) {
+			if (protocol.attackedPlayerIds.find(p => p == manager.currentPlayerId)) {
 				manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));
 			}
-			// if (p.attackedPlayerId) {
-			// 	manager.bloodSplashs.push(new bloodSplash(p.bulletPosition));
-			// }
 			this._isEnd = true;
 		}
 
-		this._bulletPosition = p.bulletPosition;
+		this._bulletPosition = protocol.bulletPosition;
 
-		this._attackPROT.playerIdsInSight = p.playerIdsInSight;
-		this._attackedPlayerId = p.attackedPlayerId;
+		this._attackPROT.playerIdsInSight = protocol.playerIdsInSight;
+		this._attackedPlayerIds = protocol.attackedPlayerIds;
 	}
 
 	draw(ctx: CanvasRenderingContext2D, manager: resourcesManager) {

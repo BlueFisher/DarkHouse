@@ -26,7 +26,6 @@ export class player {
 	};
 	canMove = true;
 	isRunning = false;
-	connected = true;
 
 	constructor(name: string, position: point) {
 		this.name = name;
@@ -261,7 +260,7 @@ export class playerManager {
 	}
 
 	move(player: player, adjustNewPosition: (oldPosition: point, newPosition: point) => void) {
-		if (!player.connected || !player.canMove) {
+		if (!player.canMove) {
 			return;
 		}
 		let angle = player.getDirectionAngle();

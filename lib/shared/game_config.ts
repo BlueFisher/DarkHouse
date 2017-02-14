@@ -69,7 +69,7 @@ export namespace weapon {
 		defaultSettings.set(type.rifle, {
 			attackType: attackType.gun,
 			attackInterval: 200,
-			attackSightRadius: 200,
+			attackSightRadius: 160,
 			attackSightRemainsTime: 60,
 			bullet: 30,
 			bulletFlyStep: 0.8 * serverConfig.mainInterval,

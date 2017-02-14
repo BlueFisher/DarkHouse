@@ -55,7 +55,8 @@ export interface duringAttackPROT {
 	id: number,
 	bulletPosition: point,
 	playerIdsInSight: number[],
-	attackedPlayerId?: number,
+	attackedPlayerIds: number[],
+	killedPlayerIds: number[],
 	isSightEnd: boolean,
 	isEnd: boolean
 }

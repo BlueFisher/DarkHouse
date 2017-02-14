@@ -819,7 +819,7 @@ var weapon;
         gun.defaultSettings.set(type.rifle, {
             attackType: attackType.gun,
             attackInterval: 200,
-            attackSightRadius: 200,
+            attackSightRadius: 160,
             attackSightRemainsTime: 60,
             bullet: 30,
             bulletFlyStep: 0.8 * serverConfig.mainInterval,
@@ -1508,6 +1508,7 @@ var attackCache = function (_resource) {
 
         var _this8 = _possibleConstructorReturn(this, (attackCache.__proto__ || Object.getPrototypeOf(attackCache)).call(this));
 
+        _this8._attackedPlayerIds = [];
         _this8._isSightEnd = false;
         _this8._isEnd = false;
         _this8._fadeOutTime = 20;
@@ -1519,23 +1520,23 @@ var attackCache = function (_resource) {
 
     _createClass(attackCache, [{
         key: "onDuringAttackPROT",
-        value: function onDuringAttackPROT(p, manager) {
-            this._isSightEnd = p.isSightEnd;
-            if (p.isEnd) {
-                if (this._attackPROT.attackPlayerId == manager.currentPlayerId && p.attackedPlayerId) {
-                    manager.shooingInAimEffect = new attackInAimEffect('击中');
+        value: function onDuringAttackPROT(protocol, manager) {
+            this._isSightEnd = protocol.isSightEnd;
+            if (protocol.isEnd) {
+                if (this._attackPROT.attackPlayerId == manager.currentPlayerId) {
+                    if (protocol.attackedPlayerIds.length > 0) manager.shooingInAimEffect = new attackInAimEffect('击中');
+                    if (protocol.killedPlayerIds.length > 0) manager.shooingInAimEffect = new attackInAimEffect('击杀');
                 }
-                if (p.attackedPlayerId == manager.currentPlayerId) {
+                if (protocol.attackedPlayerIds.find(function (p) {
+                    return p == manager.currentPlayerId;
+                })) {
                     manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));
                 }
-                // if (p.attackedPlayerId) {
-                // 	manager.bloodSplashs.push(new bloodSplash(p.bulletPosition));
-                // }
                 this._isEnd = true;
             }
-            this._bulletPosition = p.bulletPosition;
-            this._attackPROT.playerIdsInSight = p.playerIdsInSight;
-            this._attackedPlayerId = p.attackedPlayerId;
+            this._bulletPosition = protocol.bulletPosition;
+            this._attackPROT.playerIdsInSight = protocol.playerIdsInSight;
+            this._attackedPlayerIds = protocol.attackedPlayerIds;
         }
     }, {
         key: "draw",

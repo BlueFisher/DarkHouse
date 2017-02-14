@@ -37,7 +37,8 @@ export class gameCore extends events.EventEmitter {
 		angle: number,
 		bulletPosition: point,
 		collisionPoint?: point,
-		attacktedPlayer?: player,
+		attacktedPlayers: player[],
+		killedPlayers: player[],
 		sightTimeCount: number,
 		isEnd: boolean
 	}[] = [];
@@ -86,7 +87,8 @@ export class gameCore extends events.EventEmitter {
 						id: cache.id,
 						bulletPosition: cache.bulletPosition,
 						playerIdsInSight: [],
-						attackedPlayerId: cache.attacktedPlayer ? cache.attacktedPlayer.id : undefined,
+						attackedPlayerIds: cache.attacktedPlayers.map(p => p.id),
+						killedPlayerIds: cache.killedPlayers.map(p => p.id),
 						isSightEnd: false,
 						isEnd: cache.isEnd
 					};
@@ -108,9 +110,9 @@ export class gameCore extends events.EventEmitter {
 		let runningSightRemainsStep = config.player.runningSightRemainsTime / serverConfig.mainInterval,
 			runningSightDisapperStep = runningSightRemainsStep + config.player.runningSightDisapperTime / serverConfig.mainInterval;
 		/**生成奔跑协议 */
-		let generateRunningPROTs = (connectedPlayers: player[]) => {
+		let generateRunningPROTs = (players: player[]) => {
 			let runningPROTs: toClientPROT.runningPROT[] = [];
-			for (let runningPlayer of connectedPlayers.filter(p => p.canMove && p.isRunning)) {
+			for (let runningPlayer of players.filter(p => p.canMove && p.isRunning)) {
 				let runningCache = this._runningCache.get(runningPlayer);
 				if (!runningCache) {
 					runningCache = 1;
@@ -137,17 +139,17 @@ export class gameCore extends events.EventEmitter {
 
 		// 主计时器循环
 		setInterval(() => {
+			let players = this._playerManager.players;
 			let sendingMap = new Map<number, toClientPROT.mainPROT>();
 			let newPlayersBasicPROTs = this._playerManager.generateNewPlayersBasicPROTs();
 			let [attackPROTs, duringAttackPROTs] = generateAttackPROTs();
-			let connectedPlayers = this._playerManager.players.filter(p => p.connected);
-			let runningPROTs = generateRunningPROTs(connectedPlayers);
+			let runningPROTs = generateRunningPROTs(players);
 			let propPROTs = this._propManager.getAndClearPropPROTs();
-			let playersInSightMap = this._playerManager.generatePlayersInSightMap(connectedPlayers,
+			let playersInSightMap = this._playerManager.generatePlayersInSightMap(players,
 				this._barricadeManager);
 
 
-			for (let player of connectedPlayers) {
+			for (let player of players) {
 				let playersInSight = playersInSightMap.get(player);
 				playersInSight = playersInSight ? playersInSight : [];
 
@@ -221,7 +223,7 @@ export class gameCore extends events.EventEmitter {
 
 				let minDistance = Infinity;
 				let minPoint: point | null = null;
-				let firstattackedPlayer: player | null = null;
+				let firstAttackedPlayer: player | null = null;
 
 				for (let collidedPlayer of collidedPlayers) {
 					if (!collidedPlayer)
@@ -230,7 +232,7 @@ export class gameCore extends events.EventEmitter {
 					if (d < minDistance) {
 						minDistance = d;
 						minPoint = collidedPlayer.point;
-						firstattackedPlayer = collidedPlayer.player;
+						firstAttackedPlayer = collidedPlayer.player;
 					}
 				}
 
@@ -244,7 +246,7 @@ export class gameCore extends events.EventEmitter {
 						if (d < minDistance) {
 							minDistance = d;
 							minPoint = barricadePoint;
-							firstattackedPlayer = null;
+							firstAttackedPlayer = null;
 						}
 					}
 				}
@@ -256,9 +258,11 @@ export class gameCore extends events.EventEmitter {
 					}
 				}
 
-				if (firstattackedPlayer) {
-					cache.attacktedPlayer = firstattackedPlayer;
-					this._playerAttacked(cache.attacktedPlayer, cache.attackPlayer, cache.weapon);
+				if (firstAttackedPlayer) {
+					cache.attacktedPlayers.push(firstAttackedPlayer);
+					this._playerAttacked(firstAttackedPlayer, cache.attackPlayer, cache.weapon);
+					if (firstAttackedPlayer.getHp() <= 0)
+						cache.killedPlayers.push(firstAttackedPlayer);
 				}
 
 				if (minPoint) {
@@ -376,10 +380,6 @@ export class gameCore extends events.EventEmitter {
 			player.setDirectionAngle(angle);
 	}
 
-	private _playerMove(player: player) {
-
-	}
-
 	startShooting(playerId: number, active: boolean) {
 		let player = this._playerManager.findPlayerById(playerId);
 		if (player) {
@@ -414,9 +414,9 @@ export class gameCore extends events.EventEmitter {
 			if (attacktedPlayer.getGun().getBullet() > 0) {
 				this._propManager.addPropWeapon(attacktedPlayer.position, attacktedPlayer.getGun());
 			}
-		} else {
-			attacktedPlayer.setHp(hp - 1);
 		}
+
+		attacktedPlayer.setHp(hp - 1);
 	}
 
 	private _playerAttack(player: player, weapon: weapon) {
@@ -433,6 +433,8 @@ export class gameCore extends events.EventEmitter {
 			attackPosition: point.getNewInstance(position),
 			attackPlayer: player,
 			angle: angle,
+			attacktedPlayers: [],
+			killedPlayers: [],
 			sightTimeCount: weapon.attackSightTimeOut,
 			isEnd: false
 		});
