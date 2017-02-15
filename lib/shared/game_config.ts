@@ -48,33 +48,48 @@ export namespace weapon {
 	export namespace gun {
 		export enum type {
 			pistol,
-			rifle
+			rifle,
+			rocket
 		}
 
 		export interface defaultSetting extends commonSetting {
 			bullet: number,
-			maxBullet: number
+			maxBullet: number,
+			sputteringRadius: number
 		}
 
-		export let defaultSettings = new Map<type, defaultSetting>();
-		defaultSettings.set(type.pistol, {
-			attackType: attackType.gun,
-			attackInterval: 500,
-			attackSightRadius: 130,
-			attackSightRemainsTime: 70,
-			bullet: 15,
-			bulletFlyStep: 5 * serverConfig.mainInterval,
-			maxBullet: 30
-		});
-		defaultSettings.set(type.rifle, {
-			attackType: attackType.gun,
-			attackInterval: 200,
-			attackSightRadius: 160,
-			attackSightRemainsTime: 60,
-			bullet: 30,
-			bulletFlyStep: 0.8 * serverConfig.mainInterval,
-			maxBullet: 60
-		});
+		export let defaultSettings = new Map<type, defaultSetting>([
+			[type.pistol, {
+				attackType: attackType.gun,
+				attackInterval: 500,
+				attackSightRadius: 130,
+				attackSightRemainsTime: 70,
+				bullet: 15,
+				bulletFlyStep: 5 * serverConfig.mainInterval,
+				maxBullet: 30,
+				sputteringRadius: 1
+			}],
+			[type.rifle, {
+				attackType: attackType.gun,
+				attackInterval: 200,
+				attackSightRadius: 160,
+				attackSightRemainsTime: 60,
+				bullet: 30,
+				bulletFlyStep: 0.8 * serverConfig.mainInterval,
+				maxBullet: 60,
+				sputteringRadius: 1
+			}],
+			[type.rocket, {
+				attackType: attackType.gun,
+				attackInterval: 1000,
+				attackSightRadius: 160,
+				attackSightRemainsTime: 60,
+				bullet: 10,
+				bulletFlyStep: 0.4 * serverConfig.mainInterval,
+				maxBullet: 10,
+				sputteringRadius: 100
+			}]
+		]);
 	}
 
 	export namespace melee {

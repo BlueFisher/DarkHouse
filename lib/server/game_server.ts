@@ -51,14 +51,14 @@ export class gameServer {
 				let pair = this._socketPlayerColl.find(p => p.sessionId == sessionId);
 				if (pair) {
 					gameLogger.info(`anonymouse user reconnected - ${req.connection.remoteAddress}`);
-					this._closeSocket(pair.socket);
-					pair.socket = socket;
-					if (pair.playerId)
-						this._gameCore.removePlayer(pair.playerId);
-					// this._socketPlayerColl.push({
-					// 	sessionId: sessionId,
-					// 	socket: socket
-					// });
+					// this._closeSocket(pair.socket);
+					// pair.socket = socket;
+					// if (pair.playerId)
+					// 	this._gameCore.removePlayer(pair.playerId);
+					this._socketPlayerColl.push({
+						sessionId: sessionId,
+						socket: socket
+					});
 				} else {
 					gameLogger.info(`anonymouse user connected - ${req.connection.remoteAddress}`);
 					this._socketPlayerColl.push({

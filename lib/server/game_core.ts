@@ -182,115 +182,126 @@ export class gameCore extends events.EventEmitter {
 
 			this.emit(gameCore.events.sendToPlayers, sendingMap);
 
-			handleattackCache();
-			handlePlayerMoving();
+			this._handleAttackCache();
+			this._handlePlayersMoving();
 
 		}, serverConfig.mainInterval);
+	}
 
-		let handleattackCache = () => {
-			for (let i = this._attackCaches.length - 1; i >= 0; i--) {
-				let cache = this._attackCaches[i];
-				if (cache.sightTimeCount <= 0) {
-					if (cache.isEnd) {
-						this._attackCaches.splice(i, 1);
-						continue;
+	/**处理用户的攻击 */
+	private _handleAttackCache() {
+		for (let i = this._attackCaches.length - 1; i >= 0; i--) {
+			let cache = this._attackCaches[i];
+			if (cache.sightTimeCount <= 0) {
+				if (cache.isEnd) {
+					this._attackCaches.splice(i, 1);
+					continue;
+				}
+			} else {
+				cache.sightTimeCount--;
+				if (cache.isEnd) {
+					continue;
+				}
+			}
+
+			let oldPos = cache.bulletPosition,
+				newPos = new point(oldPos.x + cache.weapon.bulletFlyStep * Math.cos(cache.angle),
+					oldPos.y + cache.weapon.bulletFlyStep * Math.sin(cache.angle));
+
+			let collidedPlayers = this._playerManager.players.map(p => {
+				if (p == cache.attackPlayer)
+					return null;
+
+				let collidedPoint = p.getLineCollidedPoint(oldPos, newPos);
+				if (collidedPoint) {
+					return {
+						player: p,
+						point: collidedPoint
 					}
 				} else {
-					cache.sightTimeCount--;
-					if (cache.isEnd) {
-						continue;
-					}
+					return null;
 				}
+			});
 
-				let oldPos = cache.bulletPosition,
-					newPos = new point(oldPos.x + cache.weapon.bulletFlyStep * Math.cos(cache.angle),
-						oldPos.y + cache.weapon.bulletFlyStep * Math.sin(cache.angle));
+			let minDistance = Infinity;
+			let minPoint: point | null = null;
+			let firstAttackedPlayer: player | null = null;
 
-				let collidedPlayers = this._playerManager.players.map(p => {
-					if (p == cache.attackPlayer)
-						return null;
+			for (let collidedPlayer of collidedPlayers) {
+				if (!collidedPlayer)
+					continue;
+				let d = utils.getTwoPointsDistance(collidedPlayer.point, cache.attackPosition);
+				if (d < minDistance) {
+					minDistance = d;
+					minPoint = collidedPlayer.point;
+					firstAttackedPlayer = collidedPlayer.player;
+				}
+			}
 
-					let collidedPoint = p.getLineCollidedPoint(oldPos, newPos);
-					if (collidedPoint) {
-						return {
-							player: p,
-							point: collidedPoint
-						}
-					} else {
-						return null;
-					}
-				});
+			let collidedBarricadePoints = this._barricadeManager.barricades.map(b => {
+				return b.getLineCollidedPoint(oldPos, newPos);
+			});
 
-				let minDistance = Infinity;
-				let minPoint: point | null = null;
-				let firstAttackedPlayer: player | null = null;
-
-				for (let collidedPlayer of collidedPlayers) {
-					if (!collidedPlayer)
-						continue;
-					let d = utils.getTwoPointsDistance(collidedPlayer.point, cache.attackPosition);
+			for (let barricadePoint of collidedBarricadePoints) {
+				if (barricadePoint) {
+					let d = utils.getTwoPointsDistance(barricadePoint, cache.attackPosition);
 					if (d < minDistance) {
 						minDistance = d;
-						minPoint = collidedPlayer.point;
-						firstAttackedPlayer = collidedPlayer.player;
+						minPoint = barricadePoint;
+						firstAttackedPlayer = null;
+					}
+				}
+			}
+
+			if (!minPoint) {
+				let collidedEdgePoint = this._edge.getLineCollidedPoint(oldPos, newPos);
+				if (collidedEdgePoint) {
+					minPoint = collidedEdgePoint;
+				}
+			}
+
+			if (minPoint) {
+				let attackedPlayers: player[] = [];
+				if (cache.weapon.attackType == config.weapon.attackType.gun && (cache.weapon as gun).sputteringRadius > 1) {
+					attackedPlayers = this._playerManager.getPlayersInRadius(minPoint, (cache.weapon as gun).sputteringRadius);
+				} else {
+					if (firstAttackedPlayer) {
+						attackedPlayers = [firstAttackedPlayer];
 					}
 				}
 
-				let collidedBarricadePoints = this._barricadeManager.barricades.map(b => {
-					return b.getLineCollidedPoint(oldPos, newPos);
+				attackedPlayers.forEach(p => {
+					cache.attacktedPlayers.push(p);
+					this._playerAttacked(p, cache.attackPlayer, cache.weapon);
+					if (p.getHp() <= 0)
+						cache.killedPlayers.push(p);
 				});
 
-				for (let barricadePoint of collidedBarricadePoints) {
-					if (barricadePoint) {
-						let d = utils.getTwoPointsDistance(barricadePoint, cache.attackPosition);
-						if (d < minDistance) {
-							minDistance = d;
-							minPoint = barricadePoint;
-							firstAttackedPlayer = null;
-						}
-					}
-				}
-
-				if (!minPoint) {
-					let collidedEdgePoint = this._edge.getLineCollidedPoint(oldPos, newPos);
-					if (collidedEdgePoint) {
-						minPoint = collidedEdgePoint;
-					}
-				}
-
-				if (firstAttackedPlayer) {
-					cache.attacktedPlayers.push(firstAttackedPlayer);
-					this._playerAttacked(firstAttackedPlayer, cache.attackPlayer, cache.weapon);
-					if (firstAttackedPlayer.getHp() <= 0)
-						cache.killedPlayers.push(firstAttackedPlayer);
-				}
-
-				if (minPoint) {
-					cache.bulletPosition = cache.collisionPoint = minPoint;
+				cache.bulletPosition = cache.collisionPoint = minPoint;
+				cache.isEnd = true;
+			} else {
+				cache.bulletPosition = newPos;
+				if (cache.weapon instanceof melee) {
 					cache.isEnd = true;
-				} else {
-					cache.bulletPosition = newPos;
-					if (cache.weapon instanceof melee) {
-						cache.isEnd = true;
-					}
 				}
 			}
 		}
+	}
 
-		let handlePlayerMoving = () => {
-			for (let player of this._playerManager.players) {
-				let newPos = this._playerManager.move(player, (oldPos, newPos) => {
-					this._edge.adjustCircleCollided(newPos, config.player.radius);
-					this._barricadeManager.barricades.forEach(p => {
-						p.adjustCircleCollided(oldPos, newPos, config.player.radius);
-					});
+	/**处理所有用户的移动 */
+	private _handlePlayersMoving() {
+		for (let player of this._playerManager.players) {
+			let newPos = this._playerManager.move(player, (oldPos, newPos) => {
+				this._edge.adjustCircleCollided(newPos, config.player.radius);
+				this._barricadeManager.barricades.forEach(p => {
+					p.adjustCircleCollided(oldPos, newPos, config.player.radius);
 				});
+			});
 
-				if (!newPos)
-					continue;
+			if (!newPos)
+				continue;
 
-				this._propManager.tryCoverProp(player, newPos);
-			}
+			this._propManager.tryCoverProp(player, newPos);
 		}
 	}
 

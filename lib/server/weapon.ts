@@ -25,11 +25,13 @@ export class weapon {
 export class gun extends weapon {
 	private _bullet: number;
 	readonly maxBullet: number;
+	readonly sputteringRadius: number;
 
 	constructor(type: config.weapon.gun.type, defaultSetting: config.weapon.gun.defaultSetting) {
 		super(defaultSetting, type);
 		this._bullet = defaultSetting.bullet;
 		this.maxBullet = defaultSetting.maxBullet;
+		this.sputteringRadius = defaultSetting.sputteringRadius;
 	}
 
 	shoot(canShootCallback: () => void) {

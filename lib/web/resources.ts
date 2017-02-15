@@ -126,7 +126,7 @@ export class resourcesManager {
 		this._draw(ctx, () => {
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
-			ctx.font = '2px 微软雅黑';
+			ctx.font = '10px 微软雅黑';
 
 			for (let propHp of this.propHps) {
 				ctx.fillStyle = '#0f0';
@@ -145,10 +145,16 @@ export class resourcesManager {
 
 				let weaponName = '';
 				if (propWeapon.attackType == config.weapon.attackType.gun) {
-					if (propWeapon.weapontType == config.weapon.gun.type.pistol) {
-						weaponName = '手枪';
-					} else if (propWeapon.weapontType == config.weapon.gun.type.rifle) {
-						weaponName = '步枪';
+					switch (propWeapon.weapontType) {
+						case config.weapon.gun.type.pistol:
+							weaponName = '手枪';
+							break;
+						case config.weapon.gun.type.rifle:
+							weaponName = '步枪';
+							break;
+						case config.weapon.gun.type.rocket:
+							weaponName = '火箭筒';
+							break;
 					}
 				} else if (propWeapon.attackType == config.weapon.attackType.melee) {
 					if (propWeapon.weapontType == config.weapon.melee.type.fist) {
