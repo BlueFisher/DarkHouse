@@ -76,7 +76,7 @@ export class player {
 			angle: this._angle,
 			hp: this._hp,
 			bullet: this._gun.getBullet(),
-			maxBullet: this._gun.getMaxBullet()
+			maxBullet: this._gun.maxBullet
 		}
 	}
 	getPlayerBasicPROT(): toClientPROT.playerBasicPROT {

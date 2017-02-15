@@ -23,13 +23,13 @@ export class weapon {
 }
 
 export class gun extends weapon {
-	private _bullet = 15;
-	private _maxBullet = 30;
+	private _bullet: number;
+	readonly maxBullet: number;
 
 	constructor(type: config.weapon.gun.type, defaultSetting: config.weapon.gun.defaultSetting) {
-		super(defaultSetting,type);
+		super(defaultSetting, type);
 		this._bullet = defaultSetting.bullet;
-		this._maxBullet = defaultSetting.maxBullet;
+		this.maxBullet = defaultSetting.maxBullet;
 	}
 
 	shoot(canShootCallback: () => void) {
@@ -47,20 +47,17 @@ export class gun extends weapon {
 
 	addBullet(n: number) {
 		this._bullet += n;
-		if (this._bullet > this._maxBullet)
-			this._bullet = this._maxBullet;
+		if (this._bullet > this.maxBullet)
+			this._bullet = this.maxBullet;
 	}
 	getBullet() {
 		return this._bullet;
-	}
-	getMaxBullet() {
-		return this._maxBullet;
 	}
 }
 
 export class melee extends weapon {
 	constructor(type: config.weapon.melee.type, defaultSetting: config.weapon.melee.defaultSetting) {
-		super(defaultSetting,type);
+		super(defaultSetting, type);
 	}
 
 	combat(canCombatCallback: () => void) {
