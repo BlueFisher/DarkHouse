@@ -201,3 +201,56 @@ export function getCounterClockwiseAngleBetweenVectorAndPositiveDirectionOfX(p1:
 	}
 	return angle;
 }
+
+export function cutRectangle(oriRect: [point, point], curRects: [point, point][]) {
+	let res: [point, point][] = [oriRect];
+	let tmp: [point, point][] = [];
+	curRects.forEach(p => {
+		res.forEach(t => {
+			tmp = tmp.concat(getCutRectangles(t, p));
+		});
+		res = tmp; 
+		tmp = [];
+	});
+	return res;
+}
+
+function getCutRectangles(oriRect: [point, point], cutRect: [point, point]) {
+	let res: [point, point][] = [];
+	if (cutRect[0].x < oriRect[1].x && cutRect[0].y < oriRect[1].y && cutRect[1].x > oriRect[0].x && cutRect[1].y > oriRect[0].y) {
+		if (cutRect[0].x > oriRect[0].x) {
+			if (cutRect[1].y < oriRect[1].y) {
+				res.push([oriRect[0], { x: cutRect[0].x, y: cutRect[1].y }]);
+			} else {
+				res.push([oriRect[0], { x: cutRect[0].x, y: oriRect[1].y }]);
+			}
+		}
+		if (cutRect[1].y < oriRect[1].y) {
+			if (cutRect[1].x < oriRect[1].x) {
+				res.push([{ x: oriRect[0].x, y: cutRect[1].y }, { x: cutRect[1].x, y: oriRect[1].y }]);
+			} else {
+				res.push([{ x: oriRect[0].x, y: cutRect[1].y }, oriRect[1]]);
+			}
+		}
+		if (cutRect[1].x < oriRect[1].x) {
+			if (cutRect[0].y > oriRect[0].y) {
+				res.push([{ x: cutRect[1].x, y: cutRect[0].y }, oriRect[1]]);
+			} else {
+				res.push([{ x: cutRect[1].x, y: oriRect[0].y }, oriRect[1]]);
+			}
+		}
+		if (cutRect[0].y > oriRect[0].y) {
+			if (cutRect[0].x > oriRect[0].x) {
+				res.push([{ x: cutRect[0].x, y: oriRect[0].y }, { x: oriRect[1].x, y: cutRect[0].y }]);
+			} else {
+				res.push([oriRect[0], { x: oriRect[1].x, y: cutRect[0].y }]);
+			}
+		}
+	}
+
+	if (res.length == 0) {
+		res = [oriRect];
+	}
+
+	return res;
+}

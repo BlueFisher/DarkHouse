@@ -49,6 +49,7 @@ export class gameCore {
 				break;
 			case toClientPROT.type.init:
 				this._onInitialize(protocol as toClientPROT.initialize);
+				this._domManager.gameStarted();
 				break;
 			case toClientPROT.type.main:
 				this._onMainPROT(protocol as toClientPROT.mainPROT);

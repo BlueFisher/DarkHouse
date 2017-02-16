@@ -224,7 +224,7 @@ export class gameCore extends events.EventEmitter {
 			});
 
 			let minDistance = Infinity;
-			let minPoint: point | null = null;
+			let minAttackPosition: point | null = null;
 			let firstAttackedPlayer: player | null = null;
 
 			for (let collidedPlayer of collidedPlayers) {
@@ -233,7 +233,7 @@ export class gameCore extends events.EventEmitter {
 				let d = utils.getTwoPointsDistance(collidedPlayer.point, cache.attackPosition);
 				if (d < minDistance) {
 					minDistance = d;
-					minPoint = collidedPlayer.point;
+					minAttackPosition = collidedPlayer.point;
 					firstAttackedPlayer = collidedPlayer.player;
 				}
 			}
@@ -247,23 +247,24 @@ export class gameCore extends events.EventEmitter {
 					let d = utils.getTwoPointsDistance(barricadePoint, cache.attackPosition);
 					if (d < minDistance) {
 						minDistance = d;
-						minPoint = barricadePoint;
+						minAttackPosition = barricadePoint;
 						firstAttackedPlayer = null;
 					}
 				}
 			}
 
-			if (!minPoint) {
+			if (!minAttackPosition) {
 				let collidedEdgePoint = this._edge.getLineCollidedPoint(oldPos, newPos);
 				if (collidedEdgePoint) {
-					minPoint = collidedEdgePoint;
+					minAttackPosition = collidedEdgePoint;
 				}
 			}
 
-			if (minPoint) {
+			if (minAttackPosition) {
 				let attackedPlayers: player[] = [];
 				if (cache.weapon.attackType == config.weapon.attackType.gun && (cache.weapon as gun).sputteringRadius > 1) {
-					attackedPlayers = this._playerManager.getPlayersInRadius(minPoint, (cache.weapon as gun).sputteringRadius);
+					attackedPlayers = this._playerManager.getPlayersInRadius(minAttackPosition, (cache.weapon as gun).sputteringRadius);
+					this._barricadeManager.removeBlockedPlayers(minAttackPosition, attackedPlayers);
 				} else {
 					if (firstAttackedPlayer) {
 						attackedPlayers = [firstAttackedPlayer];
@@ -277,7 +278,7 @@ export class gameCore extends events.EventEmitter {
 						cache.killedPlayers.push(p);
 				});
 
-				cache.bulletPosition = cache.collisionPoint = minPoint;
+				cache.bulletPosition = cache.collisionPoint = minAttackPosition;
 				cache.isEnd = true;
 			} else {
 				cache.bulletPosition = newPos;
@@ -308,32 +309,31 @@ export class gameCore extends events.EventEmitter {
 	private _generateEmptyPosition(radius: number) {
 		let newPosition: point | undefined;
 
-		while (!newPosition) {
-			newPosition = new point(Math.random() * config.stage.width, Math.random() * config.stage.height);
-			if (this._edge.didCircleCollided(newPosition, radius)) {
-				newPosition = undefined;
-				continue;
-			}
-			if (this._playerManager.players.find(p => p.didCircleCollided(newPosition as point, radius))) {
-				newPosition = undefined;
-				continue;
-			}
-			if (this._barricadeManager.barricades.find(p => p.didCircleCollided(newPosition as point, radius))) {
-				newPosition = undefined;
-				continue;
-			}
+		let emptyAreas = utils.cutRectangle([this._edge.vertex1, this._edge.vertex2],
+			this._barricadeManager.barricades.map(p => {
+				let res: [point, point] = [p.vertex1, p.vertex2];
+				return res;
+			})
+		);
+
+		emptyAreas = emptyAreas.filter(p => {
+			return p[1].x - p[0].x >= radius && p[1].y - p[0].y >= radius;
+		});
+
+		if (emptyAreas.length == 0) {
+			return null;
 		}
 
-		return newPosition;
+		let tmpArea = emptyAreas[Math.floor(Math.random() * emptyAreas.length)];
+
+		return new point((tmpArea[0].x + tmpArea[1].x) / 2, (tmpArea[0].y + tmpArea[1].y) / 2);
 	}
 
 
 	/**获取玩家的初始化协议 */
 	getInitPROT(currPlayerId: number) {
-		let players = this._playerManager.players;
-
 		return new toClientPROT.initialize(currPlayerId,
-			players.map(p => p.getPlayerBasicPROT()),
+			this._playerManager.players.map(p => p.getPlayerBasicPROT()),
 			this._edge.getEdgePROT(),
 			this._barricadeManager.barricades.map(p => p.getBarricadePROT()),
 			this._propManager.propHps.map(p => p.getPropHpPROT()),
@@ -346,28 +346,22 @@ export class gameCore extends events.EventEmitter {
 	}
 
 	/**添加新玩家 */
-	addNewPlayer(name: string): number {
-		let newPoisition: point | undefined;
-		while (!newPoisition) {
-			newPoisition = new point(Math.random() * this._edge.getWidth() + this._edge.vertex1.x,
-				Math.random() * this._edge.getHeight() + this._edge.vertex1.y);
+	addNewPlayer(name: string) {
+		return new Promise<number>((resolve, reject) => {
+			let timer = () => {
+				let newPoisition = this._generateEmptyPosition(config.player.radius);
 
-			if (this._edge.didCircleCollided(newPoisition, config.player.radius)) {
-				newPoisition = undefined;
-				continue;
+				if (newPoisition) {
+					let newPlayer = this._playerManager.addNewPlayer(name.slice(0, 20), newPoisition);
+					resolve(newPlayer.id);
+				} else {
+					setTimeout(() => {
+						timer();
+					}, 1000);
+				}
 			}
-			if (this._playerManager.players.find(p => p.didCircleCollided(newPoisition as point, config.player.radius))) {
-				newPoisition = undefined;
-				continue;
-			}
-			if (this._barricadeManager.barricades.find(p => p.didCircleCollided(newPoisition as point, config.player.radius))) {
-				newPoisition = undefined;
-				continue;
-			}
-		}
-
-		let newPlayer = this._playerManager.addNewPlayer(name.slice(0, 20), newPoisition);
-		return newPlayer.id;
+			timer();
+		});
 	}
 
 	startRunning(playerId: number, active: boolean) {

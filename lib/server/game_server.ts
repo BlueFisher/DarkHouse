@@ -32,7 +32,7 @@ export class gameServer {
 			port: port
 		}, () => {
 			mainLogger.info(`WebSocket Server is listening on ${ip}:${port}`);
-		}).on('connection', socket => { 
+		}).on('connection', socket => {
 			this._onWebSocketConnection(socket);
 		});
 	}
@@ -121,11 +121,14 @@ export class gameServer {
 	private _onInitialize(protocol: fromClientPROT.initialize, socket: websocket) {
 		let pair = this._socketPlayerColl.find(p => p.socket == socket);
 		if (pair) {
-			let newPlayerId = this._gameCore.addNewPlayer(protocol.name);
-			pair.playerId = newPlayerId;
-			gameLogger.info(`player [${pair.playerId}]: ${protocol.name} added in game`);
+			let newPlayerId = this._gameCore.addNewPlayer(protocol.name).then((newPlayerId) => {
+				if (pair) {
+					pair.playerId = newPlayerId;
+					gameLogger.info(`player [${pair.playerId}]: ${protocol.name} added in game`);
 
-			this._send(JSON.stringify(this._gameCore.getInitPROT(newPlayerId)), socket);
+					this._send(JSON.stringify(this._gameCore.getInitPROT(newPlayerId)), socket);
+				}
+			});
 		}
 	}
 

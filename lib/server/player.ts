@@ -248,7 +248,7 @@ export class playerManager {
 				config.player.sightRadius,
 				players.slice(i + 1));
 
-			barricadeManager.removeBlockedPlayers(player, restPlayersInSight);
+			barricadeManager.removeBlockedPlayers(player.position, restPlayersInSight);
 
 			_addInMap(playersInSightMap, player, restPlayersInSight);
 			for (let playerInSight of restPlayersInSight) {

@@ -54,23 +54,29 @@ export class propManager {
 	private _newPropGunsCache: propWeapon[] = [];
 	private _removedPropGunIdsCache: number[] = [];
 
-	constructor(generateEmptyPositionFunc: (radius: number) => point) {
+	constructor(generateEmptyPositionFunc: (radius: number) => point | null) {
 		// 生命值道具计时器循环
 		setInterval(() => {
 			if (this.propHps.length < config.prop.hp.maxNumber) {
 				let newPosition = generateEmptyPositionFunc(config.prop.hp.activeRadius);
-				this.addPropHp(newPosition);
+				if (newPosition)
+					this.addPropHp(newPosition);
 			}
 		}, config.prop.hp.appearInterval);
 
+		// 武器道具
 		setInterval(() => {
 			if (this.propWeapons.length < config.prop.weapon.maxNumber) {
 				let newPosition = generateEmptyPositionFunc(config.prop.weapon.activeRadius);
 
-				let setting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rifle);
-				if (setting) {
-					setting.bullet = parseInt((Math.random() * setting.maxBullet).toFixed(0));
-					this.addPropWeapon(newPosition, new gun(config.weapon.gun.type.rifle, setting));
+				if (newPosition) {
+					let weaponTypes = [config.weapon.gun.type.rifle, config.weapon.gun.type.rocket];
+					let weaponType = weaponTypes[Math.floor(Math.random() * weaponTypes.length)];
+
+					let setting = config.weapon.gun.defaultSettings.get(weaponType);
+					if (setting) {
+						this.addPropWeapon(newPosition, new gun(weaponType, setting));
+					}
 				}
 			}
 		}, config.prop.weapon.appearInterval);

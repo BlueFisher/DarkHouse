@@ -45,6 +45,7 @@ export class domManager {
 		});
 
 		let gameOn = () => {
+			$('#modal-waiting').modal();
 			this._connectWebSocketServer();
 		}
 		new vue({
@@ -64,6 +65,10 @@ export class domManager {
 		window.onresize = () => {
 			adjustCanvasSize();
 		}
+	}
+
+	gameStarted(){
+		$('#modal-waiting').modal('hide');
 	}
 
 	gameOver(protocol: toClientPROT.gameOver) {

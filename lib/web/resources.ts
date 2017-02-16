@@ -14,6 +14,7 @@ export class resourcesManager {
 	attackedEffects: attackedEffect[] = [];
 	attackCaches: attackCache[] = [];
 	bloodSplashs: bloodSplash[] = [];
+	explodes: explode[] = [];
 
 	mainPROTCache: toClientPROT.mainPROT;
 
@@ -304,6 +305,9 @@ class attackCache extends resource {
 			if (protocol.attackedPlayerIds.find(p => p == manager.currentPlayerId)) {
 				manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));
 			}
+			if (this._attackPROT.attackType == config.weapon.attackType.gun && this._attackPROT.weaponType == config.weapon.gun.type.rocket) {
+				manager.explodes.push(new explode(protocol.bulletPosition));
+			}
 			this._isEnd = true;
 		}
 
@@ -381,6 +385,41 @@ class attackCache extends resource {
 	}
 }
 
+class explode extends resource {
+	private _position: point;
+	private _timeout = 20;
+
+	constructor(position: point) {
+		super();
+
+		this._position = position;
+	}
+
+	draw(ctx: CanvasRenderingContext2D, manager: resourcesManager) {
+		this._draw(ctx, () => {
+			ctx.fillStyle = `rgba(255,0,0,${this._timeout / 20})`;
+
+			ctx.beginPath();
+			let setting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rocket);
+			if (setting) {
+				ctx.arc(this._position.x, this._position.y, setting.sputteringRadius, 0, Math.PI * 2);
+			}
+
+			ctx.fill();
+		});
+
+		if (--this._timeout <= 0) {
+			this.dispose(manager);
+		}
+	}
+
+	dispose(manager: resourcesManager) {
+		this._dispose();
+		let i = manager.explodes.findIndex(p => p == this);
+		if (i != -1)
+			manager.explodes.splice(i);
+	}
+}
 
 class bloodSplash extends resource {
 	private _position: point;

@@ -84,7 +84,7 @@ export namespace weapon {
 				attackInterval: 1000,
 				attackSightRadius: 160,
 				attackSightRemainsTime: 60,
-				bullet: 10,
+				bullet: 5,
 				bulletFlyStep: 0.4 * serverConfig.mainInterval,
 				maxBullet: 10,
 				sputteringRadius: 100

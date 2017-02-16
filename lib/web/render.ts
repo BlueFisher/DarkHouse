@@ -50,6 +50,8 @@ export class render {
 
 		this._resourceManager.drawRunning(ctx);
 
+		this._resourceManager.explodes.forEach(p => p.draw(ctx, this._resourceManager));
+
 		ctx.restore();
 
 		if (this._resourceManager.shooingInAimEffect)
