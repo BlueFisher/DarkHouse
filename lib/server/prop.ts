@@ -130,10 +130,11 @@ export class propManager {
 		this._newPropsCache.push(newPropSilencer);
 	}
 
-	tryCoverProp(player: player, newPos: point) {
+	/**尝试自动使用道具 */
+	tryCoverProp(player: player, position: point) {
 		for (let i = this.propHps.length - 1; i >= 0; i--) {
 			let propHp = this.propHps[i];
-			if (utils.didTwoCirclesCollied(propHp.position, config.prop.hp.activeRadius, newPos, config.player.radius)) {
+			if (utils.didTwoCirclesCollied(propHp.position, config.prop.hp.activeRadius, position, config.player.radius)) {
 				player.setHp(player.getHp() + 1);
 				this.propHps.splice(i, 1);
 				this._removedPropIdsCache.push(propHp.id);
@@ -141,30 +142,48 @@ export class propManager {
 		}
 		for (let i = this.propWeapons.length - 1; i >= 0; i--) {
 			let propWeapon = this.propWeapons[i];
-			if (utils.didTwoCirclesCollied(propWeapon.position, config.prop.hp.activeRadius, newPos, config.player.radius)) {
-				// 如果道具枪与玩家现有枪的类型
+			if (utils.didTwoCirclesCollied(propWeapon.position, config.prop.hp.activeRadius, position, config.player.radius)) {
+				// 如果道具枪与玩家现有枪的类型相同
 				if (propWeapon.weapon.attackType == config.weapon.attackType.gun) {
 					if (player.getGun().weaponType == propWeapon.weapon.weaponType) {
 						player.getGun().addBullet((propWeapon.weapon as gun).getBullet());
-					} else {
-						player.setGun(propWeapon.weapon as gun);
-					}
-				} else if (propWeapon.weapon.attackType == config.weapon.attackType.melee) {
-					if (player.getMelee().weaponType != propWeapon.weapon.weaponType) {
-						player.setMelee(propWeapon.weapon as melee);
+
+						this.propWeapons.splice(i, 1);
+						this._removedPropIdsCache.push(propWeapon.id);
 					}
 				}
-
-				this.propWeapons.splice(i, 1);
-				this._removedPropIdsCache.push(propWeapon.id);
 			}
 		}
 		for (let i = this.propSilencers.length - 1; i >= 0; i--) {
 			let propSilencer = this.propSilencers[i];
-			if (utils.didTwoCirclesCollied(propSilencer.position, config.prop.hp.activeRadius, newPos, config.player.radius)) {
+			if (utils.didTwoCirclesCollied(propSilencer.position, config.prop.hp.activeRadius, position, config.player.radius)) {
 				player.getGun().isEquippedSilencer = true;
 				this.propSilencers.splice(i, 1);
 				this._removedPropIdsCache.push(propSilencer.id);
+			}
+		}
+	}
+
+	tryUseProp(player: player, position: point) {
+		for (let i = this.propWeapons.length - 1; i >= 0; i--) {
+			let propWeapon = this.propWeapons[i];
+			if (utils.didTwoCirclesCollied(propWeapon.position, config.prop.hp.activeRadius, position, config.player.radius)) {
+				// 如果道具枪与玩家现有枪的类型
+				if (propWeapon.weapon.attackType == config.weapon.attackType.gun) {
+					if (player.getGun().weaponType != propWeapon.weapon.weaponType) {
+						player.setGun(propWeapon.weapon as gun);
+
+						this.propWeapons.splice(i, 1);
+						this._removedPropIdsCache.push(propWeapon.id);
+					}
+				} else if (propWeapon.weapon.attackType == config.weapon.attackType.melee) {
+					if (player.getMelee().weaponType != propWeapon.weapon.weaponType) {
+						player.setMelee(propWeapon.weapon as melee);
+
+						this.propWeapons.splice(i, 1);
+						this._removedPropIdsCache.push(propWeapon.id);
+					}
+				}
 			}
 		}
 	}

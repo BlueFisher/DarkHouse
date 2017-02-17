@@ -409,6 +409,13 @@ export class gameCore extends events.EventEmitter {
 		}
 	}
 
+	useProp(playerId: number) {
+		let player = this._playerManager.findPlayerById(playerId);
+		if (player) {
+			this._propManager.tryUseProp(player, player.position);
+		}
+	}
+
 	private _playerAttacked(attacktedPlayer: player, attackPlayer: player, weapon: weapon) {
 		attackPlayer.records.attackInAimTimes++;
 		attacktedPlayer.records.attactedTimes++;

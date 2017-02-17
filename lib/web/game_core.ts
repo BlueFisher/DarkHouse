@@ -99,6 +99,9 @@ export class gameCore {
 			if (e.keyCode == 70) {
 				this._send(new fromClientPROT.startCombat(true));
 			}
+			if (e.keyCode == 88) {
+				this._send(new fromClientPROT.useProp());
+			}
 		});
 
 		this._canvas.addEventListener('keyup', e => {
