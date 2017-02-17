@@ -63,8 +63,19 @@ export class gameCore extends events.EventEmitter {
 			let attackPROTs: toClientPROT.attackPROT[] = [];
 			let duringAttackPROTs: toClientPROT.duringAttackPROT[] = [];
 
-			for (let i = this._attackCaches.length - 1; i >= 0; i--) {
-				let cache = this._attackCaches[i];
+			for (let cache of this._attackCaches) {
+				// 如果还处在视野时间中、枪没有装备上消音器则获取视野中的玩家
+				let playerIdsInAttackSight: number[] = [];
+				let attackSightRadius = cache.weapon.attackSightRadius;
+				if (cache.weapon instanceof gun && cache.weapon.isEquippedSilencer) {
+					attackSightRadius = 0;
+				} else {
+					if (cache.sightTimeCount > 0) {
+						playerIdsInAttackSight = this._playerManager
+							.getPlayersInRadius(cache.attackPosition, attackSightRadius)
+							.map(p => p.id);
+					}
+				}
 
 				// 如果是初次加入到射击缓存中
 				if (cache.sightTimeCount == cache.weapon.attackSightTimeOut) {
@@ -74,12 +85,10 @@ export class gameCore extends events.EventEmitter {
 						weaponType: cache.weapon.weaponType,
 						position: cache.attackPosition,
 						angle: cache.angle,
-						playerIdsInSight: this._playerManager
-							.getPlayersInRadius(cache.attackPosition, cache.weapon.attackSightRadius)
-							.map(p => p.id),
+						playerIdsInSight: playerIdsInAttackSight,
 						attackPlayerId: cache.attackPlayer.id,
 						bulletPosition: cache.bulletPosition,
-						sightRadius: cache.weapon.attackSightRadius
+						sightRadius: attackSightRadius
 					});
 					cache.sightTimeCount--;
 				} else {
@@ -96,9 +105,7 @@ export class gameCore extends events.EventEmitter {
 					if (cache.sightTimeCount <= 0) {
 						duringAttackPROT.isSightEnd = true;
 					} else {
-						duringAttackPROT.playerIdsInSight = this._playerManager
-							.getPlayersInRadius(cache.attackPosition, cache.weapon.attackSightRadius)
-							.map(p => p.id);
+						duringAttackPROT.playerIdsInSight = playerIdsInAttackSight;
 					}
 
 					duringAttackPROTs.push(duringAttackPROT);
@@ -161,10 +168,8 @@ export class gameCore extends events.EventEmitter {
 				mainPROT.runningPROTs = runningPROTs;
 				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
 
-				mainPROT.newPropHpPROTs = propPROTs.newPropHps;
-				mainPROT.removedPropHpIds = propPROTs.removedPropHpIds;
-				mainPROT.newPropWeaponPROTs = propPROTs.newPropGuns;
-				mainPROT.removedPropWeaponIds = propPROTs.removedPropGunIds;
+				mainPROT.newPropPROTs = propPROTs.newPropsCache;
+				mainPROT.removedPropIds = propPROTs.removedPropIdsCache;
 
 				mainPROT.rankList = this._playerManager.getRankList();
 
@@ -336,8 +341,7 @@ export class gameCore extends events.EventEmitter {
 			this._playerManager.players.map(p => p.getPlayerBasicPROT()),
 			this._edge.getEdgePROT(),
 			this._barricadeManager.barricades.map(p => p.getBarricadePROT()),
-			this._propManager.propHps.map(p => p.getPropHpPROT()),
-			this._propManager.propWeapons.map(p => p.getPropGunPROT())
+			this._propManager.getAllPropPROTs()
 		);
 	}
 

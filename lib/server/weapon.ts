@@ -27,6 +27,8 @@ export class gun extends weapon {
 	readonly maxBullet: number;
 	readonly sputteringRadius: number;
 
+	isEquippedSilencer = false;
+
 	constructor(type: config.weapon.gun.type, defaultSetting: config.weapon.gun.defaultSetting) {
 		super(defaultSetting, type);
 		this._bullet = defaultSetting.bullet;

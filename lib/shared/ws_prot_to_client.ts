@@ -23,17 +23,23 @@ export interface barricadePROT {
 	point2: point
 }
 
-export interface propPROT {
+export type allPropPROTTypes = propHpPROT | propWeaponPROT | propSilencerPROT;
+export enum propType {
+	hp,
+	weapon,
+	silencer
+}
+interface propPROT {
+	type: propType
 	id: number,
 	position: point
 }
-export interface propHpPROT extends propPROT {
-
-}
+export interface propHpPROT extends propPROT { }
 export interface propWeaponPROT extends propPROT {
 	weapontType: config.weapon.weaponType,
 	attackType: config.weapon.attackType
 }
+export interface propSilencerPROT extends propPROT { }
 
 export interface runningPROT {
 	position: point,
@@ -90,15 +96,14 @@ export class initialize extends baseProtocol {
 	constructor(currPlayerId: number, players: playerBasicPROT[],
 		edge: edgePROT,
 		barricades: barricadePROT[],
-		propHps: propHpPROT[], propWeapons: propWeaponPROT[]) {
+		allPropPROTTypes: allPropPROTTypes[]) {
 		super(type.init);
 
 		this.currPlayerId = currPlayerId;
 		this.players = players;
 		this.edge = edge;
 		this.barricades = barricades;
-		this.propHps = propHps;
-		this.propWeapons = propWeapons;
+		this.props = allPropPROTTypes;
 
 		edge.point1 = point.getFixedPoint(edge.point1);
 		edge.point2 = point.getFixedPoint(edge.point2);
@@ -106,19 +111,16 @@ export class initialize extends baseProtocol {
 			p.point1 = point.getFixedPoint(p.point1);
 			p.point2 = point.getFixedPoint(p.point2);
 		});
-		propHps.forEach(p => {
+
+		this.props.forEach(p => {
 			p.position = point.getFixedPoint(p.position);
-		});
-		propWeapons.forEach(p => {
-			p.position = point.getFixedPoint(p.position);
-		});
+		})
 	}
 	currPlayerId: number;
 	players: playerBasicPROT[];
 	edge: edgePROT;
 	barricades: barricadePROT[];
-	propHps: propHpPROT[];
-	propWeapons: propWeaponPROT[];
+	props: allPropPROTTypes[];
 }
 
 export class mainPROT extends baseProtocol {
@@ -134,8 +136,6 @@ export class mainPROT extends baseProtocol {
 		});
 		this.duringAttackPROTs.forEach(p => {
 			arr = arr.concat(p.playerIdsInSight);
-			// if (p.attackedPlayerId)
-			// 	arr.push(p.attackedPlayerId);
 		});
 		this.runningPROTs.forEach(p => {
 			arr = arr.concat(p.playerIdsInSight);
@@ -167,10 +167,7 @@ export class mainPROT extends baseProtocol {
 		this.runningPROTs.forEach(p => {
 			p.position = point.getFixedPoint(p.position);
 		});
-		this.newPropWeaponPROTs.forEach(p => {
-			p.position = point.getFixedPoint(p.position);
-		});
-		this.newPropHpPROTs.forEach(p => {
+		this.newPropPROTs.forEach(p => {
 			p.position = point.getFixedPoint(p.position);
 		});
 	}
@@ -186,10 +183,8 @@ export class mainPROT extends baseProtocol {
 
 	rankList: rankPROT[] = [];
 
-	newPropWeaponPROTs: propWeaponPROT[] = [];
-	removedPropWeaponIds: number[] = [];
-	newPropHpPROTs: propHpPROT[] = [];
-	removedPropHpIds: number[] = [];
+	newPropPROTs: allPropPROTTypes[] = [];
+	removedPropIds: number[] = [];
 }
 
 export interface records {

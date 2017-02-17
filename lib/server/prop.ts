@@ -8,18 +8,21 @@ import * as toClientPROT from '../shared/ws_prot_to_client';
 
 let id = 0;
 
-export class prop {
+export abstract class prop {
 	readonly id = ++id;
 	readonly position: point;
 
 	constructor(position: point) {
 		this.position = position;
 	}
+
+	abstract getPropPROT(): toClientPROT.allPropPROTTypes
 }
 
 export class propHp extends prop {
-	getPropHpPROT(): toClientPROT.propHpPROT {
+	getPropPROT(): toClientPROT.allPropPROTTypes {
 		return {
+			type: toClientPROT.propType.hp,
 			id: this.id,
 			position: this.position
 		}
@@ -35,8 +38,9 @@ export class propWeapon extends prop {
 		this.weapon = weapon;
 	}
 
-	getPropGunPROT(): toClientPROT.propWeaponPROT {
+	getPropPROT(): toClientPROT.allPropPROTTypes {
 		return {
+			type: toClientPROT.propType.weapon,
 			id: this.id,
 			position: this.position,
 			weapontType: this.weapon.weaponType,
@@ -45,14 +49,23 @@ export class propWeapon extends prop {
 	}
 }
 
+export class propSilencer extends prop {
+	getPropPROT(): toClientPROT.allPropPROTTypes {
+		return {
+			type: toClientPROT.propType.silencer,
+			id: this.id,
+			position: this.position,
+		}
+	}
+}
+
 export class propManager {
 	readonly propHps: propHp[] = [];
 	readonly propWeapons: propWeapon[] = [];
+	readonly propSilencers: propSilencer[] = [];
 
-	private _newPropHpsCache: propHp[] = [];
-	private _removedPropHpIdsCache: number[] = [];
-	private _newPropGunsCache: propWeapon[] = [];
-	private _removedPropGunIdsCache: number[] = [];
+	private _newPropsCache: prop[] = [];
+	private _removedPropIdsCache: number[] = [];
 
 	constructor(generateEmptyPositionFunc: (radius: number) => point | null) {
 		// 生命值道具计时器循环
@@ -61,6 +74,9 @@ export class propManager {
 				let newPosition = generateEmptyPositionFunc(config.prop.hp.activeRadius);
 				if (newPosition)
 					this.addPropHp(newPosition);
+				newPosition = generateEmptyPositionFunc(config.prop.hp.activeRadius);
+				if (newPosition)
+					this.addPropSilencer(newPosition);
 			}
 		}, config.prop.hp.appearInterval);
 
@@ -84,27 +100,34 @@ export class propManager {
 
 	getAndClearPropPROTs() {
 		let res = {
-			newPropHps: this._newPropHpsCache.map(p => p.getPropHpPROT()),
-			removedPropHpIds: this._removedPropHpIdsCache,
-			newPropGuns: this._newPropGunsCache.map(p => p.getPropGunPROT()),
-			removedPropGunIds: this._removedPropGunIdsCache
+			newPropsCache: this._newPropsCache.map(p => p.getPropPROT()),
+			removedPropIdsCache: this._removedPropIdsCache
 		}
-		this._newPropHpsCache = [];
-		this._removedPropHpIdsCache = [];
-		this._newPropGunsCache = [];
-		this._removedPropGunIdsCache = [];
+		this._newPropsCache = [];
+		this._removedPropIdsCache = [];
 		return res;
+	}
+
+	getAllPropPROTs() {
+		return this.propHps.map(p => p.getPropPROT())
+			.concat(this.propWeapons.map(p => p.getPropPROT()))
+			.concat(this.propSilencers.map(p => p.getPropPROT()));
 	}
 
 	addPropHp(position: point) {
 		let newPropHp = new propHp(position);
 		this.propHps.push(newPropHp);
-		this._newPropHpsCache.push(newPropHp);
+		this._newPropsCache.push(newPropHp);
 	}
 	addPropWeapon(position: point, gun: gun) {
 		let newPropWeapon = new propWeapon(position, gun);
 		this.propWeapons.push(newPropWeapon);
-		this._newPropGunsCache.push(newPropWeapon);
+		this._newPropsCache.push(newPropWeapon);
+	}
+	addPropSilencer(position: point) {
+		let newPropSilencer = new propSilencer(position);
+		this.propSilencers.push(newPropSilencer);
+		this._newPropsCache.push(newPropSilencer);
 	}
 
 	tryCoverProp(player: player, newPos: point) {
@@ -113,7 +136,7 @@ export class propManager {
 			if (utils.didTwoCirclesCollied(propHp.position, config.prop.hp.activeRadius, newPos, config.player.radius)) {
 				player.setHp(player.getHp() + 1);
 				this.propHps.splice(i, 1);
-				this._removedPropHpIdsCache.push(propHp.id);
+				this._removedPropIdsCache.push(propHp.id);
 			}
 		}
 		for (let i = this.propWeapons.length - 1; i >= 0; i--) {
@@ -133,7 +156,15 @@ export class propManager {
 				}
 
 				this.propWeapons.splice(i, 1);
-				this._removedPropGunIdsCache.push(propWeapon.id);
+				this._removedPropIdsCache.push(propWeapon.id);
+			}
+		}
+		for (let i = this.propSilencers.length - 1; i >= 0; i--) {
+			let propSilencer = this.propSilencers[i];
+			if (utils.didTwoCirclesCollied(propSilencer.position, config.prop.hp.activeRadius, newPos, config.player.radius)) {
+				player.getGun().isEquippedSilencer = true;
+				this.propSilencers.splice(i, 1);
+				this._removedPropIdsCache.push(propSilencer.id);
 			}
 		}
 	}
