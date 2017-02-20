@@ -31,9 +31,9 @@ export class player {
 		this.name = name;
 		this.position = position;
 
-		let gunSetting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.pistol);
+		let gunSetting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rocket);
 		if (gunSetting)
-			this._gun = new gun(config.weapon.gun.type.pistol, gunSetting);
+			this._gun = new gun(config.weapon.gun.type.rocket, gunSetting);
 
 		let meleeSetting = config.weapon.melee.defaultSettings.get(config.weapon.melee.type.fist);
 		if (meleeSetting)
@@ -49,7 +49,11 @@ export class player {
 	}
 
 	setHp(hp: number) {
-		if (hp <= config.player.maxHp && hp >= 0)
+		if (hp < 0)
+			this._hp = 0;
+		else if (hp > config.player.maxHp)
+			this._hp = config.player.maxHp
+		else
 			this._hp = hp;
 	}
 	getHp() {

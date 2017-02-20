@@ -285,7 +285,6 @@ export class gameCore extends events.EventEmitter {
 
 						for (let damageRange of gun.damageRanges) {
 							if (distance <= damageRange.radius) {
-								console.log(distance, damageRange)
 								attackedPlayerDamages.push({
 									player: player,
 									damage: damageRange.damage
@@ -448,7 +447,7 @@ export class gameCore extends events.EventEmitter {
 		attacktedPlayer.records.attactedTimes++;
 
 		let hp = attacktedPlayer.getHp();
-		if (hp - damage == 0) {
+		if (hp - damage <= 0) {
 			attackPlayer.records.killTimes++;
 			this.emit(gameCore.events.gameOver, attacktedPlayer.id,
 				new toClientPROT.gameOver(attacktedPlayer.records));

@@ -5,7 +5,7 @@ export namespace player {
 	export let movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
 	export let runingStep = 0.136 * serverConfig.mainInterval;  // 每循环跑步前进距离
 
-	export let maxHp = 6;
+	export let maxHp = 12;
 	export let radius = 20;
 	export let sightRadius = 100;
 	export let runningSightRadius = 80;
@@ -72,7 +72,7 @@ export namespace weapon {
 				bullet: 15,
 				bulletFlyStep: 5 * serverConfig.mainInterval,
 				maxBullet: 30,
-				damageRanges: [{ damage: 1, radius: 1 }]
+				damageRanges: [{ damage: 2, radius: 1 }]
 			}],
 			[type.rifle, {
 				attackType: attackType.gun,
@@ -89,7 +89,7 @@ export namespace weapon {
 				attackInterval: 1000,
 				attackSightRadius: 160,
 				attackSightRemainsTime: 60,
-				bullet: 5,
+				bullet: 10,
 				bulletFlyStep: 0.4 * serverConfig.mainInterval,
 				maxBullet: 10,
 				damageRanges: [
