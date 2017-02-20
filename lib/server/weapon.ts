@@ -25,7 +25,7 @@ export class weapon {
 export class gun extends weapon {
 	private _bullet: number;
 	readonly maxBullet: number;
-	readonly sputteringRadius: number;
+	readonly damageRanges: config.weapon.gun.damageRange[];
 
 	isEquippedSilencer = false;
 
@@ -33,7 +33,7 @@ export class gun extends weapon {
 		super(defaultSetting, type);
 		this._bullet = defaultSetting.bullet;
 		this.maxBullet = defaultSetting.maxBullet;
-		this.sputteringRadius = defaultSetting.sputteringRadius;
+		this.damageRanges = defaultSetting.damageRanges;
 	}
 
 	shoot(canShootCallback: () => void) {

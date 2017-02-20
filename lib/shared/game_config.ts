@@ -46,6 +46,11 @@ export namespace weapon {
 	}
 
 	export namespace gun {
+		export interface damageRange {
+			damage: number,
+			radius: number
+		}
+
 		export enum type {
 			pistol,
 			rifle,
@@ -55,7 +60,7 @@ export namespace weapon {
 		export interface defaultSetting extends commonSetting {
 			bullet: number,
 			maxBullet: number,
-			sputteringRadius: number
+			damageRanges: damageRange[]
 		}
 
 		export let defaultSettings = new Map<type, defaultSetting>([
@@ -67,7 +72,7 @@ export namespace weapon {
 				bullet: 15,
 				bulletFlyStep: 5 * serverConfig.mainInterval,
 				maxBullet: 30,
-				sputteringRadius: 1
+				damageRanges: [{ damage: 1, radius: 1 }]
 			}],
 			[type.rifle, {
 				attackType: attackType.gun,
@@ -77,7 +82,7 @@ export namespace weapon {
 				bullet: 30,
 				bulletFlyStep: 0.8 * serverConfig.mainInterval,
 				maxBullet: 60,
-				sputteringRadius: 1
+				damageRanges: [{ damage: 1, radius: 1 }]
 			}],
 			[type.rocket, {
 				attackType: attackType.gun,
@@ -87,7 +92,11 @@ export namespace weapon {
 				bullet: 5,
 				bulletFlyStep: 0.4 * serverConfig.mainInterval,
 				maxBullet: 10,
-				sputteringRadius: 100
+				damageRanges: [
+					{ damage: 3, radius: 20 },
+					{ damage: 2, radius: 70 },
+					{ damage: 1, radius: 100 }
+				]
 			}]
 		]);
 	}

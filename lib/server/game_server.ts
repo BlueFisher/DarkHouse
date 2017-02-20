@@ -108,7 +108,7 @@ export class gameServer {
 		let onSocketClose = (socket: websocket) => {
 			let pair = this._socketPlayerColl.find(p => p.socket == socket);
 			if (pair && pair.playerId) {
-				console.log(`player ${pair.playerId} disconnected`);
+				console.log(`player [${pair.playerId}] disconnected`);
 				this._gameCore.removePlayer(pair.playerId);
 			}
 		}

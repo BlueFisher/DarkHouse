@@ -266,21 +266,48 @@ export class gameCore extends events.EventEmitter {
 			}
 
 			if (minAttackPosition) {
-				let attackedPlayers: player[] = [];
-				if (cache.weapon.attackType == config.weapon.attackType.gun && (cache.weapon as gun).sputteringRadius > 1) {
-					attackedPlayers = this._playerManager.getPlayersInRadius(minAttackPosition, (cache.weapon as gun).sputteringRadius);
-					this._barricadeManager.removeBlockedPlayers(minAttackPosition, attackedPlayers);
+				let attackedPlayerDamages: {
+					player: player,
+					damage: number
+				}[] = [];
+
+				if (cache.weapon instanceof gun) {
+					let gun = cache.weapon;
+
+					for (let player of this._playerManager.players) {
+						let distance = utils.getTwoPointsDistance(minAttackPosition, player.position) - config.player.radius;
+						if (distance > gun.damageRanges[gun.damageRanges.length - 1].radius) {
+							continue;
+						}
+						if (this._barricadeManager.didPlayerBlocked(minAttackPosition, player)) {
+							continue;
+						}
+
+						for (let damageRange of gun.damageRanges) {
+							if (distance <= damageRange.radius) {
+								console.log(distance, damageRange)
+								attackedPlayerDamages.push({
+									player: player,
+									damage: damageRange.damage
+								});
+								break;
+							}
+						}
+					}
 				} else {
 					if (firstAttackedPlayer) {
-						attackedPlayers = [firstAttackedPlayer];
+						attackedPlayerDamages.push({
+							player: firstAttackedPlayer,
+							damage: 1
+						});
 					}
 				}
 
-				attackedPlayers.forEach(p => {
-					cache.attacktedPlayers.push(p);
-					this._playerAttacked(p, cache.attackPlayer, cache.weapon);
-					if (p.getHp() <= 0)
-						cache.killedPlayers.push(p);
+				attackedPlayerDamages.forEach(p => {
+					cache.attacktedPlayers.push(p.player);
+					this._playerAttacked(p.player, cache.attackPlayer, p.damage);
+					if (p.player.getHp() <= 0)
+						cache.killedPlayers.push(p.player);
 				});
 
 				cache.bulletPosition = cache.collisionPoint = minAttackPosition;
@@ -416,12 +443,12 @@ export class gameCore extends events.EventEmitter {
 		}
 	}
 
-	private _playerAttacked(attacktedPlayer: player, attackPlayer: player, weapon: weapon) {
+	private _playerAttacked(attacktedPlayer: player, attackPlayer: player, damage: number) {
 		attackPlayer.records.attackInAimTimes++;
 		attacktedPlayer.records.attactedTimes++;
 
 		let hp = attacktedPlayer.getHp();
-		if (hp - 1 == 0) {
+		if (hp - damage == 0) {
 			attackPlayer.records.killTimes++;
 			this.emit(gameCore.events.gameOver, attacktedPlayer.id,
 				new toClientPROT.gameOver(attacktedPlayer.records));
@@ -432,7 +459,7 @@ export class gameCore extends events.EventEmitter {
 			}
 		}
 
-		attacktedPlayer.setHp(hp - 1);
+		attacktedPlayer.setHp(hp - damage);
 	}
 
 	private _playerAttack(player: player, weapon: weapon) {

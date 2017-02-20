@@ -235,17 +235,29 @@ export class barricadeManager {
 		return isCollided;
 	}
 
-	removeBlockedPlayers(position: point, playersInSight: player[]) {
-		for (let i = playersInSight.length - 1; i >= 0; i--) {
-			let playerInSight = playersInSight[i];
+	removeBlockedPlayers(position: point, players: player[]) {
+		for (let i = players.length - 1; i >= 0; i--) {
+			let player = players[i];
 			let [tangentialPoint1, tangentialPoint2] = utils.getTangentialPointsOfPointToCircle(position,
-				playerInSight.position, config.player.radius);
+				player.position, config.player.radius);
 
 			if (this.didTwoLinesCollided(position, tangentialPoint1,
 				position, tangentialPoint2)) {
 
-				playersInSight.splice(i, 1);
+				players.splice(i, 1);
 			}
 		}
+	}
+
+	didPlayerBlocked(position: point, player: player) {
+		let [tangentialPoint1, tangentialPoint2] = utils.getTangentialPointsOfPointToCircle(position,
+			player.position, config.player.radius);
+
+		if (this.didTwoLinesCollided(position, tangentialPoint1,
+			position, tangentialPoint2)) {
+			return true;
+		}
+
+		return false;
 	}
 }

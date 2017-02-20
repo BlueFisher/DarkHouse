@@ -39,20 +39,6 @@ export function getTwoPointsDistance(point1: point, point2: point) {
 	return Math.sqrt((point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2);
 }
 
-// export function getTangentialPointsOfPointToCircle(dot: point, circlePoint: point, r: number): [point, point] {
-// 	if (dot.y - circlePoint.y == 0) {
-// 		return [new point(circlePoint.x, circlePoint.y + r), new point(circlePoint.x, circlePoint.y - r)];
-// 	} else {
-// 		let tmp = (dot.x - circlePoint.x) / (dot.y - circlePoint.x);
-// 		let tmpSqr = Math.sqrt(r ** 2 - (1 + tmp ** 2));
-// 		let x1 = tmpSqr + circlePoint.x;
-// 		let x2 = -tmpSqr + circlePoint.x;
-// 		let y1 = circlePoint.y - tmpSqr * tmp;
-// 		let y2 = circlePoint.y + tmpSqr * tmp;
-// 		return [new point(x1, y1), new point(x2, y2)];
-// 	}
-// }
-
 export function getTangentialPointsOfPointToCircle(dot: point, circlePoint: point, r: number) {
 	if (dot.y - circlePoint.y == 0) {
 		return [new point(circlePoint.x, circlePoint.y + r), new point(circlePoint.x, circlePoint.y - r)];
@@ -62,39 +48,6 @@ export function getTangentialPointsOfPointToCircle(dot: point, circlePoint: poin
 		new point(circlePoint.x - Math.cos(Math.atan(k)) * r, circlePoint.y - Math.sin(Math.atan(k)) * r)];
 	}
 }
-
-// function bbb(dot: point, circlePoint: point, r: number) {
-// 	let x0 = circlePoint.x;
-// 	let y0 = circlePoint.y;
-// 	let a = dot.x;
-// 	let b = dot.y;
-
-// 	var A = x0 ** 2 + y0 ** 2 - b * y0 - a * x0;
-
-// 	var delta = 4 * ((y0 - b) ** 2 + (y0 - b) ** 2) * (A ** 2 - (y0 - b) ** 2 * r ** 2);
-// 	var x1 = (2 * (a - x0) * A + Math.sqrt(delta)) / (2 * ((y0 - b) ** 2 + (x0 - a) ** 2))
-// 	var y1 = (A - (x0 - a) * x1) / (y0 - b);
-// 	var x2 = (2 * (a - x0) * A - Math.sqrt(delta)) / (2 * ((y0 - b) ** 2 + (x0 - a) ** 2))
-// 	var y2 = (A - (x0 - a) * x2) / (y0 - b);
-// 	return [new point(x1, y1), new point(x2, y2)];
-// }
-
-// let dots: point[] = [];
-// let circlePoints: point[] = [];
-// let rs: number[] = [];
-// for (let i = 0; i < 100000; i++) {
-// 	dots.push(new point(Math.random() * 1000, Math.random() * 1000));
-// 	circlePoints.push(new point(Math.random() * 1000, Math.random() * 1000));
-// 	rs.push(Math.random() * 100);
-// }
-// console.time();
-// for (let i = 0; i < 20; i++) {
-// 	let [a, b] = getTangentialPointsOfPointToCircle(dots[i], circlePoints[i], rs[i]);
-// 	let [c, d] = aaa(dots[i], circlePoints[i], rs[i]);
-// 	console.log('---');
-// 	console.log(getTwoPointsDistance(a, circlePoints[i]) - rs[i], getTwoPointsDistance(c, circlePoints[i]) - rs[i])
-// 	console.log(getTwoPointsDistance(a, c), getTwoPointsDistance(b, d));
-// }
 
 export function didTwoLinesCross(a: point, b: point, c: point, d: point) {
 	// 三角形abc 面积的2倍  

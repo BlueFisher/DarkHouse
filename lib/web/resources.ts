@@ -8,8 +8,6 @@ export class resourcesManager {
 	edge: toClientPROT.edgePROT;
 	barricades: toClientPROT.barricadePROT[] = [];
 	props: toClientPROT.allPropPROTTypes[] = [];
-	// propHps: toClientPROT.propHpPROT[] = [];
-	// propWeapons: toClientPROT.propWeaponPROT[] = [];
 
 	shooingInAimEffect: attackInAimEffect;
 	attackedEffects: attackedEffect[] = [];
@@ -25,8 +23,6 @@ export class resourcesManager {
 		this.edge = protocol.edge;
 		this.barricades = protocol.barricades;
 		this.props = protocol.props;
-		// this.propHps = protocol.propHps;
-		// this.propWeapons = protocol.propWeapons;
 	}
 
 	onMainProtocol(protocol: toClientPROT.mainPROT) {
@@ -42,27 +38,13 @@ export class resourcesManager {
 
 		this.playerBasicPROTs = this.playerBasicPROTs.concat(protocol.newPlayerBPROTs);
 		this.props = this.props.concat(protocol.newPropPROTs);
-		// this.propHps = this.propHps.concat(protocol.newPropHpPROTs);
-		// this.propWeapons = this.propWeapons.concat(protocol.newPropWeaponPROTs);
 
 		protocol.removedPropIds.forEach(p => {
 			let i = this.props.findIndex(pp => pp.id == p);
 			if (i != -1) {
 				this.props.splice(i, 1);
 			}
-		})
-
-		// protocol.removedPropHpIds.forEach(p => {
-		// 	let i = this.propHps.findIndex(pp => pp.id == p);
-		// 	if (i != -1)
-		// 		this.propHps.splice(i, 1);
-		// });
-
-		// protocol.removedPropWeaponIds.forEach(p => {
-		// 	let i = this.propWeapons.findIndex(pp => pp.id == p);
-		// 	if (i != -1)
-		// 		this.propWeapons.splice(i, 1);
-		// });
+		});
 	}
 
 	getPlayerPROT(playerId: number) {
@@ -188,43 +170,6 @@ export class resourcesManager {
 					ctx.fillText('消音器', propSilencer.position.x, propSilencer.position.y);
 				}
 			}
-
-			// for (let propHp of this.propHps) {
-			// 	ctx.fillStyle = '#0f0';
-			// 	ctx.beginPath();
-			// 	ctx.arc(propHp.position.x, propHp.position.y, config.prop.radius, 0, Math.PI * 2);
-			// 	ctx.fill();
-			// 	ctx.fillStyle = '#fff';
-			// 	ctx.fillText('血包', propHp.position.x, propHp.position.y);
-			// }
-
-			// for (let propWeapon of this.propWeapons) {
-			// 	ctx.fillStyle = '#f00';
-			// 	ctx.beginPath();
-			// 	ctx.arc(propWeapon.position.x, propWeapon.position.y, config.prop.radius, 0, Math.PI * 2);
-			// 	ctx.fill();
-
-			// 	let weaponName = '';
-			// 	if (propWeapon.attackType == config.weapon.attackType.gun) {
-			// 		switch (propWeapon.weapontType) {
-			// 			case config.weapon.gun.type.pistol:
-			// 				weaponName = '手枪';
-			// 				break;
-			// 			case config.weapon.gun.type.rifle:
-			// 				weaponName = '步枪';
-			// 				break;
-			// 			case config.weapon.gun.type.rocket:
-			// 				weaponName = '火箭筒';
-			// 				break;
-			// 		}
-			// 	} else if (propWeapon.attackType == config.weapon.attackType.melee) {
-			// 		if (propWeapon.weapontType == config.weapon.melee.type.fist) {
-			// 			weaponName = '拳头';
-			// 		}
-			// 	}
-			// 	ctx.fillStyle = '#fff';
-			// 	ctx.fillText(weaponName, propWeapon.position.x, propWeapon.position.y);
-			// };
 		});
 	}
 
@@ -462,7 +407,7 @@ class explode extends resource {
 			ctx.beginPath();
 			let setting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rocket);
 			if (setting) {
-				ctx.arc(this._position.x, this._position.y, setting.sputteringRadius, 0, Math.PI * 2);
+				ctx.arc(this._position.x, this._position.y, setting.damageRanges[setting.damageRanges.length - 1].radius, 0, Math.PI * 2);
 			}
 
 			ctx.fill();
