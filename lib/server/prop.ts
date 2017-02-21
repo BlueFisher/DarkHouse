@@ -27,11 +27,12 @@ export class propHp extends prop {
 
 		this.hp = hp;
 	}
-	getPropPROT(): toClientPROT.allPropPROTTypes {
+	getPropPROT(): toClientPROT.propHpPROT {
 		return {
 			type: toClientPROT.propType.hp,
 			id: this.id,
-			position: this.position
+			position: this.position,
+			hp: this.hp
 		}
 	}
 }
@@ -45,7 +46,7 @@ export class propWeapon extends prop {
 		this.weapon = weapon;
 	}
 
-	getPropPROT(): toClientPROT.allPropPROTTypes {
+	getPropPROT(): toClientPROT.propWeaponPROT {
 		return {
 			type: toClientPROT.propType.weapon,
 			id: this.id,
@@ -57,7 +58,7 @@ export class propWeapon extends prop {
 }
 
 export class propSilencer extends prop {
-	getPropPROT(): toClientPROT.allPropPROTTypes {
+	getPropPROT(): toClientPROT.propSilencerPROT {
 		return {
 			type: toClientPROT.propType.silencer,
 			id: this.id,
@@ -119,9 +120,11 @@ export class propManager {
 	}
 
 	getAllPropPROTs() {
-		return this.propHps.map(p => p.getPropPROT())
-			.concat(this.propWeapons.map(p => p.getPropPROT()))
-			.concat(this.propSilencers.map(p => p.getPropPROT()));
+		let PROTs: toClientPROT.allPropPROTTypes[] = this.propHps.map(p => p.getPropPROT());
+		PROTs = PROTs.concat(this.propWeapons.map(p => p.getPropPROT()));
+		PROTs = PROTs.concat(this.propSilencers.map(p => p.getPropPROT()));
+
+		return PROTs;
 	}
 
 	addPropHp(position: point, hp: number) {

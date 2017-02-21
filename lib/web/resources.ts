@@ -130,7 +130,7 @@ export class resourcesManager {
 					ctx.arc(propHp.position.x, propHp.position.y, config.prop.radius, 0, Math.PI * 2);
 					ctx.fill();
 					ctx.fillStyle = '#fff';
-					ctx.fillText('血包', propHp.position.x, propHp.position.y);
+					ctx.fillText(`+${propHp.hp}`, propHp.position.x, propHp.position.y);
 				} else if (prop.type == toClientPROT.propType.weapon) {
 					let propWeapon = prop as toClientPROT.propWeaponPROT;
 

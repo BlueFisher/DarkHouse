@@ -34,7 +34,9 @@ interface propPROT {
 	id: number,
 	position: point
 }
-export interface propHpPROT extends propPROT { }
+export interface propHpPROT extends propPROT {
+	hp: number
+}
 export interface propWeaponPROT extends propPROT {
 	weapontType: config.weapon.weaponType,
 	attackType: config.weapon.attackType
