@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "node build",
-    "build-w": "node build -w",
-    "preinstall": "npm install typescript"
+    "build-w": "node build -w"
   },
   "author": "Fisher",
   "license": "MIT",

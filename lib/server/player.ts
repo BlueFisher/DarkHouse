@@ -1,6 +1,7 @@
 import * as utils from '../shared/utils';
 import * as config from '../shared/game_config';
 import * as toClientPROT from '../shared/ws_prot_to_client';
+
 import { gun, melee } from './weapon';
 import { edge, barricadeManager } from './barricade';
 

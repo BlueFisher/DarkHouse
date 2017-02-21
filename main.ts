@@ -1,10 +1,15 @@
-import { webSocketServerMap, httpServer } from './lib/server/http_server';
-import * as config from './config';
 import * as cp from 'child_process';
+const packageConfig = require('./package.json');
+
+import * as config from './config';
+import { main as mainLogger } from './lib/server/log';
+import { webSocketServerMap, httpServer } from './lib/server/http_server';
 
 const fork = cp.fork;
 
 let webSocketServers: webSocketServerMap = new Map();
+
+mainLogger.info(`${packageConfig.name} - v${packageConfig.version}`)
 
 // 初始化HTTP服务器WebSocket服务器
 new httpServer(config.httpPort, webSocketServers);

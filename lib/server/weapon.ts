@@ -1,5 +1,5 @@
-import * as config from '../shared/game_config';
 import * as serverConfig from '../../config';
+import * as config from '../shared/game_config';
 
 export class weapon {
 	readonly attackType: config.weapon.attackType;

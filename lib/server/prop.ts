@@ -1,10 +1,12 @@
-import { point } from '../shared/utils';
-import { player } from './player';
-import { weapon, gun, melee } from './weapon';
 import * as config from '../shared/game_config';
 import * as utils from '../shared/utils';
-
 import * as toClientPROT from '../shared/ws_prot_to_client';
+
+import { player } from './player';
+import { weapon, gun, melee } from './weapon';
+
+const point = utils.point;
+type point = utils.point;
 
 let id = 0;
 

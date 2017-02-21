@@ -1,13 +1,13 @@
 import * as websocket from 'ws';
 import * as express from 'express';
 
-import { main as mainLogger, game as gameLogger } from './log';
-import { gameCore } from './game_core';
-import { sessionParser } from './sessionParser';
-
 import * as config from '../shared/game_config';
 import * as fromClientPROT from '../shared/ws_prot_from_client';
 import * as toClientPROT from '../shared/ws_prot_to_client';
+
+import { main as mainLogger, game as gameLogger } from './log';
+import { gameCore } from './game_core';
+import { sessionParser } from './sessionParser';
 
 export class gameServer {
 	private _gameCore: gameCore;

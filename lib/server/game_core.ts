@@ -1,17 +1,15 @@
 import * as events from 'events';
 
+import * as serverConfig from '../../config';
+import * as config from '../shared/game_config';
+import * as utils from '../shared/utils';
+import * as fromClientPROT from '../shared/ws_prot_from_client';
+import * as toClientPROT from '../shared/ws_prot_to_client';
+
 import { player, playerManager } from './player';
 import { edge, barricade, barricadeManager } from './barricade';
 import { propManager, propHp, propWeapon } from './prop';
-import * as gameServer from './game_server';
 import { weapon, gun, melee } from './weapon';
-
-import * as config from '../shared/game_config';
-import * as serverConfig from '../../config';
-import * as utils from '../shared/utils';
-
-import * as fromClientPROT from '../shared/ws_prot_from_client';
-import * as toClientPROT from '../shared/ws_prot_to_client';
 
 const point = utils.point;
 type point = utils.point;
