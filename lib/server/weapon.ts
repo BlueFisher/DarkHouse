@@ -60,8 +60,12 @@ export class gun extends weapon {
 }
 
 export class melee extends weapon {
+	readonly damage: number;
+
 	constructor(type: config.weapon.melee.type, defaultSetting: config.weapon.melee.defaultSetting) {
 		super(defaultSetting, type);
+
+		this.damage = defaultSetting.damage;
 	}
 
 	combat(canCombatCallback: () => void) {

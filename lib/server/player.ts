@@ -31,9 +31,9 @@ export class player {
 		this.name = name;
 		this.position = position;
 
-		let gunSetting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.rocket);
+		let gunSetting = config.weapon.gun.defaultSettings.get(config.weapon.gun.type.pistol);
 		if (gunSetting)
-			this._gun = new gun(config.weapon.gun.type.rocket, gunSetting);
+			this._gun = new gun(config.weapon.gun.type.pistol, gunSetting);
 
 		let meleeSetting = config.weapon.melee.defaultSettings.get(config.weapon.melee.type.fist);
 		if (meleeSetting)

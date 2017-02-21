@@ -17,6 +17,8 @@ export namespace prop {
 	export let radius = 10; // 道具显示的半径
 
 	export namespace hp {
+		export let smallHp = 2;
+		export let bigHp = 4;
 		export let activeRadius = 5; // 血包触发的半径
 		export let maxNumber = 5; // 血包存在最大数量
 		export let appearInterval = 10000; // 血包出现时间间隔
@@ -72,7 +74,7 @@ export namespace weapon {
 				bullet: 15,
 				bulletFlyStep: 5 * serverConfig.mainInterval,
 				maxBullet: 30,
-				damageRanges: [{ damage: 2, radius: 1 }]
+				damageRanges: [{ damage: 2, radius: 0 }]
 			}],
 			[type.rifle, {
 				attackType: attackType.gun,
@@ -82,15 +84,15 @@ export namespace weapon {
 				bullet: 30,
 				bulletFlyStep: 0.8 * serverConfig.mainInterval,
 				maxBullet: 60,
-				damageRanges: [{ damage: 1, radius: 1 }]
+				damageRanges: [{ damage: 1, radius: 0 }]
 			}],
 			[type.rocket, {
 				attackType: attackType.gun,
 				attackInterval: 1000,
 				attackSightRadius: 160,
 				attackSightRemainsTime: 60,
-				bullet: 10,
-				bulletFlyStep: 0.4 * serverConfig.mainInterval,
+				bullet: 5,
+				bulletFlyStep: 0.6 * serverConfig.mainInterval,
 				maxBullet: 10,
 				damageRanges: [
 					{ damage: 3, radius: 20 },
@@ -107,6 +109,7 @@ export namespace weapon {
 		}
 
 		export interface defaultSetting extends commonSetting {
+			damage: number
 		}
 
 		export let defaultSettings = new Map<type, defaultSetting>();
@@ -115,7 +118,8 @@ export namespace weapon {
 			attackInterval: 600,
 			attackSightRadius: 50,
 			attackSightRemainsTime: 60,
-			bulletFlyStep: 10
+			bulletFlyStep: 10,
+			damage: 1
 		});
 	}
 }

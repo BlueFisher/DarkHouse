@@ -20,6 +20,13 @@ export abstract class prop {
 }
 
 export class propHp extends prop {
+	readonly hp: number;
+
+	constructor(position: point, hp: number) {
+		super(position);
+
+		this.hp = hp;
+	}
 	getPropPROT(): toClientPROT.allPropPROTTypes {
 		return {
 			type: toClientPROT.propType.hp,
@@ -72,8 +79,11 @@ export class propManager {
 		setInterval(() => {
 			if (this.propHps.length < config.prop.hp.maxNumber) {
 				let newPosition = generateEmptyPositionFunc(config.prop.hp.activeRadius);
-				if (newPosition)
-					this.addPropHp(newPosition);
+				if (newPosition) {
+					let hps = [config.prop.hp.smallHp, config.prop.hp.bigHp];
+					this.addPropHp(newPosition, hps[Math.floor(Math.random() * hps.length)]);
+				}
+
 				newPosition = generateEmptyPositionFunc(config.prop.hp.activeRadius);
 				if (newPosition)
 					this.addPropSilencer(newPosition);
@@ -114,8 +124,8 @@ export class propManager {
 			.concat(this.propSilencers.map(p => p.getPropPROT()));
 	}
 
-	addPropHp(position: point) {
-		let newPropHp = new propHp(position);
+	addPropHp(position: point, hp: number) {
+		let newPropHp = new propHp(position, hp);
 		this.propHps.push(newPropHp);
 		this._newPropsCache.push(newPropHp);
 	}

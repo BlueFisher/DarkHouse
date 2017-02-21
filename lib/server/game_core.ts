@@ -274,30 +274,39 @@ export class gameCore extends events.EventEmitter {
 				if (cache.weapon instanceof gun) {
 					let gun = cache.weapon;
 
-					for (let player of this._playerManager.players) {
-						let distance = utils.getTwoPointsDistance(minAttackPosition, player.position) - config.player.radius;
-						if (distance > gun.damageRanges[gun.damageRanges.length - 1].radius) {
-							continue;
+					if (gun.damageRanges[0].radius == 0) {
+						if (firstAttackedPlayer) {
+							attackedPlayerDamages.push({
+								player: firstAttackedPlayer,
+								damage: gun.damageRanges[0].damage
+							});
 						}
-						if (this._barricadeManager.didPlayerBlocked(minAttackPosition, player)) {
-							continue;
-						}
+					} else {
+						for (let player of this._playerManager.players) {
+							let distance = utils.getTwoPointsDistance(minAttackPosition, player.position) - config.player.radius;
+							if (distance > gun.damageRanges[gun.damageRanges.length - 1].radius) {
+								continue;
+							}
+							if (this._barricadeManager.didPlayerBlocked(minAttackPosition, player)) {
+								continue;
+							}
 
-						for (let damageRange of gun.damageRanges) {
-							if (distance <= damageRange.radius) {
-								attackedPlayerDamages.push({
-									player: player,
-									damage: damageRange.damage
-								});
-								break;
+							for (let damageRange of gun.damageRanges) {
+								if (damageRange.radius != 0 && distance <= damageRange.radius) {
+									attackedPlayerDamages.push({
+										player: player,
+										damage: damageRange.damage
+									});
+									break;
+								}
 							}
 						}
 					}
-				} else {
+				} else if (cache.weapon instanceof melee) {
 					if (firstAttackedPlayer) {
 						attackedPlayerDamages.push({
 							player: firstAttackedPlayer,
-							damage: 1
+							damage: cache.weapon.damage
 						});
 					}
 				}
@@ -340,6 +349,20 @@ export class gameCore extends events.EventEmitter {
 	private _generateEmptyPosition(radius: number) {
 		let newPosition: point | undefined;
 
+		let curRectangles = this._barricadeManager.barricades.map(p => {
+			let res: [point, point] = [p.vertex1, p.vertex2];
+			return res;
+		});
+		curRectangles = curRectangles.concat(this._playerManager.players.map(p => {
+			let res: [point, point] = [
+				new point(p.position.x - config.player.radius,
+					p.position.y - config.player.radius),
+				new point(p.position.x + config.player.radius,
+					p.position.y + config.player.radius)
+			];
+			return res;
+		}));
+
 		let emptyAreas = utils.cutRectangle([this._edge.vertex1, this._edge.vertex2],
 			this._barricadeManager.barricades.map(p => {
 				let res: [point, point] = [p.vertex1, p.vertex2];
@@ -348,7 +371,7 @@ export class gameCore extends events.EventEmitter {
 		);
 
 		emptyAreas = emptyAreas.filter(p => {
-			return p[1].x - p[0].x >= radius && p[1].y - p[0].y >= radius;
+			return p[1].x - p[0].x >= 2 * radius && p[1].y - p[0].y >= 2 * radius;
 		});
 
 		if (emptyAreas.length == 0) {
@@ -357,7 +380,10 @@ export class gameCore extends events.EventEmitter {
 
 		let tmpArea = emptyAreas[Math.floor(Math.random() * emptyAreas.length)];
 
-		return new point((tmpArea[0].x + tmpArea[1].x) / 2, (tmpArea[0].y + tmpArea[1].y) / 2);
+		let x = Math.random() * (tmpArea[1].x - tmpArea[0].x - 2 * radius) + tmpArea[0].x + radius,
+			y = Math.random() * (tmpArea[1].y - tmpArea[0].y - 2 * radius) + tmpArea[0].y + radius;
+
+		return new point(x, y);
 	}
 
 
@@ -385,9 +411,9 @@ export class gameCore extends events.EventEmitter {
 					let newPlayer = this._playerManager.addNewPlayer(name.slice(0, 20), newPoisition);
 					resolve(newPlayer.id);
 				} else {
-					setTimeout(() => {
+					setImmediate(() => {
 						timer();
-					}, 1000);
+					});
 				}
 			}
 			timer();
