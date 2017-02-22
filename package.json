@@ -4,8 +4,7 @@
   "description": "a multiplayer thriller game",
   "main": "index.js",
   "scripts": {
-    "build": "node build",
-    "build-w": "node build -w"
+    "build": "node build"
   },
   "author": "Fisher",
   "license": "MIT",
