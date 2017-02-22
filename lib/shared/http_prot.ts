@@ -18,8 +18,6 @@ export class accountRequest {
 	password: string;
 }
 export class accountResponse {
-	user: {
-		_id?: string,
-		email: string
-	}
+	_id?: string;
+	email: string;
 }

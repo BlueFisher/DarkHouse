@@ -34,10 +34,8 @@
 			<div class="modal-content">
 				<div class="modal-body">
 					<h3 class="text-center title">Dark House</h3>
-					<p class="text-center title">
-						<% if (user) { %>
-							<%- user.email %>
-						<% } %>
+					<p class="text-center title" v-if="common.user">
+						{{common.user.email}}
 					</p>
 					<form v-on:submit.prevent="startGame()">
 						<div class="list-group">
@@ -52,8 +50,8 @@
 								<input v-model="common.name" maxlength="20" class="form-control" type="text">
 								<span class="input-group-btn">
 								<button type="submit" class="btn btn-default">开始新游戏</button>
-								<!--<button type="button" class="btn btn-success" 
-										v-on:click="showAccount = !showAccount">登录 / 注册</button>-->
+								<button type="button" class="btn btn-success" 
+										v-on:click="showAccount = !showAccount">登录 / 注册</button>
 							</span>
 							</div>
 						</div>
@@ -84,10 +82,8 @@
 			<div class="modal-content">
 				<div class="modal-body">
 					<h3 class="text-center title">游戏结束</h3>
-					<p class="text-center title">
-						<% if (user) { %>
-							<%- user.email %>
-						<% } %>
+					<p class="text-center title" v-if="common.user">
+						{{common.user.email}}
 					</p>
 					<p>一共射击：{{records.attackTimes}} 次</p>
 					<p>击中：{{records.attackInAimTimes}} 次</p>

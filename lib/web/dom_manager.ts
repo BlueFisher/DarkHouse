@@ -24,6 +24,36 @@ export class domManager {
 				startGame: () => {
 					$('#modal-gameinit').modal('hide');
 					gameOn();
+				},
+				signin: () => {
+					let protocol: httpPROT.accountRequest = {
+						email: vueData.gameInitModal.email,
+						password: vueData.gameInitModal.password
+					};
+					$.ajax('/signin', {
+						method: 'POST',
+						contentType: "application/json",
+						data: JSON.stringify(protocol)
+					}).then((data: httpPROT.accountResponse) => {
+						vueData.indexCommon.user = data;
+					}, ((xhr) => {
+						toastr.error((xhr.responseJSON as httpPROT.errorResponse).message);
+					}));
+				},
+				signup: () => {
+					let protocol: httpPROT.accountRequest = {
+						email: vueData.gameInitModal.email,
+						password: vueData.gameInitModal.password
+					};
+					$.ajax('/signup', {
+						method: 'POST',
+						contentType: "application/json",
+						data: JSON.stringify(protocol)
+					}).then((data: httpPROT.accountResponse) => {
+						vueData.indexCommon.user = data;
+					}, ((xhr) => {
+						toastr.error((xhr.responseJSON as httpPROT.errorResponse).message);
+					}));
 				}
 			}
 		});
@@ -52,6 +82,19 @@ export class domManager {
 			el: '#ping',
 			data: vueData.index
 		});
+
+		this._auth();
+	}
+
+	private _auth() {
+		$.ajax('/isauth', {
+			method: 'POST',
+			contentType: "application/json"
+		}).then((data: httpPROT.accountResponse) => {
+			vueData.indexCommon.user = data;
+		}, ((xhr) => {
+			console.log('111')
+		}));
 	}
 
 	private _initializeCanvas() {
@@ -67,7 +110,7 @@ export class domManager {
 		}
 	}
 
-	gameStarted(){
+	gameStarted() {
 		$('#modal-waiting').modal('hide');
 	}
 

@@ -1,6 +1,6 @@
-import * as config from '../shared/game_config';
-import * as utils from '../shared/utils';
-import * as toClientPROT from '../shared/ws_prot_to_client';
+import * as config from '../../shared/game_config';
+import * as utils from '../../shared/utils';
+import * as toClientPROT from '../../shared/ws_prot_to_client';
 
 import { player } from './player';
 import { weapon, gun, melee } from './weapon';

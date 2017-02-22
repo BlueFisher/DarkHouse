@@ -7,6 +7,7 @@ import * as httpPROT from '../shared/http_prot';
 
 import { main as mainLogger, useExpressLogger } from './log';
 import { sessionParser } from './sessionParser';
+import * as dbFuncs from './db_funcs';
 
 export type webSocketServerMap = Map<cp.ChildProcess, { ip: string, port: number }>;
 
@@ -54,6 +55,55 @@ export class httpServer {
 				protocol.push(p);
 			});
 			res.json(protocol);
+		});
+
+		app.post('/isauth', async (req, res) => {
+			let userId = (req.session as Express.Session)['userId'];
+			if (userId) {
+				let user = await dbFuncs.findUser(userId);
+				if (user) {
+					delete user.passwordHash;
+					let protocol: httpPROT.accountResponse = user;
+					res.json(protocol);
+				}
+			}
+
+			res.status(403);
+			res.end();
+		});
+
+		app.post('/signup', async (req, res) => {
+			let body = req.body as httpPROT.accountRequest;
+			let user = await dbFuncs.signup(body.email, body.password);
+			if (user) {
+				delete user.passwordHash;
+				(req.session as Express.Session)['userId'] = user._id;
+				let protocol: httpPROT.accountResponse = user;
+				res.json(protocol);
+			} else {
+				res.status(403);
+				let protocol: httpPROT.errorResponse = {
+					message: '无法注册'
+				};
+				res.json(protocol);
+			}
+		});
+
+		app.post('/signin', async (req, res) => {
+			let body = req.body as httpPROT.accountRequest;
+			let user = await dbFuncs.signin(body.email, body.password);
+			if (user) {
+				delete user.passwordHash;
+				(req.session as Express.Session)['userId'] = user._id;
+				let protocol: httpPROT.accountResponse = user;
+				res.json(protocol);
+			} else {
+				res.status(403);
+				let protocol: httpPROT.errorResponse = {
+					message: '登录失败'
+				};
+				res.json(protocol);
+			}
 		});
 	}
 }

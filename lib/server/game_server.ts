@@ -42,30 +42,29 @@ export class gameServer {
 
 		sessionParser(req, <express.Response>{}, () => {
 			// 用户登录的用户id
-			let userId: string = (req.session as Express.Session)['userId'];
+			let userId: string | undefined = (req.session as Express.Session)['userId'];
 			let sessionId: string = req.sessionID as string;
 
-			if (userId) {
-				// TODO 等有用户登录注册功能加入
+			let pair = this._socketPlayerColl.find(p => p.sessionId == sessionId);
+			if (pair) {
+				gameLogger.info(`anonymouse user reconnected - ${req.connection.remoteAddress}`);
+				// this._closeSocket(pair.socket);
+				// pair.userId = userId;
+				// pair.socket = socket;
+				// if (pair.playerId)
+				// 	this._gameCore.removePlayer(pair.playerId);
+				this._socketPlayerColl.push({
+					userId: userId,
+					sessionId: sessionId,
+					socket: socket
+				});
 			} else {
-				let pair = this._socketPlayerColl.find(p => p.sessionId == sessionId);
-				if (pair) {
-					gameLogger.info(`anonymouse user reconnected - ${req.connection.remoteAddress}`);
-					// this._closeSocket(pair.socket);
-					// pair.socket = socket;
-					// if (pair.playerId)
-					// 	this._gameCore.removePlayer(pair.playerId);
-					this._socketPlayerColl.push({
-						sessionId: sessionId,
-						socket: socket
-					});
-				} else {
-					gameLogger.info(`anonymouse user connected - ${req.connection.remoteAddress}`);
-					this._socketPlayerColl.push({
-						sessionId: sessionId,
-						socket: socket
-					});
-				}
+				gameLogger.info(`anonymouse user connected - ${req.connection.remoteAddress}`);
+				this._socketPlayerColl.push({
+					userId: userId,
+					sessionId: sessionId,
+					socket: socket
+				});
 			}
 		});
 

@@ -1,14 +1,15 @@
-import * as httpPROTs from '../shared/http_prot';
+import * as httpPROT from '../shared/http_prot';
 import * as toClientPROT from '../shared/ws_prot_to_client';
 
-
-let activeWebSocket: httpPROTs.webSocketResponse | undefined;
-let webSockets: httpPROTs.webSocketResponse[] = [];
+let activeWebSocket: httpPROT.webSocketResponse | undefined;
+let webSockets: httpPROT.webSocketResponse[] = [];
+let indexUser: httpPROT.accountResponse | undefined;
 
 export let indexCommon = {
 	name: 'Default Player',
 	activeWebSocket: activeWebSocket,
 	webSockets: webSockets,
+	user: indexUser
 }
 
 let rankList: {
@@ -24,7 +25,7 @@ export let gameInitModal = {
 	common: indexCommon,
 	email: '',
 	password: '',
-	showAccount: false,
+	showAccount: false
 }
 
 let records: toClientPROT.records = {

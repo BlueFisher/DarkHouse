@@ -6,10 +6,10 @@ import * as utils from '../shared/utils';
 import * as fromClientPROT from '../shared/ws_prot_from_client';
 import * as toClientPROT from '../shared/ws_prot_to_client';
 
-import { player, playerManager } from './player';
-import { edge, barricade, barricadeManager } from './barricade';
-import { propManager, propHp, propWeapon } from './prop';
-import { weapon, gun, melee } from './weapon';
+import { player, playerManager } from './resources/player';
+import { edge, barricade, barricadeManager } from './resources/barricade';
+import { propManager, propHp, propWeapon } from './resources/prop';
+import { weapon, gun, melee } from './resources/weapon';
 
 const point = utils.point;
 type point = utils.point;
