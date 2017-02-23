@@ -111,7 +111,7 @@ export class propManager {
 		}, config.prop.weapon.appearInterval);
 	}
 
-	getAndClearPropPROTs() {
+	getAndClearNewPropPROTs() {
 		let res = {
 			newPropsCache: this._newPropsCache.map(p => p.getPropPROT()),
 			removedPropIdsCache: this._removedPropIdsCache

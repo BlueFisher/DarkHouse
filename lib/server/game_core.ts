@@ -8,6 +8,7 @@ import * as toClientPROT from '../shared/ws_prot_to_client';
 
 import { player, playerManager } from './resources/player';
 import { edge, barricade, barricadeManager } from './resources/barricade';
+import { visableArea, visableAreaManager } from './resources/visable_area';
 import { propManager, propHp, propWeapon } from './resources/prop';
 import { weapon, gun, melee } from './resources/weapon';
 
@@ -24,6 +25,7 @@ export class gameCore extends events.EventEmitter {
 
 	private _playerManager: playerManager;
 	private _barricadeManager: barricadeManager;
+	private _visableAreaManager: visableAreaManager;
 	private _propManager: propManager;
 
 	private _attackCacheId = 0;
@@ -51,6 +53,7 @@ export class gameCore extends events.EventEmitter {
 
 		this._edge = new edge(new point(edgeX, edgeY), new point(edgeX + width, edgeY + height));
 		this._barricadeManager = new barricadeManager();
+		this._visableAreaManager = new visableAreaManager();
 
 		this._initializeMainLoop();
 	}
@@ -146,12 +149,13 @@ export class gameCore extends events.EventEmitter {
 		setInterval(() => {
 			let players = this._playerManager.players;
 			let sendingMap = new Map<number, toClientPROT.mainPROT>();
-			let newPlayersBasicPROTs = this._playerManager.generateNewPlayersBasicPROTs();
+			let newPlayersBasicPROTs = this._playerManager.getNewPlayersBasicPROTs();
 			let [attackPROTs, duringAttackPROTs] = generateAttackPROTs();
 			let runningPROTs = generateRunningPROTs(players);
-			let propPROTs = this._propManager.getAndClearPropPROTs();
+			let propPROTs = this._propManager.getAndClearNewPropPROTs();
 			let playersInSightMap = this._playerManager.generatePlayersInSightMap(players,
 				this._barricadeManager);
+			let visableAreaPROTs = this._visableAreaManager.getAllVisableAreaPROTs(this._playerManager.players);
 
 
 			for (let player of players) {
@@ -160,12 +164,13 @@ export class gameCore extends events.EventEmitter {
 
 				let mainPROT = new toClientPROT.mainPROT();
 
+				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
 				mainPROT.playerIdsInSight = playersInSight.map(p => p.id);
+				mainPROT.visableAreas = visableAreaPROTs;
 				mainPROT.attackPROTs = attackPROTs;
 				mainPROT.duringAttackPROTs = duringAttackPROTs;
 				mainPROT.runningPROTs = runningPROTs;
-				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
-
+				
 				mainPROT.newPropPROTs = propPROTs.newPropsCache;
 				mainPROT.removedPropIds = propPROTs.removedPropIdsCache;
 
@@ -388,9 +393,10 @@ export class gameCore extends events.EventEmitter {
 	/**获取玩家的初始化协议 */
 	getInitPROT(currPlayerId: number) {
 		return new toClientPROT.initialize(currPlayerId,
-			this._playerManager.players.map(p => p.getPlayerBasicPROT()),
+			this._playerManager.getAllPlayerPROTs(),
 			this._edge.getEdgePROT(),
-			this._barricadeManager.barricades.map(p => p.getBarricadePROT()),
+			this._barricadeManager.getAllBarricadePROTs(),
+			this._visableAreaManager.getAllVisableAreaBasicPROTs(),
 			this._propManager.getAllPropPROTs()
 		);
 	}

@@ -39,7 +39,7 @@ export class render {
 
 		this._resourceManager.drawProp(ctx);
 
-		this._resourceManager.drawVisableArea(ctx, currPlayer);
+		this._resourceManager.drawPlayerVisableArea(ctx, currPlayer);
 
 		this._resourceManager.drawPlayer(ctx, [this._resourceManager.currentPlayerId], '#333', '#f00');
 
@@ -51,6 +51,8 @@ export class render {
 		this._resourceManager.drawRunning(ctx);
 
 		this._resourceManager.explodes.forEach(p => p.draw(ctx, this._resourceManager));
+
+		this._resourceManager.drawVisableAreas(ctx);
 
 		ctx.restore();
 

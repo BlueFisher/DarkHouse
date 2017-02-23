@@ -206,6 +206,10 @@ export class barricadeManager {
 		});
 	}
 
+	getAllBarricadePROTs() {
+		return this.barricades.map(p => p.getBarricadePROT());
+	}
+
 	didTwoLinesCollided(a: point, b: point, c: point, d: point) {
 		let isCollided = false;
 		for (let barricade of this.barricades) {

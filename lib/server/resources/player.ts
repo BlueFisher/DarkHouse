@@ -171,6 +171,10 @@ export class playerManager {
 	readonly players: player[] = [];
 	private _newPlayersCache: player[] = [];
 
+	getAllPlayerPROTs() {
+		return this.players.map(p => p.getPlayerBasicPROT());
+	}
+	
 	findPlayerById(id: number) {
 		return this.players.find(p => p.id == id);
 	}
@@ -223,7 +227,7 @@ export class playerManager {
 	}
 
 	/**生成新加入玩家的基础协议 */
-	generateNewPlayersBasicPROTs() {
+	getNewPlayersBasicPROTs() {
 		let newPlayersBasicPROTs = this._newPlayersCache.map(p => p.getPlayerBasicPROT());
 		this._newPlayersCache = [];
 		return newPlayersBasicPROTs;

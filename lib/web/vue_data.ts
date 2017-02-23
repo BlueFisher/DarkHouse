@@ -18,6 +18,7 @@ let rankList: {
 }[] = [];
 export let index = {
 	ping: 0,
+	dataLengthPerSec: 0,
 	rankList: rankList
 }
 

@@ -7,6 +7,7 @@ export class resourcesManager {
 	playerBasicPROTs: toClientPROT.playerBasicPROT[] = [];
 	edge: toClientPROT.edgePROT;
 	barricades: toClientPROT.barricadePROT[] = [];
+	visableAreaBasicPROTs: toClientPROT.visableAreaBasicPROT[] = [];
 	props: toClientPROT.allPropPROTTypes[] = [];
 
 	shooingInAimEffect: attackInAimEffect;
@@ -22,6 +23,7 @@ export class resourcesManager {
 		this.playerBasicPROTs = protocol.players;
 		this.edge = protocol.edge;
 		this.barricades = protocol.barricades;
+		this.visableAreaBasicPROTs = protocol.visableAreas;
 		this.props = protocol.props;
 	}
 
@@ -85,7 +87,33 @@ export class resourcesManager {
 		});
 	}
 
-	drawVisableArea(ctx: CanvasRenderingContext2D, currPlayer: toClientPROT.playerPROT) {
+	drawVisableAreas(ctx: CanvasRenderingContext2D) {
+		this._draw(ctx, () => {
+			this.mainPROTCache.visableAreas.forEach(area => {
+				let areaB = this.visableAreaBasicPROTs.find(p => p.id == area.id);
+				if (areaB) {
+					ctx.save();
+
+					// 绘制可见区域中所有玩家
+					ctx.beginPath();
+
+					ctx.arc(areaB.position.x, areaB.position.y, areaB.radius, 0, Math.PI * 2);
+					ctx.clip();
+
+					this.drawPlayer(ctx, area.playerIds, '#fff', '#f00');
+					ctx.restore();
+
+					ctx.beginPath();
+					ctx.fillStyle = 'rgba(0,255,255,0.25)';
+
+					ctx.arc(areaB.position.x, areaB.position.y, areaB.radius, 0, Math.PI * 2);
+					ctx.fill();
+				}
+			});
+		});
+	}
+
+	drawPlayerVisableArea(ctx: CanvasRenderingContext2D, currPlayer: toClientPROT.playerPROT) {
 		this._draw(ctx, () => {
 			ctx.save();
 

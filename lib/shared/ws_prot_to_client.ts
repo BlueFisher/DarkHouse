@@ -18,9 +18,20 @@ export interface edgePROT {
 	point1: point,
 	point2: point
 }
+
 export interface barricadePROT {
 	point1: point,
 	point2: point
+}
+
+export interface visableAreaBasicPROT {
+	id: number,
+	position: point,
+	radius: number
+}
+export interface visableAreaPROT {
+	id: number,
+	playerIds: number[]
 }
 
 export type allPropPROTTypes = propHpPROT | propWeaponPROT | propSilencerPROT;
@@ -98,6 +109,7 @@ export class initialize extends baseProtocol {
 	constructor(currPlayerId: number, players: playerBasicPROT[],
 		edge: edgePROT,
 		barricades: barricadePROT[],
+		visableAreas: visableAreaBasicPROT[],
 		allPropPROTTypes: allPropPROTTypes[]) {
 		super(type.init);
 
@@ -105,6 +117,7 @@ export class initialize extends baseProtocol {
 		this.players = players;
 		this.edge = edge;
 		this.barricades = barricades;
+		this.visableAreas = visableAreas;
 		this.props = allPropPROTTypes;
 
 		edge.point1 = point.getFixedPoint(edge.point1);
@@ -122,6 +135,7 @@ export class initialize extends baseProtocol {
 	players: playerBasicPROT[];
 	edge: edgePROT;
 	barricades: barricadePROT[];
+	visableAreas: visableAreaBasicPROT[];
 	props: allPropPROTTypes[];
 }
 
@@ -131,8 +145,9 @@ export class mainPROT extends baseProtocol {
 	}
 
 	formatPlayerPROT(currPlayerId: number, format: (playerId: number) => playerPROT | null) {
-		let arr = [currPlayerId];
+		let arr: number[] = [currPlayerId];
 		arr = arr.concat(this.playerIdsInSight);
+
 		this.attackPROTs.forEach(p => {
 			arr = arr.concat(p.playerIdsInSight);
 		});
@@ -141,6 +156,9 @@ export class mainPROT extends baseProtocol {
 		});
 		this.runningPROTs.forEach(p => {
 			arr = arr.concat(p.playerIdsInSight);
+		});
+		this.visableAreas.forEach(p => {
+			arr = arr.concat(p.playerIds);
 		});
 
 		let json = {};
@@ -179,14 +197,16 @@ export class mainPROT extends baseProtocol {
 
 	playerIdsInSight: number[];
 
+	visableAreas: visableAreaPROT[];
+
 	attackPROTs: attackPROT[] = [];
 	duringAttackPROTs: duringAttackPROT[] = [];
 	runningPROTs: runningPROT[] = [];
 
-	rankList: rankPROT[] = [];
-
 	newPropPROTs: allPropPROTTypes[] = [];
 	removedPropIds: number[] = [];
+
+	rankList: rankPROT[] = [];
 }
 
 export interface records {
