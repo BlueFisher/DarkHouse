@@ -29,7 +29,8 @@ export class httpServer {
 		});
 	}
 	private _configExpress(app: express.Express) {
-		app.set('view engine', 'ejs');
+		app.engine('html', require('ejs').renderFile);
+		app.set('view engine', 'html');
 
 		app.use(bodyParser.json({
 			limit: '1mb'
@@ -40,6 +41,7 @@ export class httpServer {
 		app.use(sessionParser);
 
 		app.use('/public', express.static('public'));
+		app.use('/lib', express.static('node_modules'));
 
 		// 不记录静态资源
 		app.use(useExpressLogger);
