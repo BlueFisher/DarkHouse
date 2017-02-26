@@ -9,7 +9,7 @@ import * as toClientPROT from '../shared/ws_prot_to_client';
 import { player, playerManager } from './resources/player';
 import { edge, barricade, barricadeManager } from './resources/barricade';
 import { visableArea, visableAreaManager } from './resources/visable_area';
-import { propManager, propHp, propWeapon } from './resources/prop';
+import { propManager } from './resources/prop';
 import { weapon, gun, melee } from './resources/weapon';
 
 const point = utils.point;
@@ -149,14 +149,15 @@ export class gameCore extends events.EventEmitter {
 		setInterval(() => {
 			let players = this._playerManager.players;
 			let sendingMap = new Map<number, toClientPROT.mainPROT>();
-			let newPlayersBasicPROTs = this._playerManager.getNewPlayersBasicPROTs();
+			let newPlayersBasicPROTs = this._playerManager.getAndClearNewPlayersBasicPROTs();
 			let [attackPROTs, duringAttackPROTs] = generateAttackPROTs();
 			let runningPROTs = generateRunningPROTs(players);
-			let propPROTs = this._propManager.getAndClearNewPropPROTs();
+			let propPROTs = this._propManager.getAndClearNewAndRemovedPropPROTs();
 			let playersInSightMap = this._playerManager.generatePlayersInSightMap(players,
 				this._barricadeManager);
 			let visableAreaPROTs = this._visableAreaManager.getAllVisableAreaPROTs(this._playerManager.players);
-
+			let playerEqptPROTs = this._playerManager.getAndClearNewAndRemovedEqptPROTs();
+			let rankListPROT = this._playerManager.getRankListPROT();
 
 			for (let player of players) {
 				let playersInSight = playersInSightMap.get(player);
@@ -170,11 +171,13 @@ export class gameCore extends events.EventEmitter {
 				mainPROT.attackPROTs = attackPROTs;
 				mainPROT.duringAttackPROTs = duringAttackPROTs;
 				mainPROT.runningPROTs = runningPROTs;
-				
+
 				mainPROT.newPropPROTs = propPROTs.newPropsCache;
 				mainPROT.removedPropIds = propPROTs.removedPropIdsCache;
 
-				mainPROT.rankList = this._playerManager.getRankList();
+				mainPROT.playerEqptPROTs = playerEqptPROTs;
+
+				mainPROT.rankList = rankListPROT;
 
 				mainPROT.formatPlayerPROT(player.id, (playerId) => {
 					let player = this._playerManager.findPlayerById(playerId);

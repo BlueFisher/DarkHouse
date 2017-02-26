@@ -8,7 +8,7 @@ export class resourcesManager {
 	edge: toClientPROT.edgePROT;
 	barricades: toClientPROT.barricadePROT[] = [];
 	visableAreaBasicPROTs: toClientPROT.visableAreaBasicPROT[] = [];
-	props: toClientPROT.allPropPROTTypes[] = [];
+	props: toClientPROT.prop.allPropPROTTypes[] = [];
 
 	shooingInAimEffect: attackInAimEffect;
 	attackedEffects: attackedEffect[] = [];
@@ -47,6 +47,20 @@ export class resourcesManager {
 				this.props.splice(i, 1);
 			}
 		});
+
+		protocol.playerEqptPROTs.forEach(p => {
+			let player = this.playerBasicPROTs.find(pp => pp.id == p.playerId);
+			if (player) {
+				for (let id of p.removedEqptIds) {
+					let i = player.eqpts.findIndex(pp => pp.id == id);
+					if (i != -1) {
+						player.eqpts.splice(i, 1);
+					}
+				}
+				player.eqpts = player.eqpts.concat(p.newEqptPROTs);
+
+			}
+		})
 	}
 
 	getPlayerPROT(playerId: number) {
@@ -120,7 +134,16 @@ export class resourcesManager {
 			// 绘制可见区域中所有玩家
 			ctx.beginPath();
 
-			ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius - 1, 0, Math.PI * 2);
+			let sightRadius = config.player.sightRadius;
+			let currPlayerB = this.playerBasicPROTs.find(p => p.id == currPlayer.id);
+			if (currPlayerB) {
+				let eqptVisableSight = currPlayerB.eqpts.find(p => p.type == toClientPROT.eqpt.type.visableSight)
+				if (eqptVisableSight) {
+					sightRadius = eqptVisableSight.radius;
+				}
+			}
+
+			ctx.arc(currPlayer.position.x, currPlayer.position.y, sightRadius - 1, 0, Math.PI * 2);
 			ctx.clip();
 
 			this.drawPlayer(ctx, this.mainPROTCache.playerIdsInSight, '#fff', '#f00');
@@ -138,7 +161,7 @@ export class resourcesManager {
 			ctx.beginPath();
 			ctx.fillStyle = 'rgba(255,255,255,0.25)';
 
-			ctx.arc(currPlayer.position.x, currPlayer.position.y, config.player.sightRadius, 0, Math.PI * 2);
+			ctx.arc(currPlayer.position.x, currPlayer.position.y, sightRadius, 0, Math.PI * 2);
 			ctx.fill();
 		});
 	}
@@ -150,8 +173,8 @@ export class resourcesManager {
 			ctx.font = '10px 微软雅黑';
 
 			for (let prop of this.props) {
-				if (prop.type == toClientPROT.propType.hp) {
-					let propHp = prop as toClientPROT.propHpPROT;
+				if (prop.type == toClientPROT.prop.type.hp) {
+					let propHp = prop as toClientPROT.prop.hpPROT;
 
 					ctx.fillStyle = '#0f0';
 					ctx.beginPath();
@@ -159,8 +182,8 @@ export class resourcesManager {
 					ctx.fill();
 					ctx.fillStyle = '#fff';
 					ctx.fillText(`+${propHp.hp}`, propHp.position.x, propHp.position.y);
-				} else if (prop.type == toClientPROT.propType.weapon) {
-					let propWeapon = prop as toClientPROT.propWeaponPROT;
+				} else if (prop.type == toClientPROT.prop.type.weapon) {
+					let propWeapon = prop as toClientPROT.prop.weaponPROT;
 
 					ctx.fillStyle = '#f00';
 					ctx.beginPath();
@@ -187,8 +210,8 @@ export class resourcesManager {
 					}
 					ctx.fillStyle = '#fff';
 					ctx.fillText(weaponName, propWeapon.position.x, propWeapon.position.y);
-				} else if (prop.type == toClientPROT.propType.silencer) {
-					let propSilencer = prop as toClientPROT.propSilencerPROT;
+				} else if (prop.type == toClientPROT.prop.type.silencer) {
+					let propSilencer = prop as toClientPROT.prop.silencerPROT;
 
 					ctx.fillStyle = '#00f';
 					ctx.beginPath();
@@ -196,6 +219,15 @@ export class resourcesManager {
 					ctx.fill();
 					ctx.fillStyle = '#fff';
 					ctx.fillText('消音器', propSilencer.position.x, propSilencer.position.y);
+				} else if (prop.type == toClientPROT.prop.type.visableSight) {
+					let propVisableSight = prop as toClientPROT.prop.visableSightPROT;
+
+					ctx.fillStyle = '#0ff';
+					ctx.beginPath();
+					ctx.arc(propVisableSight.position.x, propVisableSight.position.y, config.prop.radius, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.fillStyle = '#fff';
+					ctx.fillText('视野', propVisableSight.position.x, propVisableSight.position.y);
 				}
 			}
 		});

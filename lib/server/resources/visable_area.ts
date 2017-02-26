@@ -38,7 +38,9 @@ export class visableAreaManager {
 	readonly visableAreas: visableArea[] = [];
 
 	constructor() {
-		this.visableAreas.push(new visableArea(new point(50, 50), 100));
+		config.stage.visableArea.forEach(p => {
+			this.visableAreas.push(new visableArea(p.position, p.radius));
+		});
 	}
 
 	getAllVisableAreaBasicPROTs() {

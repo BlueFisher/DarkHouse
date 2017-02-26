@@ -4,6 +4,8 @@ import * as toClientPROT from '../../shared/ws_prot_to_client';
 
 import { gun, melee } from './weapon';
 import { edge, barricadeManager } from './barricade';
+import * as props from './prop';
+import * as eqpts from './equipment';
 
 const point = utils.point;
 type point = utils.point;
@@ -17,6 +19,7 @@ export class player {
 	private _hp = config.player.maxHp;
 	private _gun: gun;
 	private _melee: melee;
+	private _sightRadius: number = config.player.sightRadius;
 
 	position: point;
 	records: toClientPROT.records = {
@@ -27,6 +30,7 @@ export class player {
 	};
 	canMove = true;
 	isRunning = false;
+	readonly eqpts: eqpts.equipment[] = [];
 
 	constructor(name: string, position: point) {
 		this.name = name;
@@ -47,6 +51,12 @@ export class player {
 	}
 	getDirectionAngle() {
 		return this._angle;
+	}
+	setSightRadius(radius: number) {
+		this._sightRadius = radius;
+	}
+	getSightRadius() {
+		return this._sightRadius;
 	}
 
 	setHp(hp: number) {
@@ -87,7 +97,8 @@ export class player {
 	getPlayerBasicPROT(): toClientPROT.playerBasicPROT {
 		return {
 			id: this.id,
-			name: this.name
+			name: this.name,
+			eqpts: this.eqpts.map(p => p.getEqptPROT())
 		}
 	}
 
@@ -125,6 +136,18 @@ export class player {
 			}
 			return minPoint;
 		}
+	}
+
+	newEqptsCache: eqpts.equipment[] = [];
+	removedEqptsCache: eqpts.equipment[] = [];
+	getAndClearNewAndRemovedEqptPROTs() {
+		let res = {
+			newEqptPROTs: this.newEqptsCache.map(p => p.getEqptPROT()),
+			removedEqptIds: this.removedEqptsCache.map(p => p.id)
+		};
+		this.newEqptsCache = [];
+		this.removedEqptsCache = [];
+		return res;
 	}
 
 	// 是否可以继续射击
@@ -174,7 +197,7 @@ export class playerManager {
 	getAllPlayerPROTs() {
 		return this.players.map(p => p.getPlayerBasicPROT());
 	}
-	
+
 	findPlayerById(id: number) {
 		return this.players.find(p => p.id == id);
 	}
@@ -201,21 +224,13 @@ export class playerManager {
 		}
 	}
 
-	getPlayersInPlayerSight(player: player, radius: number, withinPlayers: player[]) {
-		return withinPlayers.filter(p => {
-			if (p == player)
-				return false;
-
-			return utils.didTwoCirclesCollied(p.position, radius, player.position, config.player.radius);
-		});
-	}
 	getPlayersInRadius(position: point, radius: number) {
 		return this.players.filter(p => {
 			return utils.didTwoCirclesCollied(p.position, radius, position, config.player.radius);
 		});
 	}
 
-	getRankList(): toClientPROT.rankPROT[] {
+	getRankListPROT(): toClientPROT.rankPROT[] {
 		return this.players.slice(0).sort((a, b) => {
 			return a.records.attackInAimTimes > b.records.attackInAimTimes ? -1 : 1;
 		}).map(p => {
@@ -227,7 +242,7 @@ export class playerManager {
 	}
 
 	/**生成新加入玩家的基础协议 */
-	getNewPlayersBasicPROTs() {
+	getAndClearNewPlayersBasicPROTs() {
 		let newPlayersBasicPROTs = this._newPlayersCache.map(p => p.getPlayerBasicPROT());
 		this._newPlayersCache = [];
 		return newPlayersBasicPROTs;
@@ -235,37 +250,48 @@ export class playerManager {
 
 	/**生成每个玩家视野中的玩家 */
 	generatePlayersInSightMap(players: player[], barricadeManager: barricadeManager) {
-		let _addInMap = (map: Map<player, player[]>, key: player, playerOrPlayers: player | player[]) => {
-			let v = map.get(key);
-			if (!v) {
-				v = [];
-				map.set(key, v);
-			}
-			if (playerOrPlayers instanceof player) {
-				v.push(playerOrPlayers);
-			} else {
-				map.set(key, v.concat(playerOrPlayers));
-			}
-		}
-
 		let playersInSightMap: Map<player, player[]> = new Map();
 
-		for (let i = 0; i < players.length; i++) {
+		for (let i = 0; i < players.length - 1; i++) {
 			let player = players[i];
 
-			let restPlayersInSight = this.getPlayersInPlayerSight(player,
-				config.player.sightRadius,
-				players.slice(i + 1));
+			for (let j = i + 1; j < players.length; j++) {
+				let testPlayer = players[j];
 
-			barricadeManager.removeBlockedPlayers(player.position, restPlayersInSight);
+				let distance = utils.getTwoPointsDistance(player.position, testPlayer.position);
+				let isInPlayerSight = distance - config.player.radius <= player.getSightRadius(),
+					isInTestPlayerSight = distance - config.player.radius <= testPlayer.getSightRadius();
 
-			_addInMap(playersInSightMap, player, restPlayersInSight);
-			for (let playerInSight of restPlayersInSight) {
-				_addInMap(playersInSightMap, playerInSight, player);
+				if (isInPlayerSight || isInTestPlayerSight) {
+					if (!barricadeManager.didPlayerBlocked(player.position, testPlayer)) {
+						if (isInPlayerSight) {
+							utils.addInMap(playersInSightMap, player, testPlayer);
+						}
+						if (isInTestPlayerSight) {
+							utils.addInMap(playersInSightMap, testPlayer, player);
+						}
+					}
+				}
 			}
 		}
 
 		return playersInSightMap;
+	}
+
+	getAndClearNewAndRemovedEqptPROTs(): toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[] {
+		let res: toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[] = [];
+
+		this.players.forEach(p => {
+			let tmp = p.getAndClearNewAndRemovedEqptPROTs();
+			if (tmp.newEqptPROTs.length > 0 || tmp.removedEqptIds.length > 0)
+				res.push({
+					playerId: p.id,
+					newEqptPROTs: tmp.newEqptPROTs,
+					removedEqptIds: tmp.removedEqptIds
+				});
+		});
+
+		return res;
 	}
 
 	move(player: player, adjustNewPosition: (oldPosition: point, newPosition: point) => void) {

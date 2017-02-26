@@ -72,7 +72,7 @@ export class gameServer {
 			let protocol: fromClientPROT.baseProtocol = JSON.parse(message);
 			switch (protocol.type) {
 				case fromClientPROT.type.ping:
-					this._send(JSON.stringify(new toClientPROT.pongProtocol()), socket);
+					this._send(JSON.stringify(new toClientPROT.pong()), socket);
 					break;
 				case fromClientPROT.type.init:
 					this._onInitialize(protocol as fromClientPROT.initialize, socket);

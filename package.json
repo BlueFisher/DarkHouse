@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "cross-env NODE_ENV=production node ./build/build",
-	"build:watch":"cross-env NODE_ENV=develop node ./build/build"
+	"build:watch":"cross-env NODE_ENV=watch node ./build/build"
   },
   "author": "Fisher",
   "license": "MIT",

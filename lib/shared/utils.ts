@@ -162,7 +162,7 @@ export function cutRectangle(oriRect: [point, point], curRects: [point, point][]
 		res.forEach(t => {
 			tmp = tmp.concat(getCutRectangles(t, p));
 		});
-		res = tmp; 
+		res = tmp;
 		tmp = [];
 	});
 	return res;
@@ -206,4 +206,13 @@ function getCutRectangles(oriRect: [point, point], cutRect: [point, point]) {
 	}
 
 	return res;
+}
+
+export function addInMap<T>(map: Map<T, T[]>, key: T, value: T) {
+	let v = map.get(key);
+	if (!v) {
+		v = [];
+		map.set(key, v);
+	}
+	v.push(value);
 }

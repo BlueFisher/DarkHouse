@@ -20,14 +20,30 @@ export namespace prop {
 		export let smallHp = 2;
 		export let bigHp = 4;
 		export let activeRadius = 5; // 血包触发的半径
-		export let maxNumber = 5; // 血包存在最大数量
-		export let appearInterval = 10000; // 血包出现时间间隔
+		export let smallHpAppearInterval = 10000;
+		export let smallHpMaxNumber = 5;
+		export let bigHpAppearInterval = 20000;
+		export let bigHpMaxNumber = 3;
 	}
 
 	export namespace weapon {
 		export let activeRadius = 5;
 		export let maxNumber = 2;
 		export let appearInterval = 15000;
+	}
+
+	export namespace silencer {
+		export let activeRadius = 5;
+		export let maxNumber = 5;
+		export let appearInterval = 20000;
+	}
+
+	export namespace visableSight {
+		export let lastTime = 5000;
+		export let radius = 200;
+		export let activeRadius = 5;
+		export let maxNumber = 3;
+		export let appearInterval = 20000;
 	}
 }
 
@@ -91,7 +107,7 @@ export namespace weapon {
 				attackInterval: 1000,
 				attackSightRadius: 160,
 				attackSightRemainsTime: 60,
-				bullet: 5,
+				bullet: 7,
 				bulletFlyStep: 0.6 * serverConfig.mainInterval,
 				maxBullet: 10,
 				damageRanges: [
@@ -125,14 +141,22 @@ export namespace weapon {
 }
 
 export namespace stage {
-	export let width = 1000;
-	export let height = 500;
+	export let width = 2000 / 1.5;
+	export let height = 2000 / 1.5;
 
 	export let barricades = [
-		[new point(360, 50), new point(550, 90)],
-		[new point(310, 130), new point(610, 160)],
-		[new point(100, 160), new point(160, 410)],
-		[new point(790, 160), new point(850, 410)],
-		[new point(440, 220), new point(480, 450)],
+		[new point(150 / 1.5, 750 / 1.5), new point(500 / 1.5, 1000 / 1.5)],
+		[new point(1200 / 1.5, 750 / 1.5), new point(1600 / 1.5, 1000 / 1.5)],
+		[new point(600 / 1.5, 400 / 1.5), new point(1100 / 1.5, 500 / 1.5)],
+		[new point(1200 / 1.5, 150 / 1.5), new point(1250 / 1.5, 50 / 1.5)],
+		[new point(600 / 1.5, 1300 / 1.5), new point(1200 / 1.5, 1400 / 1.5)],
+		[new point(800 / 1.5, 1400 / 1.5), new point(900 / 1.5, 1800 / 1.5)],
+	];
+
+	export let visableArea = [
+		{
+			position: new point(1000 / 1.5, 1000 / 1.5),
+			radius: 200 / 1.5
+		}
 	]
 }

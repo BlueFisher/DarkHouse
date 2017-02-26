@@ -4,6 +4,7 @@ import * as config from '../shared/game_config';
 export interface playerBasicPROT {
 	id: number,
 	name: string
+	eqpts: eqpt.allEqptPROTTypes[]
 }
 export interface playerPROT {
 	id: number,
@@ -34,25 +35,52 @@ export interface visableAreaPROT {
 	playerIds: number[]
 }
 
-export type allPropPROTTypes = propHpPROT | propWeaponPROT | propSilencerPROT;
-export enum propType {
-	hp,
-	weapon,
-	silencer
+export namespace prop {
+	export type allPropPROTTypes = hpPROT | weaponPROT | silencerPROT | visableSightPROT;
+	export enum type {
+		hp,
+		weapon,
+		silencer,
+		visableSight
+	}
+	interface propPROT {
+		type: type
+		id: number,
+		position: point
+	}
+	export interface hpPROT extends propPROT {
+		hp: number
+	}
+	export interface weaponPROT extends propPROT {
+		weapontType: config.weapon.weaponType,
+		attackType: config.weapon.attackType
+	}
+	export interface silencerPROT extends propPROT { }
+	export interface visableSightPROT extends propPROT {
+		radius: number
+	}
 }
-interface propPROT {
-	type: propType
-	id: number,
-	position: point
+
+export namespace eqpt {
+	export type allEqptPROTTypes = visableSightPROT;
+	export enum type {
+		visableSight
+	}
+
+	export interface playerNewAndRemovedEqptPROTs {
+		playerId: number,
+		newEqptPROTs: allEqptPROTTypes[],
+		removedEqptIds: number[]
+	}
+	interface eqptPROT {
+		type: type,
+		id: number
+	}
+	export interface visableSightPROT extends eqptPROT {
+		radius: number,
+		lastTime: number
+	}
 }
-export interface propHpPROT extends propPROT {
-	hp: number
-}
-export interface propWeaponPROT extends propPROT {
-	weapontType: config.weapon.weaponType,
-	attackType: config.weapon.attackType
-}
-export interface propSilencerPROT extends propPROT { }
 
 export interface runningPROT {
 	position: point,
@@ -99,7 +127,8 @@ export class baseProtocol {
 	type: type;
 }
 
-export class pongProtocol extends baseProtocol {
+/**ping pong协议 */
+export class pong extends baseProtocol {
 	constructor() {
 		super(type.pong);
 	}
@@ -110,7 +139,7 @@ export class initialize extends baseProtocol {
 		edge: edgePROT,
 		barricades: barricadePROT[],
 		visableAreas: visableAreaBasicPROT[],
-		allPropPROTTypes: allPropPROTTypes[]) {
+		allPropPROTTypes: prop.allPropPROTTypes[]) {
 		super(type.init);
 
 		this.currPlayerId = currPlayerId;
@@ -136,7 +165,7 @@ export class initialize extends baseProtocol {
 	edge: edgePROT;
 	barricades: barricadePROT[];
 	visableAreas: visableAreaBasicPROT[];
-	props: allPropPROTTypes[];
+	props: prop.allPropPROTTypes[];
 }
 
 export class mainPROT extends baseProtocol {
@@ -197,14 +226,16 @@ export class mainPROT extends baseProtocol {
 
 	playerIdsInSight: number[];
 
-	visableAreas: visableAreaPROT[];
+	visableAreas: visableAreaPROT[] = [];
 
 	attackPROTs: attackPROT[] = [];
 	duringAttackPROTs: duringAttackPROT[] = [];
 	runningPROTs: runningPROT[] = [];
 
-	newPropPROTs: allPropPROTTypes[] = [];
+	newPropPROTs: prop.allPropPROTTypes[] = [];
 	removedPropIds: number[] = [];
+
+	playerEqptPROTs: eqpt.playerNewAndRemovedEqptPROTs[] = [];
 
 	rankList: rankPROT[] = [];
 }
