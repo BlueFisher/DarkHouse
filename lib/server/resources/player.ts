@@ -29,7 +29,7 @@ export class player {
 		killTimes: 0
 	};
 	canMove = true;
-	isRunning = false;
+
 	readonly eqpts: eqpts.equipment[] = [];
 
 	constructor(name: string, position: point) {
@@ -138,6 +138,42 @@ export class player {
 		}
 	}
 
+	private _isRunning = false;
+	private _runningSightActive = false;
+	canRun = true;
+	private _runningSightRemainsTimer: NodeJS.Timer;
+	private _runningSightDisapperTimer: NodeJS.Timer;
+	startRunning(active: boolean) {
+		if (active) {
+			if (!this._isRunning && this.canRun) {
+				this._isRunning = true;
+				this._run();
+			}
+		} else {
+			this._isRunning = false;
+		}
+	}
+	private _run() {
+		clearTimeout(this._runningSightRemainsTimer);
+		clearTimeout(this._runningSightDisapperTimer);
+		if (this._isRunning && this.canRun) {
+			this._runningSightActive = true;
+			this._runningSightRemainsTimer = setTimeout(() => {
+				this._runningSightActive = false;
+				this._runningSightDisapperTimer = setTimeout(() => {
+					this._run();
+				}, config.player.runningSightDisapperTime);
+			}, config.player.runningSightRemainsTime);
+		}
+	}
+
+	isRunningSightActive() {
+		return this._runningSightActive;
+	}
+	isRunning() {
+		return this._isRunning;
+	}
+
 	newEqptsCache: eqpts.equipment[] = [];
 	removedEqptsCache: eqpts.equipment[] = [];
 	getAndClearNewAndRemovedEqptPROTs() {
@@ -161,9 +197,16 @@ export class player {
 	}
 	private _shoot() {
 		if (this._canContinueShooting) {
+			this.canRun = false;
+			this.startRunning(false);
+
 			if (this._gun.shoot(this._shoot.bind(this))) {
 				this._shootingFinishedCallback();
+			} else {
+				this.canRun = true;
 			}
+		} else {
+			this.canRun = true;
 		}
 	}
 
@@ -300,7 +343,7 @@ export class playerManager {
 		}
 		let angle = player.getDirectionAngle();
 		let oldPos: point = player.position;
-		let step = player.isRunning ? config.player.runingStep : config.player.movingStep;
+		let step = player.isRunning() ? config.player.runingStep : config.player.movingStep;
 		let x = oldPos.x + Math.cos(angle) * step;
 		let y = oldPos.y + Math.sin(angle) * step;
 		let newPos = new point(x, y);

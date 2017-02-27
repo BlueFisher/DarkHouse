@@ -129,7 +129,6 @@ export class propManager {
 	private _removedPropIdsCache: number[] = [];
 
 	constructor(generateEmptyPositionFunc: (radius: number) => point | null) {
-		this.propVisableSight.push(new propVisableSight(new point(50, 50), 10000, 200));
 		setInterval(() => {
 			if (this.propHps.length < config.prop.hp.smallHpMaxNumber) {
 				let newPosition = generateEmptyPositionFunc(config.prop.hp.activeRadius);
@@ -188,7 +187,7 @@ export class propManager {
 					this._newPropsCache.push(newPropVisableSight);
 				}
 			}
-		});
+		}, config.prop.visableSight.appearInterval);
 	}
 
 	getAndClearNewAndRemovedPropPROTs() {

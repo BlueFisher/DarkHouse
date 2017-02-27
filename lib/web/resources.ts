@@ -13,7 +13,6 @@ export class resourcesManager {
 	shooingInAimEffect: attackInAimEffect;
 	attackedEffects: attackedEffect[] = [];
 	attackCaches: attackCache[] = [];
-	bloodSplashs: bloodSplash[] = [];
 	explodes: explode[] = [];
 
 	mainPROTCache: toClientPROT.mainPROT;
@@ -360,12 +359,12 @@ class attackCache extends resource {
 	onDuringAttackPROT(protocol: toClientPROT.duringAttackPROT, manager: resourcesManager) {
 		this._isSightEnd = protocol.isSightEnd;
 
-		if (protocol.isEnd) {
+		if (!this._isEnd && protocol.isEnd) {
 			if (this._attackPROT.attackPlayerId == manager.currentPlayerId) {
 				if (protocol.attackedPlayerIds.length > 0)
-					manager.shooingInAimEffect = new attackInAimEffect('击中');
+					manager.shooingInAimEffect = new attackInAimEffect('击中', '#fff');
 				if (protocol.killedPlayerIds.length > 0)
-					manager.shooingInAimEffect = new attackInAimEffect('击杀');
+					manager.shooingInAimEffect = new attackInAimEffect('击杀', '#FF5433'); 
 			}
 			if (protocol.attackedPlayerIds.find(p => p == manager.currentPlayerId)) {
 				manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));
@@ -486,41 +485,6 @@ class explode extends resource {
 	}
 }
 
-class bloodSplash extends resource {
-	private _position: point;
-	private _timeout = 40;
-
-	constructor(position: point) {
-		super();
-
-		this._position = position;
-	}
-
-	draw(ctx: CanvasRenderingContext2D, manager: resourcesManager) {
-		this._draw(ctx, () => {
-			if (this._timeout >= 20) {
-				ctx.fillStyle = '#f00';
-			} else {
-				ctx.fillStyle = `rgba(255,0,0,${this._timeout / 20})`;
-			}
-			ctx.beginPath();
-			ctx.arc(this._position.x, this._position.y, 20, 0, Math.PI * 2);
-			ctx.fill();
-		});
-
-		if (--this._timeout <= 0) {
-			this.dispose(manager);
-		}
-	}
-
-	dispose(manager: resourcesManager) {
-		this._dispose();
-		let i = manager.bloodSplashs.findIndex(p => p == this);
-		if (i != -1)
-			manager.bloodSplashs.splice(i);
-	}
-}
-
 /**被击中效果 */
 class attackedEffect extends resource {
 	private _angle: number;
@@ -548,24 +512,29 @@ class attackedEffect extends resource {
 
 /**击中效果 */
 class attackInAimEffect extends resource {
-	private _fontsize = 20;
+	private _fontsize = 40;
+	private _timeout = 50;
 	private _text: string;
+	private _color: string;
 
-	constructor(text: string) {
+	constructor(text: string, color: string) {
 		super();
 
 		this._text = text;
+		this._color = color;
 	}
 
 	draw(ctx: CanvasRenderingContext2D) {
+
 		this._draw(ctx, () => {
+			console.log(this._text)
 			ctx.font = `${this._fontsize}px 微软雅黑`;
 			ctx.textAlign = 'center';
-			ctx.fillStyle = '#fff'
+			ctx.fillStyle = this._color;
 			ctx.fillText(this._text, ctx.canvas.width / 2, 50);
 		});
 
-		if (++this._fontsize > 50) {
+		if (--this._timeout <= 0) {
 			this._dispose();
 		}
 	}

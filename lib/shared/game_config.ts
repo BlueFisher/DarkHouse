@@ -39,7 +39,7 @@ export namespace prop {
 	}
 
 	export namespace visableSight {
-		export let lastTime = 5000;
+		export let lastTime = 10000;
 		export let radius = 200;
 		export let activeRadius = 5;
 		export let maxNumber = 3;

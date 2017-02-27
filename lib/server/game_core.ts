@@ -43,8 +43,6 @@ export class gameCore extends events.EventEmitter {
 		isEnd: boolean
 	}[] = [];
 
-	private _runningCache: Map<player, number> = new Map();
-
 	constructor(width: number, height: number, edgeX = 0, edgeY = 0, ) {
 		super();
 
@@ -115,31 +113,17 @@ export class gameCore extends events.EventEmitter {
 			return [attackPROTs, duringAttackPROTs];
 		}
 
-		let runningSightRemainsStep = config.player.runningSightRemainsTime / serverConfig.mainInterval,
-			runningSightDisapperStep = runningSightRemainsStep + config.player.runningSightDisapperTime / serverConfig.mainInterval;
 		/**生成奔跑协议 */
 		let generateRunningPROTs = (players: player[]) => {
 			let runningPROTs: toClientPROT.runningPROT[] = [];
-			for (let runningPlayer of players.filter(p => p.canMove && p.isRunning)) {
-				let runningCache = this._runningCache.get(runningPlayer);
-				if (!runningCache) {
-					runningCache = 1;
-					this._runningCache.set(runningPlayer, runningCache);
-				}
-
-				if (runningCache >= 1 && runningCache <= runningSightRemainsStep) {
+			for (let player of players) {
+				if (player.isRunningSightActive()) {
 					runningPROTs.push({
-						position: runningPlayer.position,
+						position: player.position,
 						playerIdsInSight: this._playerManager
-							.getPlayersInRadius(runningPlayer.position, config.player.runningSightRadius)
+							.getPlayersInRadius(player.position, config.player.runningSightRadius)
 							.map(p => p.id)
 					});
-				}
-
-				if (runningCache >= runningSightDisapperStep) {
-					this._runningCache.set(runningPlayer, 1);
-				} else {
-					this._runningCache.set(runningPlayer, runningCache + 1);
 				}
 			}
 			return runningPROTs;
@@ -430,9 +414,7 @@ export class gameCore extends events.EventEmitter {
 	startRunning(playerId: number, active: boolean) {
 		let player = this._playerManager.findPlayerById(playerId);
 		if (player) {
-			player.isRunning = active;
-			if (!active)
-				this._runningCache.set(player, 1);
+			player.startRunning(active);
 		}
 	}
 
