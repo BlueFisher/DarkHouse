@@ -70,7 +70,6 @@ export class httpServer {
 				}
 			}
 
-			res.status(403);
 			res.end();
 		});
 

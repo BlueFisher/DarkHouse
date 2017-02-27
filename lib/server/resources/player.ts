@@ -321,7 +321,7 @@ export class playerManager {
 		return playersInSightMap;
 	}
 
-	getAndClearNewAndRemovedEqptPROTs(): toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[] {
+	getAndClearNewAndRemovedEqptPROTs(): toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[]|undefined {
 		let res: toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[] = [];
 
 		this.players.forEach(p => {
@@ -334,7 +334,7 @@ export class playerManager {
 				});
 		});
 
-		return res;
+		return res.length > 0 ? res : undefined;
 	}
 
 	move(player: player, adjustNewPosition: (oldPosition: point, newPosition: point) => void) {

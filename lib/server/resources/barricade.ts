@@ -15,7 +15,7 @@ export class barricade {
 		this.vertex2 = vertex2;
 	}
 
-	getBarricadePROT(): toClientPROT.barricadePROT {
+	getBarricadePROT(): toClientPROT.stage.barricadePROT {
 		return {
 			point1: this.vertex1,
 			point2: this.vertex2
@@ -132,7 +132,7 @@ export class edge {
 		return Math.abs(this.vertex2.y - this.vertex1.y);
 	}
 
-	getEdgePROT(): toClientPROT.edgePROT {
+	getEdgePROT(): toClientPROT.stage.edgePROT {
 		return {
 			point1: this.vertex1,
 			point2: this.vertex2

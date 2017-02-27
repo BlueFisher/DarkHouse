@@ -25,7 +25,7 @@ export class visableArea {
 		});
 	}
 
-	getVisableAreaPROT(): toClientPROT.visableAreaBasicPROT {
+	getVisableAreaPROT(): toClientPROT.stage.visableAreaBasicPROT {
 		return {
 			id: this.id,
 			position: this.position,
@@ -46,12 +46,18 @@ export class visableAreaManager {
 	getAllVisableAreaBasicPROTs() {
 		return this.visableAreas.map(p => p.getVisableAreaPROT());
 	}
-	getAllVisableAreaPROTs(withinPlayers: player[]): toClientPROT.visableAreaPROT[] {
-		return this.visableAreas.map(p => {
-			return {
-				id: p.id,
-				playerIds: p.getPlayersInSight(withinPlayers).map(pp => pp.id)
+	getAllVisableAreaPROTs(withinPlayers: player[]): toClientPROT.stage.visableAreaPROT[] | undefined {
+		let res: toClientPROT.stage.visableAreaPROT[] = [];
+		this.visableAreas.forEach(p => {
+			let playersInSight = p.getPlayersInSight(withinPlayers);
+			if (playersInSight.length > 0) {
+				res.push({
+					id: p.id,
+					playerIds: playersInSight.map(pp => pp.id)
+				});
 			}
 		});
+
+		return res.length > 0 ? res : undefined;
 	}
 }

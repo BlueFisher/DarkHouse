@@ -58,9 +58,11 @@ export class gameCore extends events.EventEmitter {
 
 	private _initializeMainLoop() {
 		/**生成攻击协议 */
-		let generateAttackPROTs: () => [toClientPROT.attackPROT[], toClientPROT.duringAttackPROT[]] = () => {
-			let attackPROTs: toClientPROT.attackPROT[] = [];
-			let duringAttackPROTs: toClientPROT.duringAttackPROT[] = [];
+		let generateAttackPROTs: () => [toClientPROT.attackPROT[] | undefined,
+			toClientPROT.duringAttackPROT[] | undefined
+		] = () => {
+			let attackPROTs: toClientPROT.attackPROT[] | undefined = [];
+			let duringAttackPROTs: toClientPROT.duringAttackPROT[] | undefined = [];
 
 			for (let cache of this._attackCaches) {
 				// 如果还处在视野时间中、枪没有装备上消音器则获取视野中的玩家
@@ -110,6 +112,12 @@ export class gameCore extends events.EventEmitter {
 					duringAttackPROTs.push(duringAttackPROT);
 				}
 			}
+
+			if (attackPROTs.length == 0)
+				attackPROTs = undefined;
+			if (duringAttackPROTs.length == 0)
+				duringAttackPROTs = undefined;
+
 			return [attackPROTs, duringAttackPROTs];
 		}
 
@@ -126,38 +134,45 @@ export class gameCore extends events.EventEmitter {
 					});
 				}
 			}
-			return runningPROTs;
+			return runningPROTs.length > 0 ? runningPROTs : undefined;
 		}
 
 		// 主计时器循环
 		setInterval(() => {
 			let players = this._playerManager.players;
 			let sendingMap = new Map<number, toClientPROT.mainPROT>();
+
 			let newPlayersBasicPROTs = this._playerManager.getAndClearNewPlayersBasicPROTs();
-			let [attackPROTs, duringAttackPROTs] = generateAttackPROTs();
-			let runningPROTs = generateRunningPROTs(players);
-			let propPROTs = this._propManager.getAndClearNewAndRemovedPropPROTs();
 			let playersInSightMap = this._playerManager.generatePlayersInSightMap(players,
 				this._barricadeManager);
+
 			let visableAreaPROTs = this._visableAreaManager.getAllVisableAreaPROTs(this._playerManager.players);
+
+			let [attackPROTs, duringAttackPROTs] = generateAttackPROTs();
+			let runningPROTs = generateRunningPROTs(players);
+			let [newPropsPROTs, removedPropIds] = this._propManager.getAndClearNewAndRemovedPropPROTs();
+
 			let playerEqptPROTs = this._playerManager.getAndClearNewAndRemovedEqptPROTs();
 			let rankListPROT = this._playerManager.getRankListPROT();
 
 			for (let player of players) {
-				let playersInSight = playersInSightMap.get(player);
-				playersInSight = playersInSight ? playersInSight : [];
-
 				let mainPROT = new toClientPROT.mainPROT();
 
-				mainPROT.newPlayerBPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
-				mainPROT.playerIdsInSight = playersInSight.map(p => p.id);
+				let filteredNewPlayersBasicPROTs = newPlayersBasicPROTs.filter(p => p.id != player.id);
+				if (filteredNewPlayersBasicPROTs.length > 0)
+					mainPROT.newPlayerBPROTs = filteredNewPlayersBasicPROTs;
+
+				let playersInSight = playersInSightMap.get(player);
+				if (playersInSight && playersInSight.length > 0)
+					mainPROT.playerIdsInSight = playersInSight.map(p => p.id);
+
 				mainPROT.visableAreas = visableAreaPROTs;
 				mainPROT.attackPROTs = attackPROTs;
 				mainPROT.duringAttackPROTs = duringAttackPROTs;
 				mainPROT.runningPROTs = runningPROTs;
 
-				mainPROT.newPropPROTs = propPROTs.newPropsCache;
-				mainPROT.removedPropIds = propPROTs.removedPropIdsCache;
+				mainPROT.newPropPROTs = newPropsPROTs;
+				mainPROT.removedPropIds = removedPropIds;
 
 				mainPROT.playerEqptPROTs = playerEqptPROTs;
 

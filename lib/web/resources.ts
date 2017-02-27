@@ -5,9 +5,9 @@ import { point } from '../shared/utils';
 export class resourcesManager {
 	currentPlayerId: number;
 	playerBasicPROTs: toClientPROT.playerBasicPROT[] = [];
-	edge: toClientPROT.edgePROT;
-	barricades: toClientPROT.barricadePROT[] = [];
-	visableAreaBasicPROTs: toClientPROT.visableAreaBasicPROT[] = [];
+	edge: toClientPROT.stage.edgePROT;
+	barricades: toClientPROT.stage.barricadePROT[] = [];
+	visableAreaBasicPROTs: toClientPROT.stage.visableAreaBasicPROT[] = [];
 	props: toClientPROT.prop.allPropPROTTypes[] = [];
 
 	shooingInAimEffect: attackInAimEffect;
@@ -29,37 +29,43 @@ export class resourcesManager {
 	onMainProtocol(protocol: toClientPROT.mainPROT) {
 		this.mainPROTCache = protocol;
 
-		this.attackCaches = this.attackCaches.concat(protocol.attackPROTs.map(p => new attackCache(p)));
+		if (protocol.attackPROTs)
+			this.attackCaches = this.attackCaches.concat(protocol.attackPROTs.map(p => new attackCache(p)));
 
-		protocol.duringAttackPROTs.forEach(p => {
-			let cache = this.attackCaches.find(pp => pp.id == p.id);
-			if (cache)
-				cache.onDuringAttackPROT(p, this);
-		});
+		if (protocol.duringAttackPROTs)
+			protocol.duringAttackPROTs.forEach(p => {
+				let cache = this.attackCaches.find(pp => pp.id == p.id);
+				if (cache)
+					cache.onDuringAttackPROT(p, this);
+			});
 
-		this.playerBasicPROTs = this.playerBasicPROTs.concat(protocol.newPlayerBPROTs);
-		this.props = this.props.concat(protocol.newPropPROTs);
+		if (protocol.newPlayerBPROTs)
+			this.playerBasicPROTs = this.playerBasicPROTs.concat(protocol.newPlayerBPROTs);
+		if (protocol.newPropPROTs)
+			this.props = this.props.concat(protocol.newPropPROTs);
 
-		protocol.removedPropIds.forEach(p => {
-			let i = this.props.findIndex(pp => pp.id == p);
-			if (i != -1) {
-				this.props.splice(i, 1);
-			}
-		});
-
-		protocol.playerEqptPROTs.forEach(p => {
-			let player = this.playerBasicPROTs.find(pp => pp.id == p.playerId);
-			if (player) {
-				for (let id of p.removedEqptIds) {
-					let i = player.eqpts.findIndex(pp => pp.id == id);
-					if (i != -1) {
-						player.eqpts.splice(i, 1);
-					}
+		if (protocol.removedPropIds)
+			protocol.removedPropIds.forEach(p => {
+				let i = this.props.findIndex(pp => pp.id == p);
+				if (i != -1) {
+					this.props.splice(i, 1);
 				}
-				player.eqpts = player.eqpts.concat(p.newEqptPROTs);
+			});
 
-			}
-		})
+		if (protocol.playerEqptPROTs)
+			protocol.playerEqptPROTs.forEach(p => {
+				let player = this.playerBasicPROTs.find(pp => pp.id == p.playerId);
+				if (player) {
+					for (let id of p.removedEqptIds) {
+						let i = player.eqpts.findIndex(pp => pp.id == id);
+						if (i != -1) {
+							player.eqpts.splice(i, 1);
+						}
+					}
+					player.eqpts = player.eqpts.concat(p.newEqptPROTs);
+
+				}
+			})
 	}
 
 	getPlayerPROT(playerId: number) {
@@ -102,26 +108,27 @@ export class resourcesManager {
 
 	drawVisableAreas(ctx: CanvasRenderingContext2D) {
 		this._draw(ctx, () => {
-			this.mainPROTCache.visableAreas.forEach(area => {
-				let areaB = this.visableAreaBasicPROTs.find(p => p.id == area.id);
-				if (areaB) {
-					ctx.save();
+			this.visableAreaBasicPROTs.forEach(area => {
+				if (this.mainPROTCache.visableAreas) {
+					let a = this.mainPROTCache.visableAreas.find(p => p.id == area.id);
+					if (a) {
+						ctx.save();
 
-					// 绘制可见区域中所有玩家
-					ctx.beginPath();
+						// 绘制可见区域中所有玩家
+						ctx.beginPath();
 
-					ctx.arc(areaB.position.x, areaB.position.y, areaB.radius, 0, Math.PI * 2);
-					ctx.clip();
+						ctx.arc(area.position.x, area.position.y, area.radius, 0, Math.PI * 2);
+						ctx.clip();
 
-					this.drawPlayer(ctx, area.playerIds, '#fff', '#f00');
-					ctx.restore();
-
-					ctx.beginPath();
-					ctx.fillStyle = 'rgba(0,255,255,0.25)';
-
-					ctx.arc(areaB.position.x, areaB.position.y, areaB.radius, 0, Math.PI * 2);
-					ctx.fill();
+						this.drawPlayer(ctx, a.playerIds, '#fff', '#f00');
+						ctx.restore();
+					}
 				}
+				ctx.beginPath();
+				ctx.fillStyle = 'rgba(0,255,255,0.25)';
+
+				ctx.arc(area.position.x, area.position.y, area.radius, 0, Math.PI * 2);
+				ctx.fill();
 			});
 		});
 	}
@@ -145,7 +152,8 @@ export class resourcesManager {
 			ctx.arc(currPlayer.position.x, currPlayer.position.y, sightRadius - 1, 0, Math.PI * 2);
 			ctx.clip();
 
-			this.drawPlayer(ctx, this.mainPROTCache.playerIdsInSight, '#fff', '#f00');
+			if (this.mainPROTCache.playerIdsInSight)
+				this.drawPlayer(ctx, this.mainPROTCache.playerIdsInSight, '#fff', '#f00');
 
 			// 绘制可见区域中所有障碍物
 			ctx.fillStyle = '#fff';
@@ -233,24 +241,25 @@ export class resourcesManager {
 	}
 
 	drawRunning(ctx: CanvasRenderingContext2D) {
-		this.mainPROTCache.runningPROTs.forEach(runningPROT => {
-			ctx.save();
+		if (this.mainPROTCache.runningPROTs)
+			this.mainPROTCache.runningPROTs.forEach(runningPROT => {
+				ctx.save();
 
-			// 绘制奔跑范围视野中所有的玩家
-			ctx.beginPath();
-			ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
-			ctx.clip();
+				// 绘制奔跑范围视野中所有的玩家
+				ctx.beginPath();
+				ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
+				ctx.clip();
 
-			this.drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
+				this.drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
 
-			ctx.restore();
+				ctx.restore();
 
-			// 绘制奔跑视野
-			ctx.beginPath();
-			ctx.fillStyle = 'rgba(255,255,255,0.75)';
-			ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius, 0, Math.PI * 2);
-			ctx.fill();
-		});
+				// 绘制奔跑视野
+				ctx.beginPath();
+				ctx.fillStyle = 'rgba(255,255,255,0.75)';
+				ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius, 0, Math.PI * 2);
+				ctx.fill();
+			});
 	}
 
 	drawPlayer(ctx: CanvasRenderingContext2D, playerIds: number[],
@@ -364,7 +373,7 @@ class attackCache extends resource {
 				if (protocol.attackedPlayerIds.length > 0)
 					manager.shooingInAimEffect = new attackInAimEffect('击中', '#fff');
 				if (protocol.killedPlayerIds.length > 0)
-					manager.shooingInAimEffect = new attackInAimEffect('击杀', '#FF5433'); 
+					manager.shooingInAimEffect = new attackInAimEffect('击杀', '#FF5433');
 			}
 			if (protocol.attackedPlayerIds.find(p => p == manager.currentPlayerId)) {
 				manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));

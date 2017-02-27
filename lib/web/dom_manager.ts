@@ -92,9 +92,7 @@ export class domManager {
 			contentType: "application/json"
 		}).then((data: httpPROT.accountResponse) => {
 			vueData.indexCommon.user = data;
-		}, ((xhr) => {
-			console.log('111')
-		}));
+		});
 	}
 
 	private _initializeCanvas() {

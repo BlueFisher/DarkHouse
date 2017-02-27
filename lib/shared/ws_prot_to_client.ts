@@ -15,24 +15,26 @@ export interface playerPROT {
 	maxBullet: number
 }
 
-export interface edgePROT {
-	point1: point,
-	point2: point
-}
+export namespace stage {
+	export interface edgePROT {
+		point1: point,
+		point2: point
+	}
 
-export interface barricadePROT {
-	point1: point,
-	point2: point
-}
+	export interface barricadePROT {
+		point1: point,
+		point2: point
+	}
 
-export interface visableAreaBasicPROT {
-	id: number,
-	position: point,
-	radius: number
-}
-export interface visableAreaPROT {
-	id: number,
-	playerIds: number[]
+	export interface visableAreaBasicPROT {
+		id: number,
+		position: point,
+		radius: number
+	}
+	export interface visableAreaPROT {
+		id: number,
+		playerIds: number[]
+	}
 }
 
 export namespace prop {
@@ -136,9 +138,9 @@ export class pong extends baseProtocol {
 
 export class initialize extends baseProtocol {
 	constructor(currPlayerId: number, players: playerBasicPROT[],
-		edge: edgePROT,
-		barricades: barricadePROT[],
-		visableAreas: visableAreaBasicPROT[],
+		edge: stage.edgePROT,
+		barricades: stage.barricadePROT[],
+		visableAreas: stage.visableAreaBasicPROT[],
 		allPropPROTTypes: prop.allPropPROTTypes[]) {
 		super(type.init);
 
@@ -162,9 +164,9 @@ export class initialize extends baseProtocol {
 	}
 	currPlayerId: number;
 	players: playerBasicPROT[];
-	edge: edgePROT;
-	barricades: barricadePROT[];
-	visableAreas: visableAreaBasicPROT[];
+	edge: stage.edgePROT;
+	barricades: stage.barricadePROT[];
+	visableAreas: stage.visableAreaBasicPROT[];
 	props: prop.allPropPROTTypes[];
 }
 
@@ -175,20 +177,24 @@ export class mainPROT extends baseProtocol {
 
 	formatPlayerPROT(currPlayerId: number, format: (playerId: number) => playerPROT | null) {
 		let arr: number[] = [currPlayerId];
-		arr = arr.concat(this.playerIdsInSight);
-
-		this.attackPROTs.forEach(p => {
-			arr = arr.concat(p.playerIdsInSight);
-		});
-		this.duringAttackPROTs.forEach(p => {
-			arr = arr.concat(p.playerIdsInSight);
-		});
-		this.runningPROTs.forEach(p => {
-			arr = arr.concat(p.playerIdsInSight);
-		});
-		this.visableAreas.forEach(p => {
-			arr = arr.concat(p.playerIds);
-		});
+		if (this.playerIdsInSight)
+			arr = arr.concat(this.playerIdsInSight);
+		if (this.attackPROTs)
+			this.attackPROTs.forEach(p => {
+				arr = arr.concat(p.playerIdsInSight);
+			});
+		if (this.duringAttackPROTs)
+			this.duringAttackPROTs.forEach(p => {
+				arr = arr.concat(p.playerIdsInSight);
+			});
+		if (this.runningPROTs)
+			this.runningPROTs.forEach(p => {
+				arr = arr.concat(p.playerIdsInSight);
+			});
+		if (this.visableAreas)
+			this.visableAreas.forEach(p => {
+				arr = arr.concat(p.playerIds);
+			});
 
 		let json = {};
 		for (let i of arr) {
@@ -205,39 +211,43 @@ export class mainPROT extends baseProtocol {
 			p.angle = parseFloat(p.angle.toFixed(2));
 			p.position = point.getFixedPoint(p.position);
 		});
-		this.attackPROTs.forEach(p => {
-			p.angle = parseFloat(p.angle.toFixed(2));
-			p.bulletPosition = point.getFixedPoint(p.bulletPosition);
-			p.position = point.getFixedPoint(p.position);
-		});
-		this.duringAttackPROTs.forEach(p => {
-			p.bulletPosition = point.getFixedPoint(p.bulletPosition);
-		});
-		this.runningPROTs.forEach(p => {
-			p.position = point.getFixedPoint(p.position);
-		});
-		this.newPropPROTs.forEach(p => {
-			p.position = point.getFixedPoint(p.position);
-		});
+		if (this.attackPROTs)
+			this.attackPROTs.forEach(p => {
+				p.angle = parseFloat(p.angle.toFixed(2));
+				p.bulletPosition = point.getFixedPoint(p.bulletPosition);
+				p.position = point.getFixedPoint(p.position);
+			});
+		if (this.duringAttackPROTs)
+			this.duringAttackPROTs.forEach(p => {
+				p.bulletPosition = point.getFixedPoint(p.bulletPosition);
+			});
+		if (this.runningPROTs)
+			this.runningPROTs.forEach(p => {
+				p.position = point.getFixedPoint(p.position);
+			});
+		if (this.newPropPROTs)
+			this.newPropPROTs.forEach(p => {
+				p.position = point.getFixedPoint(p.position);
+			});
 	}
 
 	playerPROTs: playerPROT[] = [];
-	newPlayerBPROTs: playerBasicPROT[] = [];
+	newPlayerBPROTs?: playerBasicPROT[];
 
-	playerIdsInSight: number[];
+	playerIdsInSight?: number[];
 
-	visableAreas: visableAreaPROT[] = [];
+	visableAreas?: stage.visableAreaPROT[];
 
-	attackPROTs: attackPROT[] = [];
-	duringAttackPROTs: duringAttackPROT[] = [];
-	runningPROTs: runningPROT[] = [];
+	attackPROTs?: attackPROT[];
+	duringAttackPROTs?: duringAttackPROT[];
+	runningPROTs?: runningPROT[];
 
-	newPropPROTs: prop.allPropPROTTypes[] = [];
-	removedPropIds: number[] = [];
+	newPropPROTs?: prop.allPropPROTTypes[];
+	removedPropIds?: number[];
 
-	playerEqptPROTs: eqpt.playerNewAndRemovedEqptPROTs[] = [];
+	playerEqptPROTs?: eqpt.playerNewAndRemovedEqptPROTs[];
 
-	rankList: rankPROT[] = [];
+	rankList: rankPROT[];
 }
 
 export interface records {

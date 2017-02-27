@@ -190,14 +190,12 @@ export class propManager {
 		}, config.prop.visableSight.appearInterval);
 	}
 
-	getAndClearNewAndRemovedPropPROTs() {
-		let res = {
-			newPropsCache: this._newPropsCache.map(p => p.getPropPROT()),
-			removedPropIdsCache: this._removedPropIdsCache
-		}
+	getAndClearNewAndRemovedPropPROTs(): [toClientPROT.prop.allPropPROTTypes[] | undefined, number[] | undefined] {
+		let newPropsCache = this._newPropsCache.length > 0 ? this._newPropsCache.map(p => p.getPropPROT()) : undefined;
+		let removedPropIdsCache = this._removedPropIdsCache.length > 0 ? this._removedPropIdsCache : undefined;
 		this._newPropsCache = [];
 		this._removedPropIdsCache = [];
-		return res;
+		return [newPropsCache, removedPropIdsCache];
 	}
 
 	getAllPropPROTs() {

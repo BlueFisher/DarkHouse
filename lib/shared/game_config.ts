@@ -148,7 +148,7 @@ export namespace stage {
 		[new point(150 / 1.5, 750 / 1.5), new point(500 / 1.5, 1000 / 1.5)],
 		[new point(1200 / 1.5, 750 / 1.5), new point(1600 / 1.5, 1000 / 1.5)],
 		[new point(600 / 1.5, 400 / 1.5), new point(1100 / 1.5, 500 / 1.5)],
-		[new point(1200 / 1.5, 150 / 1.5), new point(1250 / 1.5, 50 / 1.5)],
+		[new point(1200 / 1.5, 50 / 1.5), new point(1250 / 1.5, 150 / 1.5)],
 		[new point(600 / 1.5, 1300 / 1.5), new point(1200 / 1.5, 1400 / 1.5)],
 		[new point(800 / 1.5, 1400 / 1.5), new point(900 / 1.5, 1800 / 1.5)],
 	];
