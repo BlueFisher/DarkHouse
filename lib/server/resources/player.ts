@@ -84,15 +84,23 @@ export class player {
 		this._melee = melee;
 	}
 
+
+	newEqptsCache: eqpts.equipment[] = [];
+	removedEqptsCache: eqpts.equipment[] = [];
 	getPlayerPROT(): toClientPROT.playerPROT {
-		return {
+		let res = {
 			id: this.id,
 			position: this.position,
 			angle: this._angle,
 			hp: this._hp,
 			bullet: this._gun.getBullet(),
-			maxBullet: this._gun.maxBullet
-		}
+			maxBullet: this._gun.maxBullet,
+			newEqpts: this.newEqptsCache.length > 0 ? this.newEqptsCache.map(p => p.getEqptPROT()) : undefined,
+			removedEqptIds: this.removedEqptsCache.length > 0 ? this.removedEqptsCache.map(p => p.id) : undefined
+		};
+		this.newEqptsCache = [];
+		this.removedEqptsCache = [];
+		return res;
 	}
 	getPlayerBasicPROT(): toClientPROT.playerBasicPROT {
 		return {
@@ -178,17 +186,6 @@ export class player {
 		return this._isRunning;
 	}
 
-	newEqptsCache: eqpts.equipment[] = [];
-	removedEqptsCache: eqpts.equipment[] = [];
-	getAndClearNewAndRemovedEqptPROTs() {
-		let res = {
-			newEqptPROTs: this.newEqptsCache.map(p => p.getEqptPROT()),
-			removedEqptIds: this.removedEqptsCache.map(p => p.id)
-		};
-		this.newEqptsCache = [];
-		this.removedEqptsCache = [];
-		return res;
-	}
 
 	// 是否可以继续射击
 	private _canContinueShooting = false;
@@ -327,22 +324,6 @@ export class playerManager {
 		}
 
 		return playersInSightMap;
-	}
-
-	getAndClearNewAndRemovedEqptPROTs(): toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[] | undefined {
-		let res: toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[] = [];
-
-		this.players.forEach(p => {
-			let tmp = p.getAndClearNewAndRemovedEqptPROTs();
-			if (tmp.newEqptPROTs.length > 0 || tmp.removedEqptIds.length > 0)
-				res.push({
-					playerId: p.id,
-					newEqptPROTs: tmp.newEqptPROTs,
-					removedEqptIds: tmp.removedEqptIds
-				});
-		});
-
-		return res.length > 0 ? res : undefined;
 	}
 
 	move(player: player, adjustNewPosition: (oldPosition: point, newPosition: point) => void) {

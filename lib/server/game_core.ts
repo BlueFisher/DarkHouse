@@ -152,7 +152,6 @@ export class gameCore extends events.EventEmitter {
 			let runningPROTs = generateRunningPROTs(players);
 			let [newPropsPROTs, removedPropIds] = this._propManager.getAndClearNewAndRemovedPropPROTs();
 
-			let playerEqptPROTs = this._playerManager.getAndClearNewAndRemovedEqptPROTs();
 			let rankListPROT = this._playerManager.getRankListPROT();
 
 			for (let player of players) {
@@ -173,8 +172,6 @@ export class gameCore extends events.EventEmitter {
 
 				mainPROT.newPropPROTs = newPropsPROTs;
 				mainPROT.removedPropIds = removedPropIds;
-
-				mainPROT.playerEqptPROTs = playerEqptPROTs;
 
 				mainPROT.rankList = rankListPROT;
 

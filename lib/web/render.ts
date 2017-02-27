@@ -12,20 +12,20 @@ export class render {
 		this._resourceManager = new resourcesManager(protocol);
 	}
 
-	getPlayerBPROT(playerId: number) {
-		return this._resourceManager.getPlayerBPROT(playerId);
-	}
-
 	onMainProtocol(protocol: toClientPROT.mainPROT) {
 		this._resourceManager.onMainProtocol(protocol);
+	}
+
+	getPlayer(playerId) {
+		return this._resourceManager.players.find(p => p.id == playerId);
 	}
 
 	draw(ctx: CanvasRenderingContext2D) {
 		let canvas = ctx.canvas;
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-		let currPlayer = this._resourceManager.getPlayerPROT(this._resourceManager.currentPlayerId);
-		if (!currPlayer)
+		let currPlayer = this.getPlayer(this._resourceManager.currentPlayerId);
+		if (!currPlayer || !currPlayer.initialized)
 			return;
 
 		ctx.save();

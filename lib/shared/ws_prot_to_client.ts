@@ -3,7 +3,7 @@ import * as config from '../shared/game_config';
 
 export interface playerBasicPROT {
 	id: number,
-	name: string
+	name: string,
 	eqpts: eqpt.allEqptPROTTypes[]
 }
 export interface playerPROT {
@@ -12,7 +12,10 @@ export interface playerPROT {
 	angle: number,
 	hp: number,
 	bullet: number,
-	maxBullet: number
+	maxBullet: number,
+	
+	newEqpts?: eqpt.allEqptPROTTypes[],
+	removedEqptIds?: number[]
 }
 
 export namespace stage {
@@ -244,8 +247,6 @@ export class mainPROT extends baseProtocol {
 
 	newPropPROTs?: prop.allPropPROTTypes[];
 	removedPropIds?: number[];
-
-	playerEqptPROTs?: eqpt.playerNewAndRemovedEqptPROTs[];
 
 	rankList: rankPROT[];
 }

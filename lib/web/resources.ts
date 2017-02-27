@@ -4,7 +4,8 @@ import { point } from '../shared/utils';
 
 export class resourcesManager {
 	currentPlayerId: number;
-	playerBasicPROTs: toClientPROT.playerBasicPROT[] = [];
+	players: player[] = [];
+
 	edge: toClientPROT.stage.edgePROT;
 	barricades: toClientPROT.stage.barricadePROT[] = [];
 	visableAreaBasicPROTs: toClientPROT.stage.visableAreaBasicPROT[] = [];
@@ -19,7 +20,10 @@ export class resourcesManager {
 
 	constructor(protocol: toClientPROT.initialize) {
 		this.currentPlayerId = protocol.currPlayerId;
-		this.playerBasicPROTs = protocol.players;
+
+		protocol.players.forEach(p => {
+			this.players.push(new player(p));
+		});
 		this.edge = protocol.edge;
 		this.barricades = protocol.barricades;
 		this.visableAreaBasicPROTs = protocol.visableAreas;
@@ -40,7 +44,17 @@ export class resourcesManager {
 			});
 
 		if (protocol.newPlayerBPROTs)
-			this.playerBasicPROTs = this.playerBasicPROTs.concat(protocol.newPlayerBPROTs);
+			protocol.newPlayerBPROTs.forEach(p => {
+				this.players.push(new player(p));
+			});
+
+		protocol.playerPROTs.forEach(p => {
+			let player = this.players.find(pp => pp.id == p.id);
+			if (player) {
+				player.onPlayerPROT(p);
+			}
+		});
+
 		if (protocol.newPropPROTs)
 			this.props = this.props.concat(protocol.newPropPROTs);
 
@@ -51,29 +65,6 @@ export class resourcesManager {
 					this.props.splice(i, 1);
 				}
 			});
-
-		if (protocol.playerEqptPROTs)
-			protocol.playerEqptPROTs.forEach(p => {
-				let player = this.playerBasicPROTs.find(pp => pp.id == p.playerId);
-				if (player) {
-					for (let id of p.removedEqptIds) {
-						let i = player.eqpts.findIndex(pp => pp.id == id);
-						if (i != -1) {
-							player.eqpts.splice(i, 1);
-						}
-					}
-					player.eqpts = player.eqpts.concat(p.newEqptPROTs);
-
-				}
-			})
-	}
-
-	getPlayerPROT(playerId: number) {
-		if (this.mainPROTCache)
-			return this.mainPROTCache.playerPROTs.find(p => p.id == playerId);
-	}
-	getPlayerBPROT(playerId: number) {
-		return this.playerBasicPROTs.find(p => p.id == playerId);
 	}
 
 	private _draw(ctx: CanvasRenderingContext2D, drawHandler: () => void) {
@@ -133,7 +124,7 @@ export class resourcesManager {
 		});
 	}
 
-	drawPlayerVisableArea(ctx: CanvasRenderingContext2D, currPlayer: toClientPROT.playerPROT) {
+	drawPlayerVisableArea(ctx: CanvasRenderingContext2D, currPlayer: player) {
 		this._draw(ctx, () => {
 			ctx.save();
 
@@ -141,12 +132,10 @@ export class resourcesManager {
 			ctx.beginPath();
 
 			let sightRadius = config.player.sightRadius;
-			let currPlayerB = this.playerBasicPROTs.find(p => p.id == currPlayer.id);
-			if (currPlayerB) {
-				let eqptVisableSight = currPlayerB.eqpts.find(p => p.type == toClientPROT.eqpt.type.visableSight)
-				if (eqptVisableSight) {
-					sightRadius = eqptVisableSight.radius;
-				}
+
+			let eqptVisableSight = currPlayer.eqpts.find(p => p.type == toClientPROT.eqpt.type.visableSight)
+			if (eqptVisableSight) {
+				sightRadius = eqptVisableSight.radius;
 			}
 
 			ctx.arc(currPlayer.position.x, currPlayer.position.y, sightRadius - 1, 0, Math.PI * 2);
@@ -266,62 +255,10 @@ export class resourcesManager {
 		fillStyle: string, strokeStyle: string) {
 
 		this._draw(ctx, () => {
-			ctx.fillStyle = fillStyle;
-			ctx.strokeStyle = strokeStyle;
-			ctx.textAlign = 'center';
-
 			for (let playerId of playerIds) {
-				let player = this.getPlayerPROT(playerId);
-				if (!player)
-					continue;
-
-				ctx.beginPath();
-				ctx.arc(player.position.x, player.position.y, config.player.radius, 0, Math.PI * 2);
-				ctx.fill();
-
-				ctx.beginPath();
-				ctx.moveTo(player.position.x, player.position.y);
-				ctx.lineTo(config.player.radius * Math.cos(player.angle) + player.position.x,
-					config.player.radius * Math.sin(player.angle) + player.position.y);
-				ctx.stroke();
-
-				ctx.strokeStyle = 'rgba(0,255,0,.5)';
-				ctx.lineWidth = 3;
-				let gap = Math.PI / 25;
-				let perimeter = Math.PI * 2 - config.player.maxHp * gap;
-				for (let i = 0; i < player.hp; i++) {
-					ctx.beginPath();
-					ctx.arc(player.position.x, player.position.y, config.player.radius - 1.5,
-						i * perimeter / config.player.maxHp + i * gap - Math.PI / 2,
-						(i + 1) * perimeter / config.player.maxHp + i * gap - Math.PI / 2);
-					ctx.stroke();
-				}
-
-				ctx.strokeStyle = 'rgba(0,0,0,.5)';
-				ctx.lineWidth = 3;
-				gap = Math.PI / 50;
-				perimeter = Math.PI * 2 - player.maxBullet * gap;
-				for (let i = 0; i < player.maxBullet; i++) {
-					ctx.beginPath();
-					ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5,
-						i * perimeter / player.maxBullet + i * gap - Math.PI / 2,
-						(i + 1) * perimeter / player.maxBullet + i * gap - Math.PI / 2);
-					ctx.stroke();
-				}
-
-				ctx.strokeStyle = 'rgba(255,255,255,.5)';
-				ctx.lineWidth = 3;
-				for (let i = 0; i < player.bullet; i++) {
-					ctx.beginPath();
-					ctx.arc(player.position.x, player.position.y, config.player.radius + 1.5,
-						i * perimeter / player.maxBullet + i * gap - Math.PI / 2,
-						(i + 1) * perimeter / player.maxBullet + i * gap - Math.PI / 2);
-					ctx.stroke();
-				}
-
-				let playerBasic = this.getPlayerBPROT(player.id);
-				if (playerBasic) {
-					ctx.fillText(playerBasic.name, player.position.x, player.position.y + config.player.radius + 15);
+				let player = this.players.find(p => p.id == playerId);
+				if (player) {
+					player.draw(ctx, fillStyle, strokeStyle);
 				}
 			}
 		});
@@ -342,6 +279,110 @@ class resource {
 		ctx.save();
 		drawHandler();
 		ctx.restore();
+	}
+}
+
+class player extends resource {
+	constructor(basicPROT: toClientPROT.playerBasicPROT) {
+		super();
+
+		this.id = basicPROT.id;
+		this.name = basicPROT.name;
+		this.eqpts = basicPROT.eqpts;
+	}
+
+	onPlayerPROT(protocol: toClientPROT.playerPROT) {
+		this.initialized = true;
+		this.position = protocol.position;
+		this.angle = protocol.angle;
+		this.hp = protocol.hp;
+		this.bullet = protocol.bullet;
+		this.maxBullet = protocol.maxBullet;
+
+		if (protocol.removedEqptIds)
+			for (let id of protocol.removedEqptIds) {
+				let i = this.eqpts.findIndex(pp => pp.id == id);
+				if (i != -1) {
+					this.eqpts.splice(i, 1);
+				}
+			}
+
+		if (protocol.newEqpts)
+			this.eqpts = this.eqpts.concat(protocol.newEqpts);
+	}
+
+	initialized = false;
+	readonly id: number;
+	readonly name: string;
+	eqpts: toClientPROT.eqpt.allEqptPROTTypes[];
+
+	position: point;
+	angle: number;
+	hp: number;
+	bullet: number;
+	maxBullet: number;
+
+	draw(ctx: CanvasRenderingContext2D, fillStyle: string, strokeStyle: string) {
+		if (!this.initialized)
+			return;
+		this._draw(ctx, () => {
+			ctx.fillStyle = fillStyle;
+			ctx.strokeStyle = strokeStyle;
+			ctx.textAlign = 'center';
+
+			ctx.beginPath();
+			ctx.arc(this.position.x, this.position.y, config.player.radius, 0, Math.PI * 2);
+			ctx.fill();
+
+			ctx.beginPath();
+			ctx.moveTo(this.position.x, this.position.y);
+			ctx.lineTo(config.player.radius * Math.cos(this.angle) + this.position.x,
+				config.player.radius * Math.sin(this.angle) + this.position.y);
+			ctx.stroke();
+
+			ctx.strokeStyle = 'rgba(0,255,0,.5)';
+			ctx.lineWidth = 3;
+			let gap = Math.PI / 25;
+			let perimeter = Math.PI * 2 - config.player.maxHp * gap;
+			for (let i = 0; i < this.hp; i++) {
+				ctx.beginPath();
+				ctx.arc(this.position.x, this.position.y, config.player.radius - 1.5,
+					i * perimeter / config.player.maxHp + i * gap - Math.PI / 2,
+					(i + 1) * perimeter / config.player.maxHp + i * gap - Math.PI / 2);
+				ctx.stroke();
+			}
+
+			ctx.strokeStyle = 'rgba(0,0,0,.5)';
+			ctx.lineWidth = 3;
+			gap = Math.PI / 50;
+			perimeter = Math.PI * 2 - this.maxBullet * gap;
+			for (let i = 0; i < this.maxBullet; i++) {
+				ctx.beginPath();
+				ctx.arc(this.position.x, this.position.y, config.player.radius + 1.5,
+					i * perimeter / this.maxBullet + i * gap - Math.PI / 2,
+					(i + 1) * perimeter / this.maxBullet + i * gap - Math.PI / 2);
+				ctx.stroke();
+			}
+
+			ctx.strokeStyle = 'rgba(255,255,255,.5)';
+			ctx.lineWidth = 3;
+			for (let i = 0; i < this.bullet; i++) {
+				ctx.beginPath();
+				ctx.arc(this.position.x, this.position.y, config.player.radius + 1.5,
+					i * perimeter / this.maxBullet + i * gap - Math.PI / 2,
+					(i + 1) * perimeter / this.maxBullet + i * gap - Math.PI / 2);
+				ctx.stroke();
+			}
+
+			ctx.fillText(this.name, this.position.x, this.position.y + config.player.radius + 15);
+		});
+	}
+
+	dispose(manager: resourcesManager) {
+		this._dispose();
+		let i = manager.players.findIndex(p => p == this);
+		if (i != -1)
+			manager.explodes.splice(i);
 	}
 }
 
@@ -366,6 +407,13 @@ class attackCache extends resource {
 	}
 
 	onDuringAttackPROT(protocol: toClientPROT.duringAttackPROT, manager: resourcesManager) {
+		protocol.killedPlayerIds.forEach(p => {
+			let player = manager.players.find(pp => pp.id == p);
+			if (player) {
+				player.dispose(manager);
+			}
+		});
+
 		this._isSightEnd = protocol.isSightEnd;
 
 		if (!this._isEnd && protocol.isEnd) {
