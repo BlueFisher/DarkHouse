@@ -429,7 +429,7 @@ export class gameCore extends events.EventEmitter {
 	startRunning(playerId: number, active: boolean) {
 		let player = this._playerManager.findPlayerById(playerId);
 		if (player) {
-			player.startRunning(active);
+			player.startRunning(active, true);
 		}
 	}
 

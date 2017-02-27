@@ -143,7 +143,8 @@ export class player {
 	canRun = true;
 	private _runningSightRemainsTimer: NodeJS.Timer;
 	private _runningSightDisapperTimer: NodeJS.Timer;
-	startRunning(active: boolean) {
+	private _canContinueRunning = false;
+	startRunning(active: boolean, fromClient?: boolean) {
 		if (active) {
 			if (!this._isRunning && this.canRun) {
 				this._isRunning = true;
@@ -152,6 +153,9 @@ export class player {
 		} else {
 			this._isRunning = false;
 		}
+
+		if (fromClient)
+			this._canContinueRunning = active;
 	}
 	private _run() {
 		clearTimeout(this._runningSightRemainsTimer);
@@ -204,9 +208,13 @@ export class player {
 				this._shootingFinishedCallback();
 			} else {
 				this.canRun = true;
+				if (this._canContinueRunning)
+					this.startRunning(true);
 			}
 		} else {
 			this.canRun = true;
+			if (this._canContinueRunning)
+				this.startRunning(true);
 		}
 	}
 
@@ -321,7 +329,7 @@ export class playerManager {
 		return playersInSightMap;
 	}
 
-	getAndClearNewAndRemovedEqptPROTs(): toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[]|undefined {
+	getAndClearNewAndRemovedEqptPROTs(): toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[] | undefined {
 		let res: toClientPROT.eqpt.playerNewAndRemovedEqptPROTs[] = [];
 
 		this.players.forEach(p => {
