@@ -299,7 +299,7 @@ export class playerManager {
 		}).map(p => {
 			return {
 				id: p.id,
-				killTimes: p.records.attackInAimTimes
+				aimTimes: p.records.attackInAimTimes
 			}
 		}).slice(0, 10);
 	}

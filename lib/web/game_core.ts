@@ -97,6 +97,7 @@ export class gameCore {
 			}
 			if (!isRunning && e.keyCode == 87) {
 				isRunning = true;
+				this._render.getCurrPlayer().isRunning = true;
 				this._send(new fromClientPROT.startRunning(true));
 			}
 			if (!isCombatting && e.keyCode == 70) {
@@ -114,6 +115,7 @@ export class gameCore {
 			}
 			if (e.keyCode == 87) {
 				isRunning = false;
+				this._render.getCurrPlayer().isRunning = false;
 				this._send(new fromClientPROT.startRunning(false));
 			}
 			if (e.keyCode == 70) {
@@ -163,7 +165,7 @@ export class gameCore {
 			if (player)
 				vueData.index.rankList.push({
 					name: player.name,
-					killTimes: p.killTimes
+					killTimes: p.aimTimes
 				});
 		});
 

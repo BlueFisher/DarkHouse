@@ -13,7 +13,7 @@ export interface playerPROT {
 	hp?: number,
 	bullet?: number,
 	maxBullet?: number,
-	
+
 	newEqpts?: eqpt.allEqptPROTTypes[],
 	removedEqptIds?: number[]
 }
@@ -88,7 +88,7 @@ export namespace eqpt {
 }
 
 export interface runningPROT {
-	position: point,
+	playerId: number,
 	playerIdsInSight: number[],
 }
 
@@ -115,7 +115,7 @@ export interface duringAttackPROT {
 
 export interface rankPROT {
 	id: number,
-	killTimes: number
+	aimTimes: number // 击中次数
 }
 
 export enum type {
@@ -223,10 +223,6 @@ export class mainPROT extends baseProtocol {
 		if (this.duringAttackPROTs)
 			this.duringAttackPROTs.forEach(p => {
 				p.bulletPosition = point.getFixedPoint(p.bulletPosition);
-			});
-		if (this.runningPROTs)
-			this.runningPROTs.forEach(p => {
-				p.position = point.getFixedPoint(p.position);
 			});
 		if (this.newPropPROTs)
 			this.newPropPROTs.forEach(p => {

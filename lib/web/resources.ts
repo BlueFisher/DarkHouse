@@ -236,22 +236,25 @@ export class resourcesManager {
 	drawRunning(ctx: CanvasRenderingContext2D) {
 		if (this.mainPROTCache.runningPROTs)
 			this.mainPROTCache.runningPROTs.forEach(runningPROT => {
-				ctx.save();
+				let player = this.players.find(p => p.id == runningPROT.playerId);
+				if (player) {
+					ctx.save();
 
-				// 绘制奔跑范围视野中所有的玩家
-				ctx.beginPath();
-				ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
-				ctx.clip();
+					// 绘制奔跑范围视野中所有的玩家
+					ctx.beginPath();
+					ctx.arc(player.position.x, player.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
+					ctx.clip();
 
-				this.drawPlayersById(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
+					this.drawPlayersById(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
 
-				ctx.restore();
+					ctx.restore();
 
-				// 绘制奔跑视野
-				ctx.beginPath();
-				ctx.fillStyle = 'rgba(255,255,255,0.75)';
-				ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius, 0, Math.PI * 2);
-				ctx.fill();
+					// 绘制奔跑视野
+					ctx.beginPath();
+					ctx.fillStyle = 'rgba(255,255,255,0.75)';
+					ctx.arc(player.position.x, player.position.y, config.player.runningSightRadius, 0, Math.PI * 2);
+					ctx.fill();
+				}
 			});
 	}
 
@@ -402,16 +405,19 @@ class player extends resource {
 }
 
 class currPlayer extends player {
+	isRunning = false;
 	constructor(basicPROT: toClientPROT.playerBasicPROT) {
 		super(basicPROT);
 
-		// setInterval(() => {
-		// 	if (this.initialized) {
-		// 		let x = this.position.x + Math.cos(this.angle) * config.player.movingStep;
-		// 		let y = this.position.y + Math.sin(this.angle) * config.player.movingStep;
-		// 		this.position = new point(x, y);
-		// 	}
-		// }, 1000 / 60);
+		setInterval(() => {
+			if (this.initialized) {
+				let step = this.isRunning ? config.player.runingStep : config.player.movingStep;
+				console.log(step);
+				let x = this.position.x + Math.cos(this.angle) * step;
+				let y = this.position.y + Math.sin(this.angle) * step;
+				this.position = new point(x, y);
+			}
+		}, 1000 / 60);
 	}
 }
 

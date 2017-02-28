@@ -19,6 +19,9 @@ export class render {
 	getPlayer(playerId) {
 		return this._resourceManager.players.find(p => p.id == playerId);
 	}
+	getCurrPlayer() {
+		return this._resourceManager.currPlayer;
+	}
 
 	draw(ctx: CanvasRenderingContext2D) {
 		let canvas = ctx.canvas;

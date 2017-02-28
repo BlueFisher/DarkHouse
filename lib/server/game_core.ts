@@ -127,7 +127,7 @@ export class gameCore extends events.EventEmitter {
 			for (let player of players) {
 				if (player.isRunningSightActive()) {
 					runningPROTs.push({
-						position: player.position,
+						playerId: player.id,
 						playerIdsInSight: this._playerManager
 							.getPlayersInRadius(player.position, config.player.runningSightRadius)
 							.map(p => p.id)
