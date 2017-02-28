@@ -10,9 +10,9 @@ export interface playerPROT {
 	id: number,
 	position: point,
 	angle: number,
-	hp: number,
-	bullet: number,
-	maxBullet: number,
+	hp?: number,
+	bullet?: number,
+	maxBullet?: number,
 	
 	newEqpts?: eqpt.allEqptPROTTypes[],
 	removedEqptIds?: number[]

@@ -3,8 +3,8 @@ import * as config from '../shared/game_config';
 import { point } from '../shared/utils';
 
 export class resourcesManager {
-	currentPlayerId: number;
 	players: player[] = [];
+	currPlayer: currPlayer;
 
 	edge: toClientPROT.stage.edgePROT;
 	barricades: toClientPROT.stage.barricadePROT[] = [];
@@ -19,10 +19,14 @@ export class resourcesManager {
 	mainPROTCache: toClientPROT.mainPROT;
 
 	constructor(protocol: toClientPROT.initialize) {
-		this.currentPlayerId = protocol.currPlayerId;
-
 		protocol.players.forEach(p => {
-			this.players.push(new player(p));
+			if (p.id == protocol.currPlayerId) {
+				let curr = new currPlayer(p);
+				this.currPlayer = curr;
+				this.players.push(curr);
+			} else {
+				this.players.push(new player(p));
+			}
 		});
 		this.edge = protocol.edge;
 		this.barricades = protocol.barricades;
@@ -111,7 +115,7 @@ export class resourcesManager {
 						ctx.arc(area.position.x, area.position.y, area.radius, 0, Math.PI * 2);
 						ctx.clip();
 
-						this.drawPlayer(ctx, a.playerIds, '#fff', '#f00');
+						this.drawPlayersById(ctx, a.playerIds, '#fff', '#f00');
 						ctx.restore();
 					}
 				}
@@ -142,7 +146,7 @@ export class resourcesManager {
 			ctx.clip();
 
 			if (this.mainPROTCache.playerIdsInSight)
-				this.drawPlayer(ctx, this.mainPROTCache.playerIdsInSight, '#fff', '#f00');
+				this.drawPlayersById(ctx, this.mainPROTCache.playerIdsInSight, '#fff', '#f00');
 
 			// 绘制可见区域中所有障碍物
 			ctx.fillStyle = '#fff';
@@ -239,7 +243,7 @@ export class resourcesManager {
 				ctx.arc(runningPROT.position.x, runningPROT.position.y, config.player.runningSightRadius - 1, 0, Math.PI * 2);
 				ctx.clip();
 
-				this.drawPlayer(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
+				this.drawPlayersById(ctx, runningPROT.playerIdsInSight, '#fff', '#f00');
 
 				ctx.restore();
 
@@ -251,15 +255,23 @@ export class resourcesManager {
 			});
 	}
 
-	drawPlayer(ctx: CanvasRenderingContext2D, playerIds: number[],
+	drawPlayersById(ctx: CanvasRenderingContext2D, playerIds: number[],
 		fillStyle: string, strokeStyle: string) {
-
 		this._draw(ctx, () => {
 			for (let playerId of playerIds) {
 				let player = this.players.find(p => p.id == playerId);
-				if (player) {
+				if (player)
 					player.draw(ctx, fillStyle, strokeStyle);
-				}
+			}
+		});
+	}
+
+	drawPlayers(ctx: CanvasRenderingContext2D, players: player[],
+		fillStyle: string, strokeStyle: string) {
+
+		this._draw(ctx, () => {
+			for (let player of players) {
+				player.draw(ctx, fillStyle, strokeStyle);
 			}
 		});
 	}
@@ -295,9 +307,12 @@ class player extends resource {
 		this.initialized = true;
 		this.position = protocol.position;
 		this.angle = protocol.angle;
-		this.hp = protocol.hp;
-		this.bullet = protocol.bullet;
-		this.maxBullet = protocol.maxBullet;
+		if (protocol.hp != undefined)
+			this.hp = protocol.hp;
+		if (protocol.bullet != undefined)
+			this.bullet = protocol.bullet;
+		if (protocol.maxBullet != undefined)
+			this.maxBullet = protocol.maxBullet;
 
 		if (protocol.removedEqptIds)
 			for (let id of protocol.removedEqptIds) {
@@ -386,6 +401,20 @@ class player extends resource {
 	}
 }
 
+class currPlayer extends player {
+	constructor(basicPROT: toClientPROT.playerBasicPROT) {
+		super(basicPROT);
+
+		// setInterval(() => {
+		// 	if (this.initialized) {
+		// 		let x = this.position.x + Math.cos(this.angle) * config.player.movingStep;
+		// 		let y = this.position.y + Math.sin(this.angle) * config.player.movingStep;
+		// 		this.position = new point(x, y);
+		// 	}
+		// }, 1000 / 60);
+	}
+}
+
 /**攻击缓存 */
 class attackCache extends resource {
 	readonly id: number;
@@ -417,13 +446,13 @@ class attackCache extends resource {
 		this._isSightEnd = protocol.isSightEnd;
 
 		if (!this._isEnd && protocol.isEnd) {
-			if (this._attackPROT.attackPlayerId == manager.currentPlayerId) {
+			if (this._attackPROT.attackPlayerId == manager.currPlayer.id) {
 				if (protocol.attackedPlayerIds.length > 0)
 					manager.shooingInAimEffect = new attackInAimEffect('击中', '#fff');
 				if (protocol.killedPlayerIds.length > 0)
 					manager.shooingInAimEffect = new attackInAimEffect('击杀', '#FF5433');
 			}
-			if (protocol.attackedPlayerIds.find(p => p == manager.currentPlayerId)) {
+			if (protocol.attackedPlayerIds.find(p => p == manager.currPlayer.id)) {
 				manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));
 			}
 			if (this._attackPROT.attackType == config.weapon.attackType.gun && this._attackPROT.weaponType == config.weapon.gun.type.rocket) {
@@ -452,7 +481,7 @@ class attackCache extends resource {
 					this._attackPROT.sightRadius - 1, 0, Math.PI * 2);
 				ctx.clip();
 
-				manager.drawPlayer(ctx, this._attackPROT.playerIdsInSight, '#fff', '#f00');
+				manager.drawPlayersById(ctx, this._attackPROT.playerIdsInSight, '#fff', '#f00');
 
 				ctx.restore();
 

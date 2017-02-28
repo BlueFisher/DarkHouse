@@ -84,22 +84,37 @@ export class player {
 		this._melee = melee;
 	}
 
-
+	private _lastPlayerPROTCache: toClientPROT.playerPROT;
 	newEqptsCache: eqpts.equipment[] = [];
 	removedEqptsCache: eqpts.equipment[] = [];
 	getPlayerPROT(): toClientPROT.playerPROT {
+		let hp: number | undefined = this._hp,
+			bullet: number | undefined = this._gun.getBullet(),
+			maxBullet: number | undefined = this._gun.maxBullet;
+		if (this._lastPlayerPROTCache) {
+			if (this._lastPlayerPROTCache.hp == hp) hp = undefined;
+			else this._lastPlayerPROTCache.hp = hp;
+
+			if (this._lastPlayerPROTCache.bullet == bullet) bullet = undefined;
+			else this._lastPlayerPROTCache.bullet = bullet;
+
+			if (this._lastPlayerPROTCache.maxBullet == maxBullet) maxBullet = undefined;
+			else this._lastPlayerPROTCache.maxBullet = maxBullet;
+		}
 		let res = {
 			id: this.id,
 			position: this.position,
 			angle: this._angle,
-			hp: this._hp,
-			bullet: this._gun.getBullet(),
-			maxBullet: this._gun.maxBullet,
+			hp: hp,
+			bullet: bullet,
+			maxBullet: maxBullet,
 			newEqpts: this.newEqptsCache.length > 0 ? this.newEqptsCache.map(p => p.getEqptPROT()) : undefined,
 			removedEqptIds: this.removedEqptsCache.length > 0 ? this.removedEqptsCache.map(p => p.id) : undefined
 		};
 		this.newEqptsCache = [];
 		this.removedEqptsCache = [];
+		if (!this._lastPlayerPROTCache)
+			this._lastPlayerPROTCache = res;
 		return res;
 	}
 	getPlayerBasicPROT(): toClientPROT.playerBasicPROT {

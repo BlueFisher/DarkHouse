@@ -24,8 +24,8 @@ export class render {
 		let canvas = ctx.canvas;
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-		let currPlayer = this.getPlayer(this._resourceManager.currentPlayerId);
-		if (!currPlayer || !currPlayer.initialized)
+		let currPlayer = this._resourceManager.currPlayer;
+		if (!currPlayer.initialized)
 			return;
 
 		ctx.save();
@@ -41,7 +41,7 @@ export class render {
 
 		this._resourceManager.drawPlayerVisableArea(ctx, currPlayer);
 
-		this._resourceManager.drawPlayer(ctx, [this._resourceManager.currentPlayerId], '#333', '#f00');
+		this._resourceManager.drawPlayers(ctx, [this._resourceManager.currPlayer], '#333', '#f00');
 
 		// 绘制射击
 		this._resourceManager.attackCaches.forEach(cache => {
