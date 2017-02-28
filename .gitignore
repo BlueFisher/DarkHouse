@@ -1,7 +1,6 @@
 *.js
 !/public/scripts/lib/*.js
-!/webpack.config.js
-!/build.js
+!/build/*.js
 *.js.map
 
 typings/*
