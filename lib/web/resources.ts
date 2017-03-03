@@ -1,5 +1,8 @@
-import * as toClientPROT from '../shared/ws_prot_to_client';
+import * as serverConfig from '../../config';
 import * as config from '../shared/game_config';
+
+import * as toClientPROT from '../shared/ws_prot_to_client';
+
 import { point } from '../shared/utils';
 
 export class resourcesManager {
@@ -412,13 +415,14 @@ class player extends resource {
 class currPlayer extends player {
 	isMoving = true;
 	isRunning = false;
+	canRun = true;
 	constructor(basicPROT: toClientPROT.playerBasicPROT) {
 		super(basicPROT);
 
 		setInterval(() => {
 			if (this.initialized) {
 				if (this.isMoving) {
-					let step = this.isRunning ? config.player.runingStep : config.player.movingStep;
+					let step = this.isRunning && this.canRun ? config.player.runingStep : config.player.movingStep;
 					let x = this.position.x + Math.cos(this.angle) * step;
 					let y = this.position.y + Math.sin(this.angle) * step;
 					this.position = new point(x, y);
@@ -435,53 +439,87 @@ class currPlayer extends player {
 /**攻击缓存 */
 class attackCache extends resource {
 	readonly id: number;
+	private _attackType: config.weapon.attackType;
+	private _weaponType: config.weapon.weaponType;
+	private _position: point; // 攻击地点
+	private _angle: number;
+	private _playerIdsInSight: number[] = [];
+	private _attackPlayerId: number; // 攻击的玩家id
 	private _bulletPosition: point;
-	private _attackPROT: toClientPROT.attackPROT;
+	private _sightRadius: number;
 
 	private _attackedPlayerIds: number[] = [];
 	private _isSightEnd: boolean = false;
 	private _isEnd: boolean = false;
 
 	private _fadeOutTime = 20;
+	private _bulletTimer: NodeJS.Timer;
 
-	constructor(p: toClientPROT.attackPROT) {
+	constructor(protocol: toClientPROT.attackPROT) {
 		super();
 
-		this.id = p.id;
-		this._bulletPosition = p.bulletPosition;
-		this._attackPROT = p;
+		this.id = protocol.id;
+		this._attackType = protocol.attackType;
+		this._weaponType = protocol.weaponType;
+		this._position = protocol.position;
+		this._angle = protocol.angle;
+		if (protocol.playerIdsInSight)
+			this._playerIdsInSight = protocol.playerIdsInSight;
+		this._bulletPosition = protocol.bulletPosition;
+		this._sightRadius = protocol.sightRadius;
+
+		this._bulletTimer = setInterval(() => {
+			this._bulletPosition = new point(this._bulletPosition.x + protocol.bulletFlyStep * Math.cos(this._angle),
+				this._bulletPosition.y + protocol.bulletFlyStep * Math.sin(this._angle));
+		}, serverConfig.mainInterval);
 	}
 
 	onDuringAttackPROT(protocol: toClientPROT.duringAttackPROT, manager: resourcesManager) {
-		protocol.killedPlayerIds.forEach(p => {
-			let player = manager.players.find(pp => pp.id == p);
-			if (player) {
-				player.dispose(manager);
-			}
-		});
+		if (protocol.bulletPosition) {
+			console.log('end')
+		}
+		if (protocol.isSightEnd) {
+			console.log('sightend')
+		}
+		if (protocol.killedPlayerIds)
+			protocol.killedPlayerIds.forEach(p => {
+				let player = manager.players.find(pp => pp.id == p);
+				if (player) {
+					player.dispose(manager);
+				}
+			});
 
-		this._isSightEnd = protocol.isSightEnd;
+		if (protocol.isSightEnd)
+			this._isSightEnd = true;
 
-		if (!this._isEnd && protocol.isEnd) {
-			if (this._attackPROT.attackPlayerId == manager.currPlayer.id) {
-				if (protocol.attackedPlayerIds.length > 0)
+		if (!this._isEnd && protocol.bulletPosition) {
+			if (this._attackPlayerId == manager.currPlayer.id) {
+				if (protocol.attackedPlayerIds)
 					manager.shooingInAimEffect = new attackInAimEffect('击中', '#fff');
-				if (protocol.killedPlayerIds.length > 0)
+				if (protocol.killedPlayerIds)
 					manager.shooingInAimEffect = new attackInAimEffect('击杀', '#FF5433');
 			}
-			if (protocol.attackedPlayerIds.find(p => p == manager.currPlayer.id)) {
-				manager.attackedEffects.push(new attackedEffect(this._attackPROT.angle + Math.PI));
+
+			if (protocol.attackedPlayerIds) {
+				if (protocol.attackedPlayerIds.find(p => p == manager.currPlayer.id)) {
+					manager.attackedEffects.push(new attackedEffect(this._angle + Math.PI));
+				}
 			}
-			if (this._attackPROT.attackType == config.weapon.attackType.gun && this._attackPROT.weaponType == config.weapon.gun.type.rocket) {
+
+			if (this._attackType == config.weapon.attackType.gun &&
+				this._weaponType == config.weapon.gun.type.rocket) {
 				manager.explodes.push(new explode(protocol.bulletPosition));
 			}
+
+			this._bulletPosition = protocol.bulletPosition;
+			if (protocol.attackedPlayerIds)
+				this._attackedPlayerIds = protocol.attackedPlayerIds;
 			this._isEnd = true;
+			clearInterval(this._bulletTimer);
 		}
 
-		this._bulletPosition = protocol.bulletPosition;
-
-		this._attackPROT.playerIdsInSight = protocol.playerIdsInSight;
-		this._attackedPlayerIds = protocol.attackedPlayerIds;
+		if (protocol.playerIdsInSight)
+			this._playerIdsInSight = protocol.playerIdsInSight;
 	}
 
 	draw(ctx: CanvasRenderingContext2D, manager: resourcesManager) {
@@ -489,16 +527,16 @@ class attackCache extends resource {
 			if (this._isEnd && this._fadeOutTime <= 0) {
 				this.dispose(manager);
 			}
-			if (!this._isSightEnd && this._attackPROT.sightRadius > 0) {
+			if (!this._isSightEnd && this._sightRadius > 0) {
 				ctx.save();
 
 				// 绘制射击可见区域中所有玩家
 				ctx.beginPath();
-				ctx.arc(this._attackPROT.position.x, this._attackPROT.position.y,
-					this._attackPROT.sightRadius - 1, 0, Math.PI * 2);
+				ctx.arc(this._position.x, this._position.y,
+					this._sightRadius - 1, 0, Math.PI * 2);
 				ctx.clip();
 
-				manager.drawPlayersById(ctx, this._attackPROT.playerIdsInSight, '#fff', '#f00');
+				manager.drawPlayersById(ctx, this._playerIdsInSight, '#fff', '#f00');
 
 				ctx.restore();
 
@@ -507,25 +545,25 @@ class attackCache extends resource {
 				ctx.fillStyle = 'rgba(255,255,0,0.25)';
 				ctx.strokeStyle = 'rgba(255,255,0,0.25)';
 				ctx.lineWidth = 3;
-				ctx.arc(this._attackPROT.position.x, this._attackPROT.position.y,
-					this._attackPROT.sightRadius, 0, Math.PI * 2);
+				ctx.arc(this._position.x, this._position.y,
+					this._sightRadius, 0, Math.PI * 2);
 				ctx.fill();
 			}
 
 			if (this._fadeOutTime >= 15) {
 				// 绘制子弹
 				ctx.beginPath();
-				if (this._attackPROT.attackType == config.weapon.attackType.gun) {
+				if (this._attackType == config.weapon.attackType.gun) {
 					ctx.strokeStyle = '#fff';
-				} else if (this._attackPROT.attackType == config.weapon.attackType.melee) {
+				} else if (this._attackType == config.weapon.attackType.melee) {
 					ctx.strokeStyle = '#00f';
 				}
 
 				ctx.lineWidth = 4;
-				ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._attackPROT.angle),
-					this._bulletPosition.y - 10 * Math.sin(this._attackPROT.angle));
-				ctx.lineTo(this._bulletPosition.x + 10 * Math.cos(this._attackPROT.angle),
-					this._bulletPosition.y + 10 * Math.sin(this._attackPROT.angle));
+				ctx.moveTo(this._bulletPosition.x - 10 * Math.cos(this._angle),
+					this._bulletPosition.y - 10 * Math.sin(this._angle));
+				ctx.lineTo(this._bulletPosition.x + 10 * Math.cos(this._angle),
+					this._bulletPosition.y + 10 * Math.sin(this._angle));
 				ctx.stroke();
 			}
 
@@ -537,7 +575,7 @@ class attackCache extends resource {
 			}
 
 			ctx.lineWidth = 4;
-			ctx.moveTo(this._attackPROT.position.x, this._attackPROT.position.y);
+			ctx.moveTo(this._position.x, this._position.y);
 			ctx.lineTo(this._bulletPosition.x, this._bulletPosition.y);
 			ctx.stroke();
 		});

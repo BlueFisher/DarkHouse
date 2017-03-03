@@ -103,19 +103,21 @@ export interface attackPROT {
 	weaponType: config.weapon.weaponType,
 	position: point, // 攻击地点
 	angle: number,
-	playerIdsInSight: number[],
+	playerIdsInSight?: number[],
 	attackPlayerId: number, // 攻击的玩家id
 	bulletPosition: point,
-	sightRadius: number
+	bulletFlyStep: number,
+	sightRadius: number,
+	sightTime: number
 }
 export interface duringAttackPROT {
 	id: number,
-	bulletPosition: point,
-	playerIdsInSight: number[],
-	attackedPlayerIds: number[],
-	killedPlayerIds: number[],
-	isSightEnd: boolean,
-	isEnd: boolean
+	playerIdsInSight?: number[],
+
+	bulletPosition?: point,
+	attackedPlayerIds?: number[],
+	killedPlayerIds?: number[],
+	isSightEnd?: boolean,
 }
 
 export interface rankPROT {
@@ -168,7 +170,7 @@ export class initialize extends baseProtocol {
 
 		this.props.forEach(p => {
 			p.position = point.getFixedPoint(p.position);
-		})
+		});
 	}
 	currPlayerId: number;
 	players: playerBasicPROT[];
@@ -189,11 +191,13 @@ export class mainPROT extends baseProtocol {
 			arr = arr.concat(this.playerIdsInSight);
 		if (this.attackPROTs)
 			this.attackPROTs.forEach(p => {
-				arr = arr.concat(p.playerIdsInSight);
+				if (p.playerIdsInSight)
+					arr = arr.concat(p.playerIdsInSight);
 			});
 		if (this.duringAttackPROTs)
 			this.duringAttackPROTs.forEach(p => {
-				arr = arr.concat(p.playerIdsInSight);
+				if (p.playerIdsInSight)
+					arr = arr.concat(p.playerIdsInSight);
 			});
 		if (this.runningPROTs)
 			this.runningPROTs.forEach(p => {
@@ -227,7 +231,8 @@ export class mainPROT extends baseProtocol {
 			});
 		if (this.duringAttackPROTs)
 			this.duringAttackPROTs.forEach(p => {
-				p.bulletPosition = point.getFixedPoint(p.bulletPosition);
+				if (p.bulletPosition)
+					p.bulletPosition = point.getFixedPoint(p.bulletPosition);
 			});
 		if (this.newPropPROTs)
 			this.newPropPROTs.forEach(p => {

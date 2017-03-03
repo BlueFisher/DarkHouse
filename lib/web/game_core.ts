@@ -146,9 +146,12 @@ export class gameCore {
 
 		this._canvas.addEventListener('mousedown', e => {
 			this._send(new fromClientPROT.startShoot(true));
+			if (this._render.getCurrPlayer().bullet > 0)
+				this._render.getCurrPlayer().canRun = false;
 		});
 		this._canvas.addEventListener('mouseup', e => {
 			this._send(new fromClientPROT.startShoot(false));
+			this._render.getCurrPlayer().canRun = true;
 		});
 	}
 

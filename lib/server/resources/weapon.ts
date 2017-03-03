@@ -5,7 +5,7 @@ export class weapon {
 	readonly attackType: config.weapon.attackType;
 	readonly weaponType: config.weapon.weaponType;
 	readonly attackSightRadius: number;
-	readonly attackSightTimeOut: number;
+	readonly attackSightTime: number;
 	readonly bulletFlyStep: number;
 
 	protected _attackInterval: number;
@@ -16,7 +16,7 @@ export class weapon {
 
 		this.attackType = setting.attackType;
 		this.attackSightRadius = setting.attackSightRadius;
-		this.attackSightTimeOut = setting.attackSightRemainsTime / serverConfig.mainInterval;
+		this.attackSightTime = setting.attackSightRemainsTime;
 		this.bulletFlyStep = setting.bulletFlyStep;
 		this._attackInterval = setting.attackInterval;
 	}

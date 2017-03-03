@@ -24,8 +24,14 @@ export class attackCache {
 	collisionPoint?: point;
 	attacktedPlayers: player[] = [];
 	killedPlayers: player[] = [];
-	sightTimeCount: number;
-	isEnd: boolean = false;
+
+	isFirstAdded = true;
+
+	isEnd = false;
+	isSightEnd = false;
+
+	isEndSent = false;
+	isSightEndSent = false;
 
 	constructor(weapon: weapon, attackPlayer: player) {
 		let angle = attackPlayer.getDirectionAngle();
@@ -36,7 +42,32 @@ export class attackCache {
 		this.angle = angle;
 		this.bulletPosition = new point(attackPlayer.position.x + config.player.radius * Math.cos(angle),
 			attackPlayer.position.y + config.player.radius * Math.sin(angle));
-		this.sightTimeCount = weapon.attackSightTimeOut;
+
+		setTimeout(() => {
+			this.isSightEnd = true;
+		}, weapon.attackSightTime);
+	}
+
+	getAttackPROT(playerIdsInAttackSight: number[], attackSightRadius: number): toClientPROT.attackPROT {
+		let res: toClientPROT.attackPROT = {
+			id: this.id,
+			attackType: this.weapon.attackType,
+			weaponType: this.weapon.weaponType,
+			position: this.attackPosition,
+			angle: this.angle,
+
+			attackPlayerId: this.attackPlayer.id,
+			bulletPosition: this.bulletPosition,
+			bulletFlyStep: this.weapon.bulletFlyStep,
+			sightRadius: attackSightRadius,
+			sightTime: this.weapon.attackSightTime
+		};
+
+		if (playerIdsInAttackSight.length > 0) {
+			res.playerIdsInSight = playerIdsInAttackSight;
+		}
+
+		return res;
 	}
 }
 
@@ -47,7 +78,8 @@ export class attackCacheManager {
 		this._attackCaches.push(new attackCache(weapon, attackPlayer));
 	}
 
-	generateAttackPROTs(playerManager: playerManager): [toClientPROT.attackPROT[] | undefined, toClientPROT.duringAttackPROT[] | undefined] {
+	generateAttackPROTs(playerManager: playerManager): [toClientPROT.attackPROT[] | undefined,
+		toClientPROT.duringAttackPROT[] | undefined] {
 		let attackPROTs: toClientPROT.attackPROT[] | undefined = [];
 		let duringAttackPROTs: toClientPROT.duringAttackPROT[] | undefined = [];
 
@@ -58,44 +90,43 @@ export class attackCacheManager {
 			if (cache.weapon instanceof gun && cache.weapon.isEquippedSilencer) {
 				attackSightRadius = 0;
 			} else {
-				if (cache.sightTimeCount > 0) {
+				if (!cache.isSightEnd) {
 					playerIdsInAttackSight = playerManager.getPlayersInRadius(cache.attackPosition, attackSightRadius)
 						.map(p => p.id);
 				}
 			}
 
 			// 如果是初次加入到射击缓存中
-			if (cache.sightTimeCount == cache.weapon.attackSightTimeOut) {
-				attackPROTs.push({
-					id: cache.id,
-					attackType: cache.weapon.attackType,
-					weaponType: cache.weapon.weaponType,
-					position: cache.attackPosition,
-					angle: cache.angle,
-					playerIdsInSight: playerIdsInAttackSight,
-					attackPlayerId: cache.attackPlayer.id,
-					bulletPosition: cache.bulletPosition,
-					sightRadius: attackSightRadius
-				});
-				cache.sightTimeCount--;
+			if (cache.isFirstAdded) {
+				cache.isFirstAdded = false;
+				attackPROTs.push(cache.getAttackPROT(playerIdsInAttackSight, attackSightRadius));
 			} else {
 				let duringAttackPROT: toClientPROT.duringAttackPROT = {
-					id: cache.id,
-					bulletPosition: cache.bulletPosition,
-					playerIdsInSight: [],
-					attackedPlayerIds: cache.attacktedPlayers.map(p => p.id),
-					killedPlayerIds: cache.killedPlayers.map(p => p.id),
-					isSightEnd: false,
-					isEnd: cache.isEnd
+					id: cache.id
 				};
 
-				if (cache.sightTimeCount <= 0) {
-					duringAttackPROT.isSightEnd = true;
-				} else {
+				if (playerIdsInAttackSight.length > 0) {
 					duringAttackPROT.playerIdsInSight = playerIdsInAttackSight;
 				}
 
-				duringAttackPROTs.push(duringAttackPROT);
+				if (cache.isEnd && !cache.isEndSent) {
+					cache.isEndSent = true;
+					duringAttackPROT.bulletPosition = cache.bulletPosition;
+					duringAttackPROT.attackedPlayerIds = cache.attacktedPlayers.map(p => p.id);
+					duringAttackPROT.killedPlayerIds = cache.killedPlayers.map(p => p.id);
+				}
+
+				if (!cache.isSightEndSent) {
+					if (cache.isSightEnd) {
+						cache.isSightEndSent = true;
+						duringAttackPROT.isSightEnd = true;
+					} else {
+						duringAttackPROT.playerIdsInSight = playerIdsInAttackSight;
+					}
+				}
+
+				if (playerIdsInAttackSight.length > 0 || duringAttackPROT.bulletPosition || duringAttackPROT.isSightEnd)
+					duringAttackPROTs.push(duringAttackPROT);
 			}
 		}
 
@@ -111,13 +142,12 @@ export class attackCacheManager {
 		playerAttacked: (attacktedPlayer: player, attackPlayer: player, damage: number) => void) {
 		for (let i = this._attackCaches.length - 1; i >= 0; i--) {
 			let cache = this._attackCaches[i];
-			if (cache.sightTimeCount <= 0) {
+			if (cache.isSightEnd) {
 				if (cache.isEnd) {
 					this._attackCaches.splice(i, 1);
 					continue;
 				}
 			} else {
-				cache.sightTimeCount--;
 				if (cache.isEnd) {
 					continue;
 				}
