@@ -116,7 +116,6 @@ export class player {
 		if (!this._lastPlayerPROTCache)
 			this._lastPlayerPROTCache = res;
 
-		console.log(res.hp);
 		return res;
 	}
 	getPlayerBasicPROT(): toClientPROT.playerBasicPROT {
