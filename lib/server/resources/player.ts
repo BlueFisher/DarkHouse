@@ -115,12 +115,19 @@ export class player {
 		this.removedEqptsCache = [];
 		if (!this._lastPlayerPROTCache)
 			this._lastPlayerPROTCache = res;
+
+		console.log(res.hp);
 		return res;
 	}
 	getPlayerBasicPROT(): toClientPROT.playerBasicPROT {
 		return {
 			id: this.id,
 			name: this.name,
+			position: this.position,
+			angle: this._angle,
+			hp: this._hp,
+			bullet: this._gun.getBullet(),
+			maxBullet: this._gun.maxBullet,
 			eqpts: this.eqpts.map(p => p.getEqptPROT())
 		}
 	}

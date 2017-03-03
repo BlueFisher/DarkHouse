@@ -4,6 +4,11 @@ import * as config from '../shared/game_config';
 export interface playerBasicPROT {
 	id: number,
 	name: string,
+	position: point,
+	angle: number,
+	hp: number,
+	bullet: number,
+	maxBullet: number,
 	eqpts: eqpt.allEqptPROTTypes[]
 }
 export interface playerPROT {
@@ -178,7 +183,7 @@ export class mainPROT extends baseProtocol {
 		super(type.main);
 	}
 
-	formatPlayerPROT(currPlayerId: number, format: (playerId: number) => playerPROT | null) {
+	formatPlayerPROT(currPlayerId: number, playerPROTs: playerPROT[]) {
 		let arr: number[] = [currPlayerId];
 		if (this.playerIdsInSight)
 			arr = arr.concat(this.playerIdsInSight);
@@ -203,7 +208,7 @@ export class mainPROT extends baseProtocol {
 		for (let i of arr) {
 			if (!json[i]) {
 				json[i] = 1;
-				let playerPROT = format(i);
+				let playerPROT = playerPROTs.find(p => p.id == i);
 				if (playerPROT)
 					this.playerPROTs.push(playerPROT);
 			}

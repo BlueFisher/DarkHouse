@@ -303,6 +303,11 @@ class player extends resource {
 
 		this.id = basicPROT.id;
 		this.name = basicPROT.name;
+		this.position = basicPROT.position;
+		this.angle = basicPROT.angle;
+		this.hp = basicPROT.hp;
+		this.bullet = basicPROT.bullet;
+		this.maxBullet = basicPROT.maxBullet;
 		this.eqpts = basicPROT.eqpts;
 	}
 

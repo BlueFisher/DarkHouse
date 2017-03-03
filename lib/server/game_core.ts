@@ -140,6 +140,8 @@ export class gameCore extends events.EventEmitter {
 		// 主计时器循环
 		setInterval(() => {
 			let players = this._playerManager.players;
+			let playerPROTs = players.map(p => p.getPlayerPROT());
+
 			let sendingMap = new Map<number, toClientPROT.mainPROT>();
 
 			let newPlayersBasicPROTs = this._playerManager.getAndClearNewPlayersBasicPROTs();
@@ -175,13 +177,7 @@ export class gameCore extends events.EventEmitter {
 
 				mainPROT.rankList = rankListPROT;
 
-				mainPROT.formatPlayerPROT(player.id, (playerId) => {
-					let player = this._playerManager.findPlayerById(playerId);
-					if (player)
-						return player.getPlayerPROT();
-					else
-						return null;
-				});
+				mainPROT.formatPlayerPROT(player.id, playerPROTs);
 				mainPROT.fixNumbers();
 
 				sendingMap.set(player.id, mainPROT);
