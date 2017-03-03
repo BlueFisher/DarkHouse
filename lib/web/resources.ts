@@ -405,19 +405,25 @@ class player extends resource {
 }
 
 class currPlayer extends player {
+	isMoving = true;
 	isRunning = false;
 	constructor(basicPROT: toClientPROT.playerBasicPROT) {
 		super(basicPROT);
 
 		setInterval(() => {
 			if (this.initialized) {
-				let step = this.isRunning ? config.player.runingStep : config.player.movingStep;
-				console.log(step);
-				let x = this.position.x + Math.cos(this.angle) * step;
-				let y = this.position.y + Math.sin(this.angle) * step;
-				this.position = new point(x, y);
+				if (this.isMoving) {
+					let step = this.isRunning ? config.player.runingStep : config.player.movingStep;
+					let x = this.position.x + Math.cos(this.angle) * step;
+					let y = this.position.y + Math.sin(this.angle) * step;
+					this.position = new point(x, y);
+				}
 			}
 		}, 1000 / 60);
+	}
+
+	setAngle(angle: number) {
+		this.angle = angle;
 	}
 }
 

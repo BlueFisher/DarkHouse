@@ -86,13 +86,17 @@ export class gameCore {
 				}
 			}
 
+			this._render.getCurrPlayer().setAngle(angle);
 			this._send(new fromClientPROT.rotate(angle));
 		});
 
-		let isRunning = false,
+		let isMoving = true,
+			isRunning = false,
 			isCombatting = false;
 		this._canvas.addEventListener('keydown', e => {
-			if (e.keyCode == 32) {
+			if (isMoving && e.keyCode == 32) {
+				isMoving = false;
+				this._render.getCurrPlayer().isMoving = false;
 				this._send(new fromClientPROT.stopMoving(true));
 			}
 			if (!isRunning && e.keyCode == 87) {
@@ -111,6 +115,8 @@ export class gameCore {
 
 		this._canvas.addEventListener('keyup', e => {
 			if (e.keyCode == 32) {
+				isMoving = true;
+				this._render.getCurrPlayer().isMoving = true;
 				this._send(new fromClientPROT.stopMoving(false));
 			}
 			if (e.keyCode == 87) {

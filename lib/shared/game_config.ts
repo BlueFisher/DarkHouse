@@ -3,7 +3,7 @@ import { point } from '../shared/utils';
 
 export namespace player {
 	export let movingStep = 0.08 * serverConfig.mainInterval; // 每循环移动前进距离
-	export let runingStep = 0.136 * serverConfig.mainInterval;  // 每循环跑步前进距离
+	export let runingStep = 0.18 * serverConfig.mainInterval;  // 每循环跑步前进距离
 
 	export let maxHp = 12;
 	export let radius = 20;
