@@ -418,21 +418,21 @@ class currPlayer extends player {
 	canRun = true;
 	constructor(basicPROT: toClientPROT.playerBasicPROT) {
 		super(basicPROT);
-
-		setInterval(() => {
-			if (this.initialized) {
-				if (this.isMoving) {
-					let step = this.isRunning && this.canRun ? config.player.runingStep : config.player.movingStep;
-					let x = this.position.x + Math.cos(this.angle) * step;
-					let y = this.position.y + Math.sin(this.angle) * step;
-					this.position = new point(x, y);
-				}
-			}
-		}, 1000 / 60);
 	}
 
 	setAngle(angle: number) {
 		this.angle = angle;
+	}
+
+	handleMoving() {
+		if (this.initialized) {
+			if (this.isMoving) {
+				let step = this.isRunning && this.canRun ? config.player.runingStep : config.player.movingStep;
+				let x = this.position.x + Math.cos(this.angle) * step;
+				let y = this.position.y + Math.sin(this.angle) * step;
+				this.position = new point(x, y);
+			}
+		}
 	}
 }
 
@@ -446,6 +446,7 @@ class attackCache extends resource {
 	private _playerIdsInSight: number[] = [];
 	private _attackPlayerId: number; // 攻击的玩家id
 	private _bulletPosition: point;
+	private _bulletFlyStep: number;
 	private _sightRadius: number;
 
 	private _attackedPlayerIds: number[] = [];
@@ -453,7 +454,7 @@ class attackCache extends resource {
 	private _isEnd: boolean = false;
 
 	private _fadeOutTime = 20;
-	private _bulletTimer: NodeJS.Timer;
+	// private _bulletTimer: NodeJS.Timer;
 
 	constructor(protocol: toClientPROT.attackPROT) {
 		super();
@@ -466,12 +467,12 @@ class attackCache extends resource {
 		if (protocol.playerIdsInSight)
 			this._playerIdsInSight = protocol.playerIdsInSight;
 		this._bulletPosition = protocol.bulletPosition;
+		this._bulletFlyStep = protocol.bulletFlyStep;
 		this._sightRadius = protocol.sightRadius;
 
-		this._bulletTimer = setInterval(() => {
-			this._bulletPosition = new point(this._bulletPosition.x + protocol.bulletFlyStep * Math.cos(this._angle),
-				this._bulletPosition.y + protocol.bulletFlyStep * Math.sin(this._angle));
-		}, serverConfig.mainInterval);
+		// this._bulletTimer = setInterval(() => {
+
+		// }, serverConfig.mainInterval);
 	}
 
 	onDuringAttackPROT(protocol: toClientPROT.duringAttackPROT, manager: resourcesManager) {
@@ -515,7 +516,7 @@ class attackCache extends resource {
 			if (protocol.attackedPlayerIds)
 				this._attackedPlayerIds = protocol.attackedPlayerIds;
 			this._isEnd = true;
-			clearInterval(this._bulletTimer);
+			// clearInterval(this._bulletTimer);
 		}
 
 		if (protocol.playerIdsInSight)
@@ -579,6 +580,11 @@ class attackCache extends resource {
 			ctx.lineTo(this._bulletPosition.x, this._bulletPosition.y);
 			ctx.stroke();
 		});
+
+		if (!this._isEnd) {
+			this._bulletPosition = new point(this._bulletPosition.x + this._bulletFlyStep * Math.cos(this._angle),
+				this._bulletPosition.y + this._bulletFlyStep * Math.sin(this._angle));
+		}
 	}
 
 	dispose(manager: resourcesManager) {

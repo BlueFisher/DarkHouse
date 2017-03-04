@@ -63,5 +63,7 @@ export class render {
 			this._resourceManager.shooingInAimEffect.draw(ctx);
 
 		this._resourceManager.attackedEffects.forEach(p => p.draw(ctx));
+
+		this._resourceManager.currPlayer.handleMoving();
 	}
 }
