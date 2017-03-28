@@ -16,7 +16,7 @@ export class baseProtocol {
 	type: type;
 }
 
-export class pingProtocol extends baseProtocol {
+export class ping extends baseProtocol {
 	constructor() {
 		super(type.ping);
 	}

@@ -164,7 +164,7 @@ export class gameCore {
 
 	private _sendPing() {
 		this._pingTime = new Date();
-		this._send(new fromClientPROT.pingProtocol());
+		this._send(new fromClientPROT.ping());
 	}
 
 	private _onMainPROT(protocol: toClientPROT.mainPROT) {

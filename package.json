@@ -5,36 +5,36 @@
   "main": "index.js",
   "scripts": {
     "build": "cross-env NODE_ENV=production node ./build/build",
-	"build:watch":"cross-env NODE_ENV=watch node ./build/build",
-	"start":"cross-env NODE_ENV=production node main",
-	"start:dev":"cross-env NODE_ENV=develop node main"
+    "build:watch": "cross-env NODE_ENV=watch node ./build/build",
+    "start": "cross-env NODE_ENV=production node main",
+    "start:dev": "cross-env NODE_ENV=develop node main"
   },
   "author": "Fisher",
   "license": "MIT",
   "dependencies": {
-    "body-parser": "^1.16.1",
+    "body-parser": "^1.17.1",
     "bootstrap": "^3.3.7",
     "connect-mongo": "^1.3.2",
     "cookie-parser": "^1.4.3",
-    "cross-env": "^3.1.4",
+    "cross-env": "^3.2.3",
     "ejs": "^2.5.6",
-    "express": "^4.14.1",
+    "express": "^4.15.2",
     "express-session": "^1.15.1",
     "font-awesome": "^4.7.0",
     "jquery": "^3.1.1",
-    "log4js": "^1.1.0",
+    "log4js": "^1.1.1",
     "toastr": "^2.1.2",
-    "vue": "^2.1.10",
+    "vue": "^2.2.2",
     "webpack-merge": "^3.0.0",
     "ws": "^1.1.2"
   },
   "devDependencies": {
-    "babel-core": "^6.23.1",
+    "babel-core": "^6.4.0",
     "babel-loader": "^6.3.2",
     "babel-preset-es2015": "^6.22.0",
     "source-map-loader": "^0.1.6",
     "typescript": "^2.1.5",
-    "webpack": "^2.2.1",
-    "typings": "^2.1.0"
+    "typings": "^2.1.0",
+    "webpack": "^2.2.1"
   }
 }

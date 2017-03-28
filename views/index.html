@@ -1,141 +1,143 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh">
 
 <head>
-	<meta charset="UTF-8">
-	<title>DarkHouse</title>
+    <meta charset="UTF-8">
+    <title>DarkHouse</title>
 
-	<% if (useCDN) { %>
-		<link href="//cdn.bootcss.com/toastr.js/latest/css/toastr.min.css" rel="stylesheet" />
-		<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" />
-		<link href="//cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
-		<% } else { %>
-			<link rel="stylesheet" href="/lib/toastr/build/toastr.css" />
-			<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.css" />
-			<link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.css" />
-			<% } %>
+    <% if (useCDN) { %>
+    <link href="//cdn.bootcss.com/toastr.js/latest/css/toastr.min.css" rel="stylesheet" />
+    <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" />
+    <link href="//cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+    <% } else { %>
+    <link rel="stylesheet" href="/lib/toastr/build/toastr.css" />
+    <link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.css" />
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.css" />
+    <% } %>
 
-				<link rel="stylesheet" href="/public/style/main.css" />
+    <link rel="stylesheet" href="/public/style/main.css" />
 </head>
 
 <body>
-	<div class="stage-container">
-		<canvas class="stage" id="stage" tabindex="0"></canvas>
-	</div>
-	<div class="ping" id="ping">
-		<p>{{ping}} ms</p>
-		<p>{{dataLengthPerSec}} kb/s</p>
-	</div>
-	<div class="ranklist" id="ranklist">
-		<p v-for="(player, index) in rankList">
-			{{index+1}} {{player.name}} {{player.killTimes}}
-		</p>
-	</div>
+    <div class="stage-container">
+        <canvas class="stage" id="stage" tabindex="0"></canvas>
+    </div>
+    <div class="ping" id="ping">
+        <p>{{ping}} ms</p>
+        <p>{{dataLengthPerSec}} kb/s</p>
+    </div>
+    <div class="ranklist" id="ranklist">
+        <p v-for="(player, index) in rankList">
+            {{index+1}} {{player.name}} {{player.killTimes}}
+        </p>
+    </div>
 
-	<div class="modal fade" id="modal-gameinit">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<div class="modal-body">
-					<h3 class="text-center title">Dark House</h3>
-					<p class="text-center title" v-if="common.user">
-						{{common.user.email}}
-					</p>
-					<form v-on:submit.prevent="startGame()">
-						<div class="list-group">
-							<a v-for="(webSocket, index) in common.webSockets" v-bind:class="{active: webSocket == common.activeWebSocket}" v-on:click="common.activeWebSocket = webSocket"
-								href="javascript:;" class="list-group-item">
-								{{index+1}}. {{webSocket.ip}}:{{webSocket.port}}
-								<span v-show="webSocket == common.activeWebSocket" class="pull-right"><i class="fa fa-check-circle"></i></span>
-								</a>
-						</div>
-						<div class="form-group">
-							<div class="input-group">
-								<input v-model="common.name" maxlength="20" class="form-control" type="text">
-								<span class="input-group-btn">
-								<button type="submit" class="btn btn-default">开始新游戏</button>
-								<button type="button" class="btn btn-success" 
-										v-on:click="showAccount = !showAccount">登录 / 注册</button>
-							</span>
-							</div>
-						</div>
-						<template v-if="showAccount">
-							<div class="form-group">
-								<input type="email" class="form-control" placeholder="邮箱" v-model="email">
-							</div>
-							<div class="form-group">
-								<input type="password" class="form-control" placeholder="密码" v-model="password">
-							</div>
-							<div class="row">
-								<div class="col-md-6">
-									<button type="button" class="btn btn-primary btn-block" v-on:click="signin()">登录</button>
-								</div>
-								<div class="col-md-6">
-									<button type="button" class="btn btn-default btn-block" v-on:click="signup()">注册</button>
-								</div>
-							</div>
-						</template>
-					</form>
-				</div>
-			</div>
-		</div>
-	</div>
+    <div class="modal fade" id="modal-gameinit">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h3 class="text-center title">Dark House</h3>
+                    <p class="text-center title" v-if="common.user">
+                        {{common.user.email}}
+                    </p>
+                    <form v-on:submit.prevent="startGame()">
+                        <div class="list-group">
+                            <a v-for="(webSocket, index) in common.webSockets" v-bind:class="{active: webSocket == common.activeWebSocket}" v-on:click="common.activeWebSocket = webSocket"
+                               href="javascript:;" class="list-group-item">
+                                {{index+1}}. {{webSocket.ip}}:{{webSocket.port}}
+                                <span v-show="webSocket == common.activeWebSocket" class="pull-right"><i class="fa fa-check-circle"></i></span>
+                            </a>
+                        </div>
+                        <div class="form-group">
+                            <div class="input-group">
+                                <input v-model="common.name" maxlength="20" class="form-control" type="text">
+                                <span class="input-group-btn">
+                                    <button type="submit" class="btn btn-default">开始新游戏</button>
+                                    <button type="button" class="btn btn-success"
+                                            v-on:click="showAccount = !showAccount">
+                                        登录 / 注册
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                        <template v-if="showAccount">
+                            <div class="form-group">
+                                <input type="email" class="form-control" placeholder="邮箱" v-model="email">
+                            </div>
+                            <div class="form-group">
+                                <input type="password" class="form-control" placeholder="密码" v-model="password">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <button type="button" class="btn btn-primary btn-block" v-on:click="signin()">登录</button>
+                                </div>
+                                <div class="col-md-6">
+                                    <button type="button" class="btn btn-default btn-block" v-on:click="signup()">注册</button>
+                                </div>
+                            </div>
+                        </template>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
-	<div class="modal fade" id="modal-gameover">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<div class="modal-body">
-					<h3 class="text-center title">游戏结束</h3>
-					<p class="text-center title" v-if="common.user">
-						{{common.user.email}}
-					</p>
-					<p>一共射击：{{records.attackTimes}} 次</p>
-					<p>击中：{{records.attackInAimTimes}} 次</p>
-					<p>被击中：{{records.attackedTimes}} 次</p>
-					<p>杀死：{{records.killTimes}} 次</p>
-					<form v-on:submit.prevent="startGameFromGameOver">
-						<div class="list-group">
-							<a v-for="(webSocket, index) in common.webSockets" v-bind:class="{active: webSocket == common.activeWebSocket}" v-on:click="common.activeWebSocket = webSocket"
-								href="javascript:;" class="list-group-item">
-								{{index+1}}. {{webSocket.ip}}:{{webSocket.port}}
-								<span v-show="webSocket == common.activeWebSocket" class="pull-right"><i class="fa fa-check-circle"></i></span>
-								</a>
-						</div>
-						<div class="input-group">
-							<input v-model="common.name" maxlength="20" class="form-control" type="text">
-							<span class="input-group-btn">
-								<button type="submit" class="btn btn-default">重新开始</button>
-							</span>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-	</div>
+    <div class="modal fade" id="modal-gameover">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h3 class="text-center title">游戏结束</h3>
+                    <p class="text-center title" v-if="common.user">
+                        {{common.user.email}}
+                    </p>
+                    <p>一共射击：{{records.attackTimes}} 次</p>
+                    <p>击中：{{records.attackInAimTimes}} 次</p>
+                    <p>被击中：{{records.attackedTimes}} 次</p>
+                    <p>杀死：{{records.killTimes}} 次</p>
+                    <form v-on:submit.prevent="startGameFromGameOver">
+                        <div class="list-group">
+                            <a v-for="(webSocket, index) in common.webSockets" v-bind:class="{active: webSocket == common.activeWebSocket}" v-on:click="common.activeWebSocket = webSocket"
+                               href="javascript:;" class="list-group-item">
+                                {{index+1}}. {{webSocket.ip}}:{{webSocket.port}}
+                                <span v-show="webSocket == common.activeWebSocket" class="pull-right"><i class="fa fa-check-circle"></i></span>
+                            </a>
+                        </div>
+                        <div class="input-group">
+                            <input v-model="common.name" maxlength="20" class="form-control" type="text">
+                            <span class="input-group-btn">
+                                <button type="submit" class="btn btn-default">重新开始</button>
+                            </span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
-	<div class="modal fade" id="modal-waiting">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<div class="modal-body">
-					<h3 class="text-center title">等待中</h3>
-				</div>
-			</div>
-		</div>
-	</div>
+    <div class="modal fade" id="modal-waiting">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h3 class="text-center title">等待中</h3>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
-	<% if (useCDN) { %>
-		<script src="//cdn.bootcss.com/vue/2.0.1/vue.min.js"></script>
-		<script src="//cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
-		<script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-		<script src="//cdn.bootcss.com/toastr.js/latest/js/toastr.min.js"></script>
-		<% } else { %>
-			<script src="/lib/vue/dist//vue.js"></script>
-			<script src="/lib/jquery/dist/jquery.js"></script>
-			<script src="/lib/bootstrap/dist/js/bootstrap.js"></script>
-			<script src="/lib/toastr/build/toastr.min.js"></script>
-			<% } %>
+    <% if (useCDN) { %>
+    <script src="//cdn.bootcss.com/vue/2.0.1/vue.min.js"></script>
+    <script src="//cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
+    <script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="//cdn.bootcss.com/toastr.js/latest/js/toastr.min.js"></script>
+    <% } else { %>
+    <script src="/lib/vue/dist//vue.js"></script>
+    <script src="/lib/jquery/dist/jquery.js"></script>
+    <script src="/lib/bootstrap/dist/js/bootstrap.js"></script>
+    <script src="/lib/toastr/build/toastr.min.js"></script>
+    <% } %>
 
-				<script src="/public/scripts/bundle.js"></script>
+    <script src="/public/scripts/bundle.js"></script>
 </body>
 
 </html>
