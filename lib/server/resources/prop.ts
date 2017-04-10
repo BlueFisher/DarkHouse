@@ -59,7 +59,7 @@ export class propWeapon extends prop {
 			type: toClientPROT.prop.type.weapon,
 			id: this.id,
 			position: this.position,
-			weapontType: this.weapon.weaponType,
+			weaponType: this.weapon.weaponType,
 			attackType: this.weapon.attackType
 		}
 	}

@@ -195,7 +195,7 @@ export class resourcesManager {
 
 					let weaponName = '';
 					if (propWeapon.attackType == config.weapon.attackType.gun) {
-						switch (propWeapon.weapontType) {
+						switch (propWeapon.weaponType) {
 							case config.weapon.gun.type.pistol:
 								weaponName = '手枪';
 								break;
@@ -207,7 +207,7 @@ export class resourcesManager {
 								break;
 						}
 					} else if (propWeapon.attackType == config.weapon.attackType.melee) {
-						if (propWeapon.weapontType == config.weapon.melee.type.fist) {
+						if (propWeapon.weaponType == config.weapon.melee.type.fist) {
 							weaponName = '拳头';
 						}
 					}

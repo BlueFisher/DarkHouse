@@ -50,7 +50,8 @@ export class gameCore extends events.EventEmitter {
 						playerId: player.id,
 						playerIdsInSight: this._playerManager
 							.getPlayersInRadius(player.position, config.player.runningSightRadius)
-							.map(p => p.id)
+							.map(p => p.id),
+						sightRadius: undefined // TODO FEATURE: 如果奔跑视野与默认配置不同则传递新的奔跑视野
 					});
 				}
 			}
@@ -179,7 +180,11 @@ export class gameCore extends events.EventEmitter {
 			this._edge.getEdgePROT(),
 			this._barricadeManager.getAllBarricadePROTs(),
 			this._visableAreaManager.getAllVisableAreaBasicPROTs(),
-			this._propManager.getAllPropPROTs()
+			this._propManager.getAllPropPROTs(),
+			{
+				playerRadius: config.player.radius,
+				runningSightRadius: config.player.runningSightRadius
+			}
 		);
 	}
 

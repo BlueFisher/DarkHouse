@@ -62,7 +62,7 @@ export namespace prop {
 		hp: number
 	}
 	export interface weaponPROT extends propPROT {
-		weapontType: config.weapon.weaponType,
+		weaponType: config.weapon.weaponType,
 		attackType: config.weapon.attackType
 	}
 	export interface silencerPROT extends propPROT { }
@@ -95,6 +95,7 @@ export namespace eqpt {
 export interface runningPROT {
 	playerId: number,
 	playerIdsInSight: number[],
+	sightRadius?: number
 }
 
 export interface attackPROT {
@@ -146,12 +147,18 @@ export class pong extends baseProtocol {
 	}
 }
 
+export interface initExtraParam {
+	playerRadius: number,
+	runningSightRadius: number,
+}
+
 export class initialize extends baseProtocol {
 	constructor(currPlayerId: number, players: playerBasicPROT[],
 		edge: stage.edgePROT,
 		barricades: stage.barricadePROT[],
 		visableAreas: stage.visableAreaBasicPROT[],
-		allPropPROTTypes: prop.allPropPROTTypes[]) {
+		allPropPROTTypes: prop.allPropPROTTypes[],
+		extraParam: initExtraParam) {
 		super(type.init);
 
 		this.currPlayerId = currPlayerId;
@@ -171,6 +178,8 @@ export class initialize extends baseProtocol {
 		this.props.forEach(p => {
 			p.position = point.getFixedPoint(p.position);
 		});
+
+		this.extraParam = extraParam;
 	}
 	currPlayerId: number;
 	players: playerBasicPROT[];
@@ -178,6 +187,8 @@ export class initialize extends baseProtocol {
 	barricades: stage.barricadePROT[];
 	visableAreas: stage.visableAreaBasicPROT[];
 	props: prop.allPropPROTTypes[];
+
+	extraParam: initExtraParam;
 }
 
 export class mainPROT extends baseProtocol {
