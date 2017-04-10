@@ -10,18 +10,17 @@ if (env == 'production') {
 	console.log('Compiling TypeScript...');
 	cp.exec('tsc -p .', function (err) {
 		if (err) { console.log(err); }
-		else {
-			console.log('Compiling webpack...');
-			let compiler = webpack(webpackConfig);
-			compiler.run(function (err, stats) {
-				if (err) { console.log(err); }
-				else {
-					console.log(stats.toString({
-						colors: true,
-					}));
-				}
-			});
-		}
+
+		console.log('Compiling webpack...');
+		let compiler = webpack(webpackConfig);
+		compiler.run(function (err, stats) {
+			if (err) { console.log(err); }
+			else {
+				console.log(stats.toString({
+					colors: true,
+				}));
+			}
+		});
 	});
 } else if (env == 'watch') {
 	const webpackConfig = require('./webpack.dev.conf');

@@ -59,7 +59,8 @@ export class attackCache {
 			attackPlayerId: this.attackPlayer.id,
 			bulletPosition: this.bulletPosition,
 			bulletFlyStep: this.weapon.bulletFlyStep,
-			sightRadius: attackSightRadius
+			sightRadius: attackSightRadius,
+			sightTime: attackSightRadius == 0 ? 0 : this.weapon.attackSightTime
 		};
 
 		if (playerIdsInAttackSight.length > 0) {

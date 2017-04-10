@@ -107,7 +107,8 @@ export interface attackPROT {
 	attackPlayerId: number, // 攻击的玩家id
 	bulletPosition: point,
 	bulletFlyStep: number,
-	sightRadius: number
+	sightRadius: number,
+	sightTime: number
 }
 export interface duringAttackPROT {
 	id: number,
